@@ -1,0 +1,72 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/shell/AppShell";
+import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
+import { formatEventDate } from "@/lib/format";
+
+export const metadata: Metadata = {
+  title: "Faculty oversight · Sangam",
+  description: "Faculty mentor read-only dashboard.",
+};
+
+export default async function FacultyHome() {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [clubs, eventsThisMonth, pendingApprovals, recentEvents] = await Promise.all([
+    prisma.club.findMany({
+      take: 4,
+      orderBy: { name: "asc" },
+      include: { _count: { select: { memberships: true } }, events: { orderBy: { date: "desc" }, take: 1 } },
+    }),
+    prisma.event.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.event.count({ where: { approval: "pending" } }),
+    prisma.event.findMany({ orderBy: { date: "desc" }, take: 5, include: { club: true, _count: { select: { rsvps: true } } } }),
+  ]);
+
+  return (
+    <>
+      <PageHeader eyebrow="Read-only" title={<>Club activity, <span className="text-display text-primary italic">at a glance.</span></>} description="Signals. Not surveillance." />
+      <div className="grid gap-3 md:grid-cols-4">
+        <Stat label="Clubs monitored" value={clubs.length} hue="155" />
+        <Stat label="Events this month" value={eventsThisMonth} hue="122" />
+        <Stat label="Pending approvals" value={pendingApprovals} delta={pendingApprovals > 0 ? "Needs you" : undefined} hue="5" />
+        <Stat label="Compliance" value="98%" hue="45" />
+      </div>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div>
+          <div className="text-mono-label mb-3">Clubs under mentorship</div>
+          <div className="space-y-2">
+            {clubs.map(c => (
+              <GlassCard key={c.id} className="flex items-center gap-3 p-4">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg"
+                     style={{ background: `oklch(0.72 0.18 ${c.hue} / 15%)`, color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{c.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {c.events[0] ? `Last event ${formatEventDate(c.events[0].date)}` : "No events yet"} · {c._count.memberships} members
+                  </div>
+                </div>
+                <StatusPill tone={c.active ? "green" : "amber"}>{c.active ? "Healthy" : "Quiet"}</StatusPill>
+              </GlassCard>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-mono-label mb-3">Recent event outcomes</div>
+          <div className="glass-strong divide-y divide-hairline rounded-2xl">
+            {recentEvents.map(e => (
+              <div key={e.id} className="p-4">
+                <div className="text-mono-label mb-1">{e.club.name}</div>
+                <div className="text-sm">{e.title}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.rsvps} attendees</div>
+              </div>
+            ))}
+          </div>
+          <Link href="/faculty/approvals" className="mt-4 inline-flex text-xs text-primary hover:underline">Review approvals →</Link>
+        </div>
+      </div>
+    </>
+  );
+}
