@@ -1,0 +1,81 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { Plus } from "lucide-react";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { PageHeader } from "@/components/shell/AppShell";
+import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { formatEventDate } from "@/lib/format";
+
+export const metadata: Metadata = {
+  title: "Coordinator · Sangam",
+  description: "Event coordinator dashboard.",
+};
+
+export default async function CoordinatorHome() {
+  const session = await getServerSession(authOptions);
+  const membership = getPrimaryClubMembership(session!, "Coordinator");
+  const clubId = membership!.clubId;
+
+  const [myEvents, tasks, volunteerCount] = await Promise.all([
+    prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { rsvps: true } } } }),
+    prisma.task.findMany({ where: { event: { clubId } }, include: { event: true } }),
+    prisma.membership.count({ where: { clubId, role: { in: ["Volunteer", "Member"] } } }),
+  ]);
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Ops"
+        title={<>Run the day, <span className="text-display text-primary italic">without the drama.</span></>}
+        actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
+      />
+      <div className="grid gap-3 md:grid-cols-3">
+        <Stat label="Live events" value={myEvents.length} hue="122" />
+        <Stat label="Volunteers assigned" value={volunteerCount} hue="5" />
+        <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} hue="45" />
+      </div>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="text-mono-label mb-3">Your events</h2>
+          <div className="space-y-2">
+            {myEvents.length === 0 && <div className="text-sm text-muted-foreground">No upcoming events.</div>}
+            {myEvents.map(e => (
+              <GlassCard key={e.id} className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-lg" style={{ background: e.cover }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{e.title}</div>
+                    <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>
+                  </div>
+                  <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
+                </div>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                  <div className="h-full rounded-full" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%`, background: "var(--gradient-accent)" }} />
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h2 className="text-mono-label mb-3">Task board</h2>
+          <div className="space-y-2">
+            {tasks.length === 0 && <div className="text-sm text-muted-foreground">No tasks yet.</div>}
+            {tasks.map(t => (
+              <GlassCard key={t.id} className="flex items-center gap-3 p-4">
+                <div className={`h-2 w-2 shrink-0 rounded-full ${t.status === "done" ? "bg-success" : t.status === "doing" ? "bg-warning" : "bg-muted-foreground"}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm">{t.title}</div>
+                  <div className="text-xs text-muted-foreground">{t.event.title}</div>
+                </div>
+                <StatusPill tone={t.status === "done" ? "green" : t.status === "doing" ? "amber" : "slate"}>{t.status}</StatusPill>
+              </GlassCard>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
