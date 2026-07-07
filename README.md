@@ -1,6 +1,6 @@
 # Sangam
 
-A community and society management platform. Single source of truth for membership, events, places, equipment, tasks, and communication, replacing WhatsApp groups, Google Forms, and spreadsheets.
+A community and society management platform. Single source of truth for membership, events, venues, equipment, tasks, and communication, replacing WhatsApp groups, Google Forms, and spreadsheets.
 
 ## Tech Stack
 
@@ -8,41 +8,86 @@ A community and society management platform. Single source of truth for membersh
 - TypeScript
 - Tailwind CSS
 - Prisma ORM
-- PostgreSQL (SQLite for local dev)
-- NextAuth.js / JWT auth
+- PostgreSQL (prod) / SQLite (local dev) — two schema files, see below
+- NextAuth.js (Credentials provider, JWT sessions)
 
 ## Getting Started
 
 ```bash
 git clone <repo-url>
 cd sangam
-npm install
+bun install
 cp .env.example .env
-npx prisma migrate dev
-npm run dev
+bun run db:migrate   # applies prisma/schema.sqlite.prisma, generates the client
+bun run db:seed      # seeds demo clubs/users/events — all seeded users share password "password123"
+bun run dev
 ```
 
-App runs at `http://localhost:3000`
+App runs at `http://localhost:3000`.
+
+`npm` works too if you don't have `bun` (`npm install`, `npm run db:migrate`, `npm run db:seed`, `npm run dev`) — just note there's no committed lockfile for either yet, so the first person to run `bun install` should commit the resulting `bun.lock`.
+
+## Database
+
+Two Prisma schemas, kept manually in sync:
+
+- `prisma/schema.sqlite.prisma` — local dev. Enums are downgraded to plain validated `String` fields (SQLite has no enum type), and `Event.tags` is a comma-joined string (SQLite has no array type).
+- `prisma/schema.postgres.prisma` — production. Real Postgres enums and native `String[]` arrays.
+
+Scripts always target the SQLite schema by default (`bun run dev`, `bun run db:migrate`, `bun run db:studio`); use `bun run db:migrate:prod` / `next build` (which runs `prisma generate --schema=prisma/schema.postgres.prisma`) for the Postgres path.
 
 ## Project Structure
 
 ```
 app/
-  (public)/        landing, discover, login, signup
-  (member)/        dashboard, clubs, events, issues, announcements, faq, profile
-  (admin)/         dashboard, members, approvals, issues, announcements, activity, transparency, handover
-  (coordinator)/   dashboard, events, volunteers, places
-  (volunteer)/     tasks, events, faq
-  (faculty)/       oversight, approvals, activity
-  api/             route handlers
-components/        ui/, shared/, member/, admin/, coordinator/, volunteer/, faculty/, forms/
-lib/                types, mock-data, store, utils, prisma, auth
-prisma/             schema.prisma
+  (public)/        landing, clubs directory, login, signup
+  (member)/app/    dashboard, clubs, events (+ RSVP), issues (+ raise), faq, profile
+  (admin)/admin/   dashboard, members, approvals, announcements, metrics, transparency, handover
+  (coordinator)/coordinator/  dashboard, new event, resources (venues + equipment), volunteers
+  (volunteer)/volunteer/      task list with inline status updates
+  (faculty)/faculty/          oversight dashboard, event approvals
+  api/auth/[...nextauth]/     NextAuth route handler
+
+components/
+  ui/          Btn, GlassCard, Stat, StatusPill — shared design-system primitives
+  shell/       AppShell (per-role sidebar/nav), PageHeader
+  auth/        AuthShell (shared login/signup visual shell)
+  tasks/       TaskStatusButtons — shared between the volunteer and coordinator task boards
+  (route-local components — e.g. forms, list views specific to one page — live colocated
+   next to their page.tsx inside app/, per Next.js convention, rather than under components/)
+
+lib/
+  auth.ts               NextAuth config (authOptions)
+  prisma.ts              Prisma client singleton
+  session-helpers.ts     helpers for reading a user's per-club role from the session
+  actions/               Server Actions shared across more than one route (approvals, task status)
+  seed-data.ts            seed dataset for prisma/seed.ts; also backs the two bits of content that
+                           are deliberately static rather than DB-backed (FAQ copy, landing preview)
+  format.ts               date/display formatting helpers
+  utils.ts                cn() class-name helper
+
+types/
+  next-auth.d.ts    session/JWT type augmentation (adds id, isFaculty, memberships to Session.user)
+
+prisma/
+  schema.postgres.prisma, schema.sqlite.prisma, migrations/, seed.ts
 ```
+
+## Data model
+
+Role is per-club, not global: a `Membership` join table (`User` × `Club`) carries a `ClubRole` (`Member | Volunteer | Coordinator | Admin`), so one user can be Coordinator of one club and a plain Member of another. Faculty is separate — an institution-wide `User.isFaculty` flag, not part of the per-club role system, since faculty oversight isn't scoped to a single club.
+
+Venues and Equipment are separate models (not a merged "Resource" type).
 
 ## Roles
 
-Admin, Event Coordinator, Club Member, Volunteer, Faculty Coordinator. A user can hold multiple roles across different clubs.
+Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. Route access is gated two ways: `middleware.ts` checks for a signed-in session on every `/app`, `/admin`, `/coordinator`, `/volunteer`, `/faculty` request; each persona's `layout.tsx` then checks the session's actual `Membership` role (or `isFaculty`) and redirects to `/app` if it doesn't match.
+
+## Known gaps vs. original plan
+
+- Volunteer currently only has the task list — no dedicated events or FAQ view yet.
+- Admin doesn't have a standalone "issues" view — club issues currently only surface in the member persona (raised-by-me list) and aren't yet aggregated for admins.
+- No automated tests yet (Vitest setup planned).
 
 ## Team — Dhurandhar (MAY2026-Team-004)
 

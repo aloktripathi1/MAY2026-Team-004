@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Sangam design system — dark glass + acid accent.
+ * Typography uses the system font stack (no web fonts).
+ */
+
+:root {
+  --font-sans: system-ui, sans-serif;
+  --font-display: system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-3xl: 36px;
+
+  /* Institutional paper surfaces (IITM light theme) */
+  --background: oklch(0.985 0.004 80);   /* warm off-white paper */
+  --foreground: oklch(0.18 0.02 25);     /* deep maroon-black ink */
+
+  --surface:   oklch(1 0 0);             /* pure white cards */
+  --surface-2: oklch(0.975 0.006 60);    /* warm sub-panel */
+  --surface-3: oklch(0.955 0.008 60);
+  --hairline:  oklch(0.18 0.02 25 / 12%);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 25);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 25);
+
+  /* IITM maroon primary — #7a1a1a */
+  --primary: oklch(0.38 0.13 25);
+  --primary-foreground: oklch(0.99 0.005 80);
+  --primary-glow: oklch(0.45 0.15 25);
+
+  /* IITM gold secondary — #d6a64f */
+  --secondary: oklch(0.76 0.13 78);
+  --secondary-foreground: oklch(0.18 0.02 25);
+
+  --accent: oklch(0.76 0.13 78);
+  --accent-foreground: oklch(0.18 0.02 25);
+
+  --muted: oklch(0.955 0.006 60);
+  --muted-foreground: oklch(0.42 0.02 25);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 80);
+  --success: oklch(0.55 0.14 155);
+  --warning: oklch(0.72 0.15 75);
+
+  --border: oklch(0.18 0.02 25 / 14%);
+  --input: oklch(0.18 0.02 25 / 10%);
+  --ring: oklch(0.38 0.13 25 / 45%);
+
+  --chart-1: oklch(0.38 0.13 25);
+  --chart-2: oklch(0.76 0.13 78);
+  --chart-3: oklch(0.55 0.14 155);
+  --chart-4: oklch(0.55 0.18 260);
+  --chart-5: oklch(0.60 0.22 320);
+
+  /* Sidebar = deep maroon slab, white text (IITM hero band) */
+  --sidebar: oklch(0.30 0.13 25);
+  --sidebar-foreground: oklch(0.99 0.005 80);
+  --sidebar-primary: oklch(0.76 0.13 78);
+  --sidebar-primary-foreground: oklch(0.18 0.02 25);
+  --sidebar-accent: oklch(0.36 0.13 25);
+  --sidebar-accent-foreground: oklch(0.99 0.005 80);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.76 0.13 78 / 55%);
+
+  /* Composed institutional tokens */
+  --gradient-hero: linear-gradient(180deg, oklch(0.38 0.13 25) 0%, oklch(0.32 0.12 25) 100%);
+  --gradient-accent: linear-gradient(135deg, oklch(0.76 0.13 78), oklch(0.70 0.14 65));
+  --gradient-hot: linear-gradient(135deg, oklch(0.38 0.13 25), oklch(0.45 0.15 25));
+
+  --shadow-glow: 0 12px 40px -12px oklch(0.38 0.13 25 / 35%);
+  --shadow-panel: 0 1px 2px oklch(0.18 0.02 25 / 4%), 0 12px 32px -16px oklch(0.18 0.02 25 / 12%);
+  --shadow-inset: 0 0 0 1px oklch(0.18 0.02 25 / 8%) inset;
+}
+
+@layer base {
+  * { border-color: var(--border); }
+  html { color-scheme: light; }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: oklch(0.76 0.13 78 / 45%); color: oklch(0.18 0.02 25); }
+
+  /* Ambient paper texture — faint warm grid */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 100% 60% at 50% -10%, oklch(0.38 0.13 25 / 5%), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.76 0.13 78 / 6%), transparent 60%),
+      linear-gradient(180deg, oklch(0.985 0.004 80), oklch(0.97 0.005 60));
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+      linear-gradient(oklch(0.18 0.02 25 / 4%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.18 0.02 25 / 4%) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 80%);
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: color-mix(in oklab, var(--surface) 92%, transparent);
+    backdrop-filter: blur(12px) saturate(120%);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .glass-strong {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .text-display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 0.95;
+  }
+
+  .text-institutional {
+    font-family: var(--font-display);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 0.92;
+  }
+
+  .text-mono-label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    color: var(--muted-foreground);
+  }
+
+  .accent-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .scrollbar-hidden {
+    scrollbar-width: none;
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animate-marquee {
+    animation: marquee 40s linear infinite;
+  }
+
+  .pulse-dot {
+    animation: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 oklch(0.76 0.13 78 / 55%); }
+  70% { box-shadow: 0 0 0 12px oklch(0.76 0.13 78 / 0%); }
+  100% { box-shadow: 0 0 0 0 oklch(0.76 0.13 78 / 0%); }
+}
