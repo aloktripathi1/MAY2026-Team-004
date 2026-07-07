@@ -83,6 +83,26 @@ Venues and Equipment are separate models (not a merged "Resource" type).
 
 Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. Route access is gated two ways: `middleware.ts` checks for a signed-in session on every `/app`, `/admin`, `/coordinator`, `/volunteer`, `/faculty` request; each persona's `layout.tsx` then checks the session's actual `Membership` role (or `isFaculty`) and redirects to `/app` if it doesn't match.
 
+## Seeded dev accounts
+
+`bun run db:seed` creates these accounts (source: `lib/seed-data.ts` → `prisma/seed.ts`). Every account uses the same password: **`password123`**. Email is `<roll>@ds.study.iitm.ac.in`.
+
+| Name | Roll no. | Email | Role(s) · Club(s) | Membership status |
+|---|---|---|---|---|
+| Ananya Rao | 23f1000123 | 23f1000123@ds.study.iitm.ac.in | Admin · CodeChef | Active |
+| Kabir Menon | 23f1000456 | 23f1000456@ds.study.iitm.ac.in | Coordinator · CodeChef, E-Cell | Active |
+| Ishita Deshpande | 24f1000789 | 24f1000789@ds.study.iitm.ac.in | Volunteer · Sarga, Paradox | Active |
+| Rohan Iyer | 24f1000321 | 24f1000321@ds.study.iitm.ac.in | Member · CodeChef | **Pending** (good for testing the admin approvals queue) |
+| Meera Nair | 23f1000654 | 23f1000654@ds.study.iitm.ac.in | Coordinator · Kalakriti | Active |
+| Aarav Sen | 22f1000111 | 22f1000111@ds.study.iitm.ac.in | Member · Arena, CodeChef | Active |
+| Diya Krishnan | 24f1000908 | 24f1000908@ds.study.iitm.ac.in | Member · Prakriti | **Pending** |
+| Vikram Shah | 23f1000202 | 23f1000202@ds.study.iitm.ac.in | Member · E-Cell | Inactive |
+| — (Faculty, no roll number) | — | faculty.mentor@ds.study.iitm.ac.in | Faculty (`isFaculty: true`, institution-wide, not club-scoped) | — |
+
+Quick picks for testing each persona: **Ananya Rao** for `/admin` (CodeChef Admin), **Kabir Menon** for `/coordinator` (Coordinator of two clubs), **Ishita Deshpande** for `/volunteer`, any of the above for `/app` (member views), **the Faculty account** for `/faculty`.
+
+Seeded content alongside the users: 8 clubs, 8 events (mixed upcoming/past, one pending faculty approval — "Ignite 2026"), 4 announcements, 5 issues, 4 tasks, 4 venues + 2 equipment items, 4 transparency-log entries. Re-running `bun run db:seed` on top of an already-seeded DB will hit unique-constraint errors (slugs/emails collide) — wipe `prisma/dev.db` first (`rm prisma/dev.db && bun run db:migrate` recreates it, then reseed).
+
 ## Known gaps vs. original plan
 
 - Volunteer currently only has the task list — no dedicated events or FAQ view yet.
