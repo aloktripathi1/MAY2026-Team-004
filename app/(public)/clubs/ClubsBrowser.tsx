@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Search } from "lucide-react";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { pluralize } from "@/lib/format";
 
 export type ClubListItem = {
   id: string;
@@ -78,7 +79,7 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
               <div className="mt-1 text-sm text-muted-foreground">{c.tagline}</div>
               <p className="mt-4 line-clamp-3 text-xs text-muted-foreground/80">{c.description}</p>
               <div className="mt-5 flex items-center justify-between border-t border-hairline pt-4 text-mono-label">
-                <span>{c.members} members</span>
+                <span>{c.members} {pluralize(c.members, "member")}</span>
                 <span>Since {c.founded}</span>
               </div>
               <Link href="/signup" className="mt-4 block rounded-xl bg-surface-2 py-2 text-center text-xs transition hover:bg-primary hover:text-primary-foreground">

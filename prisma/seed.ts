@@ -22,6 +22,13 @@ const clubNameToSlug: Record<string, string> = {
   Quill: "quill",
 };
 
+// Parses seed-data.ts's display dates ("Aug 2023") into real Dates, so seeded
+// users/memberships show their intended join date instead of "whenever the
+// seed script happened to run" (Prisma's createdAt/joinedAt default to now()).
+function parseMonthYear(display: string): Date {
+  return new Date(`1 ${display}`);
+}
+
 async function main() {
   console.log("Seeding clubs...");
   const clubBySlug = new Map<string, { id: string }>();
@@ -47,12 +54,14 @@ async function main() {
   const userByName = new Map<string, { id: string }>();
   for (const m of members) {
     const email = `${m.roll}@ds.study.iitm.ac.in`;
+    const joinedAt = parseMonthYear(m.joined);
     const user = await prisma.user.create({
       data: {
         email,
         hashedPassword,
         name: m.name,
         rollNumber: m.roll,
+        createdAt: joinedAt,
       },
     });
     userByName.set(m.name, user);
@@ -67,6 +76,7 @@ async function main() {
           clubId: club.id,
           role: m.role,
           status: m.status,
+          joinedAt,
         },
       });
     }

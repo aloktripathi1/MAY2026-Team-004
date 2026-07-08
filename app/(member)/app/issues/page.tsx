@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { formatIssueStatus } from "@/lib/format";
 import { IssueForm } from "./IssueForm";
 
 export const metadata: Metadata = {
@@ -38,7 +39,7 @@ export default async function IssuesPage() {
               <div className="mt-1 text-xs text-muted-foreground">Raised by {i.raisedBy.name}</div>
             </div>
             <StatusPill tone={i.priority === "High" ? "magenta" : i.priority === "Med" ? "amber" : "slate"}>{i.priority}</StatusPill>
-            <StatusPill tone={i.status === "Resolved" ? "green" : i.status === "InProgress" ? "amber" : "magenta"}>{i.status}</StatusPill>
+            <StatusPill tone={i.status === "Resolved" ? "green" : i.status === "InProgress" ? "amber" : "magenta"}>{formatIssueStatus(i.status)}</StatusPill>
           </GlassCard>
         ))}
       </div>

@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Lives in @layer components (lower priority than @layer utilities) so any
+ * Tailwind text-color utility applied alongside .text-mono-label (e.g.
+ * text-white/70, text-sidebar-foreground/60) correctly overrides its default
+ * color, instead of losing to it via CSS source order within the same layer. */
+@layer components {
+  .text-mono-label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    color: oklch(var(--muted-foreground));
+  }
+}
+
 /*
  * Sangam design system — dark glass + acid accent.
  * Typography uses the system font stack (no web fonts).
@@ -163,14 +177,6 @@
     text-transform: uppercase;
     letter-spacing: -0.01em;
     line-height: 0.92;
-  }
-
-  .text-mono-label {
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    font-size: 0.7rem;
-    color: oklch(var(--muted-foreground));
   }
 
   .accent-glow {

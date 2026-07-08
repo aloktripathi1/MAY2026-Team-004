@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
-import { formatEventDate } from "@/lib/format";
+import { formatEventDate, pluralize } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Faculty oversight · Sangam",
@@ -45,7 +45,7 @@ export default async function FacultyHome() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{c.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {c.events[0] ? `Last event ${formatEventDate(c.events[0].date)}` : "No events yet"} · {c._count.memberships} members
+                    {c.events[0] ? `Last event ${formatEventDate(c.events[0].date)}` : "No events yet"} · {c._count.memberships} {pluralize(c._count.memberships, "member")}
                   </div>
                 </div>
                 <StatusPill tone={c.active ? "green" : "amber"}>{c.active ? "Healthy" : "Quiet"}</StatusPill>

@@ -68,19 +68,29 @@ export default async function AdminDashboard() {
             <div className="mb-6 flex items-end justify-between">
               <div>
                 <div className="text-mono-label">RSVPs, last 7 days</div>
-                <div className="text-display mt-2 text-4xl">{recentRsvps.length} <span className="text-sm text-success"><TrendingUp className="inline h-3 w-3" /></span></div>
+                <div className="text-display mt-2 text-4xl">
+                  {recentRsvps.length}
+                  {recentRsvps.length > 0 && <span className="text-sm text-success"> <TrendingUp className="inline h-3 w-3" /></span>}
+                </div>
               </div>
               <div className="text-mono-label">Last 7 days</div>
             </div>
-            <div className="flex h-40 items-end gap-2">
-              {weeklyAttendance.map((v, i) => (
-                <div key={i} className="group flex flex-1 flex-col items-center gap-2">
-                  <div className="w-full rounded-t-lg transition group-hover:opacity-80"
-                       style={{ height: `${(v / maxAttendance) * 100}%`, background: `linear-gradient(180deg, oklch(0.93 0.22 122) 0%, oklch(0.72 0.18 260) 100%)` }} />
-                  <div className="text-mono-label !text-[9px]">{["M","T","W","T","F","S","S"][i]}</div>
-                </div>
-              ))}
-            </div>
+            {recentRsvps.length === 0 ? (
+              <div className="flex h-40 flex-col items-center justify-center gap-1 text-center">
+                <div className="text-sm text-muted-foreground">No RSVPs yet this week.</div>
+                <div className="text-xs text-muted-foreground/70">Activity will show up here once members start RSVPing.</div>
+              </div>
+            ) : (
+              <div className="flex h-40 items-end gap-2">
+                {weeklyAttendance.map((v, i) => (
+                  <div key={i} className="group flex flex-1 flex-col items-center gap-2">
+                    <div className="w-full rounded-t-lg transition group-hover:opacity-80"
+                         style={{ height: `${(v / maxAttendance) * 100}%`, background: `linear-gradient(180deg, oklch(0.93 0.22 122) 0%, oklch(0.72 0.18 260) 100%)` }} />
+                    <div className="text-mono-label !text-[9px]">{["M","T","W","T","F","S","S"][i]}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </GlassCard>
 
           {/* Upcoming */}

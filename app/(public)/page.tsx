@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Calendar, Compass, Megaphone, ShieldCheck, Sparkles, Users2, Zap } from "lucide-react";
 import { clubs, events, announcements } from "@/lib/seed-data";
 import { Btn, GlassCard, StatusPill } from "@/components/ui/primitives";
+import { pluralize } from "@/lib/format";
 
 export default function Landing() {
   return (
@@ -252,7 +253,7 @@ function ClubsSection() {
               <div className="text-sm font-medium">{c.name}</div>
               <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.tagline}</div>
               <div className="mt-4 flex items-center justify-between text-mono-label">
-                <span>{c.members} members</span>
+                <span>{c.members} {pluralize(c.members, "member")}</span>
                 <span className="opacity-0 transition group-hover:opacity-100">Join →</span>
               </div>
             </GlassCard>
