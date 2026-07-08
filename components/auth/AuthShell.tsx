@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
@@ -25,7 +25,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             </p>
             <div className="mt-8 text-sm text-muted-foreground">— Team Dhurandhar</div>
           </div>
-          <div className="text-xs text-muted-foreground">v1.0 · Milestone 2 · IITM BS</div>
+          <div className="text-xs text-muted-foreground">Sangam · IITM BS</div>
         </div>
       </div>
 
@@ -59,6 +59,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
 
 function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -77,7 +78,12 @@ function LoginForm() {
       setError("Incorrect email or password.");
       return;
     }
-    router.push("/app");
+    // Honor the callbackUrl middleware attaches when it redirects an
+    // unauthenticated visit to /login (e.g. clicking "Faculty Mentor" on the
+    // landing page while signed out) so sign-in lands them where they meant
+    // to go, not always on the member dashboard.
+    const callbackUrl = searchParams.get("callbackUrl");
+    router.push(callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/app");
     router.refresh();
   }
 
@@ -95,10 +101,17 @@ function LoginForm() {
 
 const initialSignupState: SignupState = {};
 
+const INTERESTS = ["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"];
+
 function SignupForm() {
   const router = useRouter();
   const [state, formAction] = useFormState(signupAction, initialSignupState);
   const [redirecting, setRedirecting] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
+
+  function toggleInterest(t: string) {
+    setInterests((prev) => (prev.includes(t) ? prev.filter((i) => i !== t) : [...prev, t]));
+  }
 
   useEffect(() => {
     if (!state.ok || redirecting) return;
@@ -120,11 +133,24 @@ function SignupForm() {
       <div>
         <div className="text-mono-label mb-2">Pick 2–3 interests</div>
         <div className="flex flex-wrap gap-1.5">
-          {["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"].map(t => (
-            <button key={t} type="button" className="rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/60 hover:bg-primary/10 hover:text-primary">
-              {t}
-            </button>
-          ))}
+          {INTERESTS.map(t => {
+            const selected = interests.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleInterest(t)}
+                aria-pressed={selected}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  selected
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-hairline bg-surface text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
       </div>
       {state.error && <p className="text-xs text-destructive">{state.error}</p>}

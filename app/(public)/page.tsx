@@ -61,7 +61,7 @@ function Hero() {
         >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
             <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-primary" />
-            <span className="text-mono-label !text-[10px] !text-muted-foreground/80">v1.0 · Milestone 2</span>
+            <span className="text-mono-label !text-[10px] !text-muted-foreground/80">Live</span>
             <span className="text-foreground/60">Now open to all IITM BS clubs</span>
           </div>
           <h1 className="text-5xl leading-[0.95] tracking-[-0.03em] md:text-8xl">
@@ -75,8 +75,8 @@ function Hero() {
             <Link href="/signup">
               <Btn size="lg" className="accent-glow">Get started free <ArrowUpRight className="h-4 w-4" /></Btn>
             </Link>
-            <Link href="/app">
-              <Btn size="lg" variant="outline">Explore the demo</Btn>
+            <Link href="/login">
+              <Btn size="lg" variant="outline">Sign in to explore</Btn>
             </Link>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" /> Verified via IITM BS credentials
@@ -120,10 +120,12 @@ function FakeSidebarPreview() {
   );
 }
 function FakeCenterPreview() {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   return (
     <div className="rounded-2xl border border-hairline bg-surface/40 p-5 backdrop-blur">
       <div className="text-mono-label">This week</div>
-      <h3 className="text-display mt-2 text-3xl">Good evening, Ananya.</h3>
+      <h3 className="text-display mt-2 text-3xl">{greeting}.</h3>
       <div className="mt-5 grid grid-cols-3 gap-2 text-xs">
         {[["Events", "4"], ["Tasks", "7"], ["Issues", "2"]].map(([l, v]) => (
           <div key={l} className="rounded-xl bg-background/60 p-3">
@@ -314,6 +316,7 @@ function RolesSection() {
       <div className="mb-10">
         <div className="text-mono-label mb-3">04 · Built for every role</div>
         <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">One product. <span className="text-display italic text-primary">Five different views.</span></h2>
+        <p className="mt-3 max-w-lg text-muted-foreground">Click a role to see its actual dashboard — you'll sign in first, then land right there.</p>
       </div>
       <div className="glass-strong overflow-hidden rounded-3xl">
         {roles.map((r, i) => (
@@ -372,7 +375,7 @@ function CTA() {
         <h2 className="text-5xl leading-none tracking-[-0.02em] md:text-7xl">Start running the club.</h2>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Link href="/signup"><Btn size="lg" className="accent-glow">Create your account</Btn></Link>
-          <Link href="/app"><Btn size="lg" variant="outline">Open the demo</Btn></Link>
+          <Link href="/login"><Btn size="lg" variant="outline">Sign in</Btn></Link>
         </div>
       </div>
     </section>
