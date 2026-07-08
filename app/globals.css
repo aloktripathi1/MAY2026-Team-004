@@ -20,57 +20,64 @@
   --radius-2xl: 28px;
   --radius-3xl: 36px;
 
-  /* Institutional paper surfaces (IITM light theme) */
-  --background: oklch(0.985 0.004 80);   /* warm off-white paper */
-  --foreground: oklch(0.18 0.02 25);     /* deep maroon-black ink */
+  /* Institutional paper surfaces (IITM light theme).
+   * Bare "L C H" channels (no oklch() wrapper) for every color that's ever
+   * used with a Tailwind opacity modifier (e.g. bg-primary/15) — the
+   * tailwind.config.ts mapping wraps these in oklch(var(--x) / <alpha-value>),
+   * which only works if the variable holds bare channels, not a complete
+   * color function. Colors that are always used unmodified and carry their
+   * own fixed alpha by design (hairline, border, input, ring, sidebar-border,
+   * sidebar-ring) are left as complete oklch(...) values below. */
+  --background: 0.985 0.004 80;   /* warm off-white paper */
+  --foreground: 0.18 0.02 25;     /* deep maroon-black ink */
 
-  --surface:   oklch(1 0 0);             /* pure white cards */
-  --surface-2: oklch(0.975 0.006 60);    /* warm sub-panel */
-  --surface-3: oklch(0.955 0.008 60);
+  --surface:   1 0 0;             /* pure white cards */
+  --surface-2: 0.975 0.006 60;    /* warm sub-panel */
+  --surface-3: 0.955 0.008 60;
   --hairline:  oklch(0.18 0.02 25 / 12%);
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 25);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 25);
+  --card: 1 0 0;
+  --card-foreground: 0.18 0.02 25;
+  --popover: 1 0 0;
+  --popover-foreground: 0.18 0.02 25;
 
   /* IITM maroon primary — #7a1a1a */
-  --primary: oklch(0.38 0.13 25);
-  --primary-foreground: oklch(0.99 0.005 80);
-  --primary-glow: oklch(0.45 0.15 25);
+  --primary: 0.38 0.13 25;
+  --primary-foreground: 0.99 0.005 80;
+  --primary-glow: 0.45 0.15 25;
 
   /* IITM gold secondary — #d6a64f */
-  --secondary: oklch(0.76 0.13 78);
-  --secondary-foreground: oklch(0.18 0.02 25);
+  --secondary: 0.76 0.13 78;
+  --secondary-foreground: 0.18 0.02 25;
 
-  --accent: oklch(0.76 0.13 78);
-  --accent-foreground: oklch(0.18 0.02 25);
+  --accent: 0.76 0.13 78;
+  --accent-foreground: 0.18 0.02 25;
 
-  --muted: oklch(0.955 0.006 60);
-  --muted-foreground: oklch(0.42 0.02 25);
+  --muted: 0.955 0.006 60;
+  --muted-foreground: 0.42 0.02 25;
 
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.99 0.005 80);
-  --success: oklch(0.55 0.14 155);
-  --warning: oklch(0.72 0.15 75);
+  --destructive: 0.55 0.22 25;
+  --destructive-foreground: 0.99 0.005 80;
+  --success: 0.55 0.14 155;
+  --warning: 0.72 0.15 75;
 
   --border: oklch(0.18 0.02 25 / 14%);
   --input: oklch(0.18 0.02 25 / 10%);
   --ring: oklch(0.38 0.13 25 / 45%);
 
-  --chart-1: oklch(0.38 0.13 25);
-  --chart-2: oklch(0.76 0.13 78);
-  --chart-3: oklch(0.55 0.14 155);
-  --chart-4: oklch(0.55 0.18 260);
-  --chart-5: oklch(0.60 0.22 320);
+  --chart-1: 0.38 0.13 25;
+  --chart-2: 0.76 0.13 78;
+  --chart-3: 0.55 0.14 155;
+  --chart-4: 0.55 0.18 260;
+  --chart-5: 0.60 0.22 320;
 
   /* Sidebar = deep maroon slab, white text (IITM hero band) */
-  --sidebar: oklch(0.30 0.13 25);
-  --sidebar-foreground: oklch(0.99 0.005 80);
-  --sidebar-primary: oklch(0.76 0.13 78);
-  --sidebar-primary-foreground: oklch(0.18 0.02 25);
-  --sidebar-accent: oklch(0.36 0.13 25);
-  --sidebar-accent-foreground: oklch(0.99 0.005 80);
+  --sidebar: 0.30 0.13 25;
+  --sidebar-foreground: 0.99 0.005 80;
+  --sidebar-primary: 0.76 0.13 78;
+  --sidebar-primary-foreground: 0.18 0.02 25;
+  --sidebar-accent: 0.36 0.13 25;
+  --sidebar-accent-foreground: 0.99 0.005 80;
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.76 0.13 78 / 55%);
 
@@ -88,8 +95,8 @@
   * { border-color: var(--border); }
   html { color-scheme: light; }
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: oklch(var(--background));
+    color: oklch(var(--foreground));
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
@@ -124,20 +131,20 @@
 
 @layer utilities {
   .glass {
-    background: color-mix(in oklab, var(--surface) 92%, transparent);
+    background: color-mix(in oklab, oklch(var(--surface)) 92%, transparent);
     backdrop-filter: blur(12px) saturate(120%);
     border: 1px solid var(--hairline);
     box-shadow: var(--shadow-panel);
   }
 
   .glass-strong {
-    background: var(--surface);
+    background: oklch(var(--surface));
     border: 1px solid var(--hairline);
     box-shadow: var(--shadow-panel);
   }
 
   .panel {
-    background: var(--surface);
+    background: oklch(var(--surface));
     border: 1px solid var(--hairline);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-panel);
@@ -163,7 +170,7 @@
     text-transform: uppercase;
     letter-spacing: 0.14em;
     font-size: 0.7rem;
-    color: var(--muted-foreground);
+    color: oklch(var(--muted-foreground));
   }
 
   .accent-glow {
