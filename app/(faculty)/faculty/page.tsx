@@ -14,7 +14,7 @@ export default async function FacultyHome() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [clubs, eventsThisMonth, pendingApprovals, recentEvents] = await Promise.all([
+  const [clubs, eventsThisMonth, pendingApprovals, totalEvents, recentEvents] = await Promise.all([
     prisma.club.findMany({
       take: 4,
       orderBy: { name: "asc" },
@@ -22,8 +22,13 @@ export default async function FacultyHome() {
     }),
     prisma.event.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.event.count({ where: { approval: "pending" } }),
+    prisma.event.count(),
     prisma.event.findMany({ orderBy: { date: "desc" }, take: 5, include: { club: true, _count: { select: { rsvps: true } } } }),
   ]);
+
+  // Share of events that have cleared the approval queue (approved or didn't need one),
+  // rather than a fabricated number — 100% when there are no events yet.
+  const compliance = totalEvents === 0 ? 100 : Math.round(((totalEvents - pendingApprovals) / totalEvents) * 100);
 
   return (
     <>
@@ -32,7 +37,7 @@ export default async function FacultyHome() {
         <Stat label="Clubs monitored" value={clubs.length} hue="155" />
         <Stat label="Events this month" value={eventsThisMonth} hue="122" />
         <Stat label="Pending approvals" value={pendingApprovals} delta={pendingApprovals > 0 ? "Needs you" : undefined} hue="5" />
-        <Stat label="Compliance" value="98%" hue="45" />
+        <Stat label="Compliance" value={`${compliance}%`} hue="45" />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>

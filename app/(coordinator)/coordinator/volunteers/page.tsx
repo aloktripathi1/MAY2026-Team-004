@@ -61,6 +61,9 @@ export default async function VolunteersPage() {
                   <span>{tasks.filter(t => t.status === col).length}</span>
                 </div>
                 <div className="space-y-2">
+                  {tasks.filter(t => t.status === col).length === 0 && (
+                    <div className="rounded-xl border border-dashed border-hairline p-3 text-center text-xs text-muted-foreground">Nothing here.</div>
+                  )}
                   {tasks.filter(t => t.status === col).map(t => (
                     <div key={t.id} className="rounded-xl border border-hairline bg-surface p-3">
                       <div className="text-sm">{t.title}</div>
