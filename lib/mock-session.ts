@@ -17,7 +17,7 @@ export function getMockSession() {
       // silently matches nothing.
       id: "u1",
       name: "Ananya Rao",
-      email: "23f1000123@ds.study.iitm.ac.in",
+      email: "23s1000123@ds.study.iitm.ac.in",
       isFaculty: true,
       memberships,
     },

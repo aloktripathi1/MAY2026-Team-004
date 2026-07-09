@@ -91,14 +91,14 @@ Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. Route access i
 
 | Name | Roll no. | Email | Role(s) · Club(s) | Membership status |
 |---|---|---|---|---|
-| Ananya Rao | 23f1000123 | 23f1000123@ds.study.iitm.ac.in | Admin · CodeChef | Active |
-| Kabir Menon | 23f1000456 | 23f1000456@ds.study.iitm.ac.in | Coordinator · CodeChef, E-Cell | Active |
-| Ishita Deshpande | 24f1000789 | 24f1000789@ds.study.iitm.ac.in | Volunteer · Sarga, Paradox | Active |
-| Rohan Iyer | 24f1000321 | 24f1000321@ds.study.iitm.ac.in | Member · CodeChef | **Pending** (good for testing the admin approvals queue) |
-| Meera Nair | 23f1000654 | 23f1000654@ds.study.iitm.ac.in | Coordinator · Kalakriti | Active |
-| Aarav Sen | 22f1000111 | 22f1000111@ds.study.iitm.ac.in | Member · Arena, CodeChef | Active |
-| Diya Krishnan | 24f1000908 | 24f1000908@ds.study.iitm.ac.in | Member · Prakriti | **Pending** |
-| Vikram Shah | 23f1000202 | 23f1000202@ds.study.iitm.ac.in | Member · E-Cell | Inactive |
+| Ananya Rao | 23s1000123 | 23s1000123@ds.study.iitm.ac.in | Admin · CodeChef | Active |
+| Kabir Menon | 23s1000456 | 23s1000456@ds.study.iitm.ac.in | Coordinator · CodeChef, E-Cell | Active |
+| Ishita Deshpande | 24s1000789 | 24s1000789@ds.study.iitm.ac.in | Volunteer · Sarga, Paradox | Active |
+| Rohan Iyer | 24s1000321 | 24s1000321@ds.study.iitm.ac.in | Member · CodeChef | **Pending** (good for testing the admin approvals queue) |
+| Meera Nair | 23s1000654 | 23s1000654@ds.study.iitm.ac.in | Coordinator · Kalakriti | Active |
+| Aarav Sen | 22s1000111 | 22s1000111@ds.study.iitm.ac.in | Member · Arena, CodeChef | Active |
+| Diya Krishnan | 24s1000908 | 24s1000908@ds.study.iitm.ac.in | Member · Prakriti | **Pending** |
+| Vikram Shah | 23s1000202 | 23s1000202@ds.study.iitm.ac.in | Member · E-Cell | Inactive |
 | — (Faculty, no roll number) | — | faculty.mentor@ds.study.iitm.ac.in | Faculty (`isFaculty: true`, institution-wide, not club-scoped) | — |
 
 Quick picks for testing each persona: **Ananya Rao** for `/admin` (CodeChef Admin), **Kabir Menon** for `/coordinator` (Coordinator of two clubs), **Ishita Deshpande** for `/volunteer`, any of the above for `/app` (member views), **the Faculty account** for `/faculty`.
