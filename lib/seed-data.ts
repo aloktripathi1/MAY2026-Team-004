@@ -122,14 +122,14 @@ export interface Member {
   avatar: string; // initial-derived color hue
 }
 export const members: Member[] = [
-  { id: "m1", name: "Ananya Rao", roll: "23f1000123", role: "Admin", clubs: ["CodeChef"], joined: "Aug 2023", status: "Active", avatar: "122" },
-  { id: "m2", name: "Kabir Menon", roll: "23f1000456", role: "Coordinator", clubs: ["CodeChef", "E-Cell"], joined: "Aug 2023", status: "Active", avatar: "5" },
-  { id: "m3", name: "Ishita Deshpande", roll: "24f1000789", role: "Volunteer", clubs: ["Sarga", "Paradox"], joined: "Jan 2024", status: "Active", avatar: "260" },
-  { id: "m4", name: "Rohan Iyer", roll: "24f1000321", role: "Member", clubs: ["CodeChef"], joined: "Feb 2024", status: "Pending", avatar: "85" },
-  { id: "m5", name: "Meera Nair", roll: "23f1000654", role: "Coordinator", clubs: ["Kalakriti"], joined: "Aug 2023", status: "Active", avatar: "45" },
-  { id: "m6", name: "Aarav Sen", roll: "22f1000111", role: "Member", clubs: ["Arena", "CodeChef"], joined: "Jul 2022", status: "Active", avatar: "155" },
-  { id: "m7", name: "Diya Krishnan", roll: "24f1000908", role: "Member", clubs: ["Prakriti"], joined: "May 2024", status: "Pending", avatar: "320" },
-  { id: "m8", name: "Vikram Shah", roll: "23f1000202", role: "Member", clubs: ["E-Cell"], joined: "Sep 2023", status: "Inactive", avatar: "0" },
+  { id: "m1", name: "Ananya Rao", roll: "23s1000123", role: "Admin", clubs: ["CodeChef"], joined: "Aug 2023", status: "Active", avatar: "122" },
+  { id: "m2", name: "Kabir Menon", roll: "23s1000456", role: "Coordinator", clubs: ["CodeChef", "E-Cell"], joined: "Aug 2023", status: "Active", avatar: "5" },
+  { id: "m3", name: "Ishita Deshpande", roll: "24s1000789", role: "Volunteer", clubs: ["Sarga", "Paradox"], joined: "Jan 2024", status: "Active", avatar: "260" },
+  { id: "m4", name: "Rohan Iyer", roll: "24s1000321", role: "Member", clubs: ["CodeChef"], joined: "Feb 2024", status: "Pending", avatar: "85" },
+  { id: "m5", name: "Meera Nair", roll: "23s1000654", role: "Coordinator", clubs: ["Kalakriti"], joined: "Aug 2023", status: "Active", avatar: "45" },
+  { id: "m6", name: "Aarav Sen", roll: "22s1000111", role: "Member", clubs: ["Arena", "CodeChef"], joined: "Jul 2022", status: "Active", avatar: "155" },
+  { id: "m7", name: "Diya Krishnan", roll: "24s1000908", role: "Member", clubs: ["Prakriti"], joined: "May 2024", status: "Pending", avatar: "320" },
+  { id: "m8", name: "Vikram Shah", roll: "23s1000202", role: "Member", clubs: ["E-Cell"], joined: "Sep 2023", status: "Inactive", avatar: "0" },
 ];
 
 export const faqs = [
