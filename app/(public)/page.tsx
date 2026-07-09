@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowUpRight, Calendar, Compass, Megaphone, ShieldCheck, Sparkles, Users2, Zap } from "lucide-react";
+import { ArrowUpRight, Calendar, Compass, Megaphone, Sparkles, Users2, Zap } from "lucide-react";
 import { clubs, events, announcements } from "@/lib/seed-data";
 import { Btn, GlassCard, StatusPill } from "@/components/ui/primitives";
 import { pluralize } from "@/lib/format";
+
+// Seed data (club names, event/announcement titles) uses em-dashes as a
+// stylistic separator; this page swaps them for the app's other separator
+// convention (middot) at render time, without touching the shared strings
+// used elsewhere in the app.
+function noEmDash(s: string): string {
+  return s.replace(/\s*—\s*/g, " · ");
+}
 
 export default function Landing() {
   return (
@@ -28,7 +36,6 @@ function MarketingNav() {
     <header className="sticky top-4 z-40 mx-auto flex max-w-6xl items-center justify-between rounded-full border border-hairline bg-background/60 px-4 py-2.5 backdrop-blur-2xl md:top-6 md:px-5">
       <Link href="/" className="flex items-center gap-2">
         <span className="text-display text-2xl leading-none">sangam</span>
-        <span className="pulse-dot inline-block h-1.5 w-1.5 rounded-full bg-primary" />
       </Link>
       <nav className="hidden items-center gap-1 text-sm text-muted-foreground md:flex">
         <a href="#modules" className="rounded-full px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Product</a>
@@ -58,36 +65,20 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-primary" />
-            <span className="text-mono-label !text-[10px]">Live</span>
-            <span className="text-foreground/85">Open to any IITM BS club</span>
-          </div>
           <h1 className="text-5xl leading-[0.95] tracking-[-0.03em] md:text-8xl">
             The <span className="text-display text-primary">confluence</span><br />
             for IITM BS <span className="text-display italic">societies.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            One place for members, events, tasks and announcements — instead of six WhatsApp groups, three Google Forms and a spreadsheet nobody trusts.
+            Every club, one dashboard. No more chasing updates across WhatsApp groups, Google Forms, and spreadsheets nobody trusts.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-5">
-            <Link href="/signup">
-              <Btn size="lg" className="accent-glow">Get started free <ArrowUpRight className="h-4 w-4" /></Btn>
-            </Link>
-            <Link href="/login" className="text-sm font-medium text-foreground/80 underline-offset-4 transition hover:text-foreground hover:underline">
-              Sign in to explore
-            </Link>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5" /> Verified via IITM BS credentials
-            </div>
-          </div>
         </motion.div>
 
         {/* Product surface preview */}
         <motion.div
           initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="glass-strong relative mt-16 overflow-hidden rounded-3xl p-3 md:mt-24"
+          className="glass-strong relative mt-12 overflow-hidden rounded-3xl p-3 md:mt-16"
         >
           <div className="grid gap-3 md:grid-cols-[280px_1fr_260px]">
             <FakeSidebarPreview />
@@ -138,7 +129,7 @@ function FakeCenterPreview() {
           <div key={e.id} className="flex items-center gap-3 rounded-xl bg-background/60 p-3">
             <div className="h-10 w-10 shrink-0 rounded-lg" style={{ background: e.cover }} />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm">{e.title}</div>
+              <div className="truncate text-sm">{noEmDash(e.title)}</div>
               <div className="text-mono-label !text-[9px]">{e.date} · {e.venue}</div>
             </div>
             <div className="text-xs text-primary">RSVP</div>
@@ -159,7 +150,7 @@ function FakeRightPreview() {
               <span className="text-mono-label !text-[9px]">{a.club}</span>
               <span className="text-mono-label !text-[9px]">{a.timeAgo}</span>
             </div>
-            <div className="text-xs leading-snug">{a.title}</div>
+            <div className="text-xs leading-snug">{noEmDash(a.title)}</div>
           </div>
         ))}
       </div>
@@ -194,7 +185,7 @@ function Modules() {
     { icon: Megaphone, label: "Announcements", desc: "Only what's relevant to clubs you're in. Pin the important. No spam.", hue: "260" },
     { icon: Compass, label: "Discovery", desc: "Interest-based onboarding. Every club has an active/inactive signal you can trust.", hue: "45" },
     { icon: Zap, label: "Volunteer ops", desc: "Assign tasks, track progress, log contributions for the year-end handover.", hue: "155" },
-    { icon: Sparkles, label: "Transparency", desc: "Every event's outcome, spend, and attendance — logged, searchable, exportable.", hue: "320" },
+    { icon: Sparkles, label: "Transparency", desc: "Every event's outcome, spend, and attendance: logged, searchable, exportable.", hue: "320" },
   ];
   return (
     <section id="modules" className="mx-auto max-w-6xl px-5 py-24 md:py-32">
@@ -213,7 +204,7 @@ function Modules() {
         {modules.map((m, i) => (
           <motion.div
             key={m.label}
-            initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }}
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.5 }}
           >
             <GlassCard className="relative h-full overflow-hidden p-6">
@@ -236,6 +227,43 @@ function Modules() {
   );
 }
 
+function ClubLogoStrip() {
+  const doubled = [...clubs, ...clubs];
+  return (
+    <div className="mb-12">
+      <div className="mb-4 text-center text-mono-label text-muted-foreground/70">Active clubs on Sangam</div>
+      <div className="glass-strong relative overflow-hidden rounded-3xl py-8 shadow-[0_1px_2px_oklch(0.18_0.02_25_/_4%),0_16px_40px_-20px_oklch(0.18_0.02_25_/_18%)] [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
+        <div className="animate-logo-scroll flex w-max items-center gap-14 px-8">
+          {doubled.map((c, i) => (
+            <div key={`${c.id}-${i}`} title={noEmDash(c.name)} className="group flex shrink-0 flex-col items-center gap-2.5">
+              <div className="relative">
+                <div
+                  className="absolute -inset-1.5 rounded-full opacity-0 blur-md transition duration-300 group-hover:opacity-40"
+                  style={{ background: `oklch(0.72 0.18 ${c.hue})` }}
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={c.banner}
+                  alt=""
+                  className="relative h-16 w-16 rounded-full object-cover shadow-md ring-2 ring-white transition duration-300 group-hover:scale-110 group-hover:ring-4"
+                  style={{ ["--tw-ring-color" as string]: `oklch(0.72 0.18 ${c.hue} / 50%)` }}
+                />
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full text-xs ring-2 ring-background"
+                  style={{ background: `oklch(0.98 0.01 80)`, color: `oklch(0.5 0.18 ${c.hue})` }}
+                >
+                  {c.emoji}
+                </span>
+              </div>
+              <span className="text-mono-label !text-[9px] text-muted-foreground/70">{c.name.split("—")[0].trim()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ClubsSection() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-24">
@@ -246,6 +274,7 @@ function ClubsSection() {
         </div>
         <Link href="/clubs" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline-flex">See all →</Link>
       </div>
+      <ClubLogoStrip />
       <div className="grid gap-3 md:grid-cols-4">
         {clubs.slice(0, 8).map((c) => (
           <Link key={c.id} href="/clubs" className="group">
@@ -254,7 +283,7 @@ function ClubsSection() {
                 <div className="text-3xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
                 <StatusPill tone={c.active ? "lime" : "slate"}>{c.active ? "Active" : "Quiet"}</StatusPill>
               </div>
-              <div className="text-sm font-medium">{c.name}</div>
+              <div className="text-sm font-medium">{noEmDash(c.name)}</div>
               <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.tagline}</div>
               <div className="mt-4 flex items-center justify-between text-mono-label">
                 <span>{c.members} {pluralize(c.members, "member")}</span>
@@ -266,15 +295,6 @@ function ClubsSection() {
       </div>
     </section>
   );
-}
-
-// Muted, on-brand cover for the landing page's event previews — reuses each
-// event's parent club hue (so the accent still means something) but pulled
-// into the same low-chroma, dark tonal range as --gradient-hero, instead of
-// the fully saturated per-event `cover` gradients used on the live event
-// pages (those stay vivid there; this page just needed a calmer palette).
-function mutedEventCover(hue: string): string {
-  return `linear-gradient(135deg, oklch(0.40 0.09 ${hue}) 0%, oklch(0.28 0.08 ${hue}) 100%)`;
 }
 
 function EventsSection() {
@@ -291,8 +311,16 @@ function EventsSection() {
           return (
             <Link key={e.id} href={`/app/events/${e.slug}`}>
               <GlassCard className="group h-full overflow-hidden p-0">
-                <div className="relative h-40 overflow-hidden" style={{ background: mutedEventCover(club?.hue ?? "25") }}>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="relative h-40 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={e.photo}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0" style={{ background: `oklch(0.35 0.1 ${club?.hue ?? "25"} / 25%)` }} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                   <div className="absolute bottom-3 left-3 flex gap-1.5">
                     {e.tags.map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}
                   </div>
@@ -301,8 +329,8 @@ function EventsSection() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <div className="text-mono-label mb-2">{e.club}</div>
-                  <div className="text-base font-medium leading-snug">{e.title}</div>
+                  <div className="text-mono-label mb-2">{noEmDash(e.club)}</div>
+                  <div className="text-base font-medium leading-snug">{noEmDash(e.title)}</div>
                   <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                     <span>{e.time} · {e.venue}</span>
                     <span className="text-primary">{e.going} going →</span>
@@ -330,7 +358,7 @@ function RolesSection() {
       <div className="mb-10">
         <div className="text-mono-label mb-3">04 · Built for every role</div>
         <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">One product. <span className="text-display italic text-primary">Five different views.</span></h2>
-        <p className="mt-3 max-w-lg text-muted-foreground">Sign in once, and Sangam shows you exactly the view your role needs — nothing more.</p>
+        <p className="mt-3 max-w-lg text-muted-foreground">Sign in once, and Sangam shows you exactly the view your role needs. Nothing more.</p>
       </div>
       <div className="glass-strong overflow-hidden rounded-3xl">
         {roles.map((r, i) => (
@@ -386,11 +414,8 @@ function Footer() {
         <FooterCol title="Legal" links={[["Terms", "#"], ["Privacy", "#"], ["Contact", "#"]]} />
       </div>
       <div className="border-t border-hairline">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5 text-xs text-muted-foreground">
-          <span>© 2026 Sangam · Team Dhurandhar · IITM BS</span>
-          <span className="flex items-center gap-2">
-            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-primary" /> All systems on
-          </span>
+        <div className="mx-auto max-w-6xl px-5 py-5 text-center text-xs text-muted-foreground">
+          © 2026 Sangam · Team Dhurandhar · IITM BS
         </div>
       </div>
     </footer>

@@ -1,4 +1,6 @@
-# Sangam
+<p align="center">
+  <img src="public/banner.png" alt="Sangam" width="100%" />
+</p>
 
 A community and society management platform. Single source of truth for membership, events, venues, equipment, tasks, and communication, replacing WhatsApp groups, Google Forms, and spreadsheets.
 

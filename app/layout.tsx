@@ -5,14 +5,14 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Sangam — the confluence for IITM BS clubs",
+  title: "Sangam: the confluence for IITM BS clubs",
   description:
-    "One place for IITM BS student clubs and societies to run members, events, tasks and announcements — no more scattered WhatsApp threads and Google Forms.",
+    "One place for IITM BS student clubs and societies to run members, events, tasks and announcements. No more scattered WhatsApp threads and Google Forms.",
   authors: [{ name: "Team Dhurandhar" }],
   icons: { icon: "/favicon.ico" },
   openGraph: {
-    title: "Sangam — the confluence for IITM BS clubs",
-    description: "Members, events, tasks, announcements — one confluence for every IITM BS society.",
+    title: "Sangam: the confluence for IITM BS clubs",
+    description: "Members, events, tasks, announcements: one confluence for every IITM BS society.",
     type: "website",
   },
   twitter: { card: "summary_large_image" },
