@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <AuthShell mode="login" />;
+  return (
+    <Suspense>
+      <AuthShell mode="login" />
+    </Suspense>
+  );
 }

@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 
 export async function toggleRsvpAction(eventId: string, eventSlug: string) {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const existing = await prisma.rsvp.findUnique({

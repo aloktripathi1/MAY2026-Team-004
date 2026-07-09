@@ -1,29 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Plus, Send } from "lucide-react";
 import { Btn, GlassCard } from "@/components/ui/primitives";
 import { createIssueAction, type IssueFormState } from "./actions";
 
-const initialState: IssueFormState = {};
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Btn disabled={pending}><Send className="h-4 w-4" /> {pending ? "Submitting..." : "Submit"}</Btn>;
+}
 
 export function IssueForm() {
   const [showForm, setShowForm] = useState(false);
-  const [state, formAction] = useFormState(createIssueAction, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction] = useFormState<IssueFormState, FormData>(createIssueAction, {});
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (state.ok) setShowForm(false);
-  }, [state.ok]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (state.ok) {
+      setShowForm(false);
+      formRef.current?.reset();
+    }
+  }, [state]);
 
   return (
     <>
       <div className="mb-6 flex justify-end">
         <Btn onClick={() => setShowForm(v => !v)}><Plus className="h-4 w-4" /> Raise issue</Btn>
       </div>
+      {state.ok && !showForm && <div className="glass mb-4 rounded-2xl p-4 text-sm text-success">Issue submitted.</div>}
       {showForm && (
         <GlassCard className="glass-strong mb-6 p-6">
-          <form action={formAction}>
+          <form ref={formRef} action={formAction}>
             <div className="text-mono-label mb-3">New issue</div>
             <div className="grid gap-3 md:grid-cols-[1fr_180px]">
               <input name="title" required placeholder="Brief title — what's broken?" className="rounded-xl border border-hairline bg-surface/60 px-4 py-2.5 text-sm outline-none focus:border-primary/60" />
@@ -41,12 +54,5 @@ export function IssueForm() {
         </GlassCard>
       )}
     </>
-  );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Btn disabled={pending}><Send className="h-4 w-4" /> {pending ? "Submitting…" : "Submit"}</Btn>
   );
 }

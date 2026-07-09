@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+import { getMockSession } from "@/lib/mock-session";
 import { CalendarClock, ArrowUpRight, Pin } from "lucide-react";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
-import { formatWeekday, formatDayNumber } from "@/lib/format";
+import { formatWeekday, formatDayNumber, formatIssueStatus, formatTimeAgo } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Dashboard · Sangam",
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MemberDashboard() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const userId = session!.user.id;
   const memberships = session!.user.memberships;
 
@@ -94,6 +93,7 @@ export default async function MemberDashboard() {
                   <div className="mb-1.5 flex items-center gap-2">
                     {a.pinned && <Pin className="h-3 w-3 text-primary" />}
                     <span className="text-mono-label">{a.club.name}</span>
+                    <span className="text-mono-label !normal-case !tracking-normal !text-[10px] text-muted-foreground/60">· {formatTimeAgo(a.createdAt)}</span>
                   </div>
                   <div className="text-sm font-medium leading-snug">{a.title}</div>
                   <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.body}</div>
@@ -112,7 +112,7 @@ export default async function MemberDashboard() {
               {myIssues.map(i => (
                 <div key={i.id} className="flex items-center gap-3 border-b border-hairline p-3 last:border-b-0">
                   <div className="flex-1 truncate text-sm">{i.title}</div>
-                  <StatusPill tone={i.status === "Resolved" ? "green" : i.status === "InProgress" ? "amber" : "magenta"}>{i.status}</StatusPill>
+                  <StatusPill tone={i.status === "Resolved" ? "green" : i.status === "InProgress" ? "amber" : "magenta"}>{formatIssueStatus(i.status)}</StatusPill>
                 </div>
               ))}
             </div>

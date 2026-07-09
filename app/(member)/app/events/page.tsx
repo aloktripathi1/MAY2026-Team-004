@@ -4,6 +4,7 @@ import { CalendarDays } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -44,7 +45,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
               <div className="relative h-44 overflow-hidden" style={{ background: e.cover }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute right-3 top-3 flex gap-1.5">
-                  {e.tags.split(",").map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}
+                  {normalizeEventTags(e.tags).map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}
                 </div>
                 <div className="absolute bottom-3 left-4 right-4">
                   <div className="text-mono-label !text-[10px] text-white/70">{e.club.name}</div>

@@ -1,19 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 
 async function requireAdminForClub(clubId: string) {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   const isAdmin = session.user.memberships.some((m) => m.clubId === clubId && m.role === "Admin");
   if (!isAdmin) throw new Error("Not authorized for this club");
 }
 
 async function requireFaculty() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   if (!session.user.isFaculty) throw new Error("Faculty only");
 }

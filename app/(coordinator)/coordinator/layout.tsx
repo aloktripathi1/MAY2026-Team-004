@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
-import { getServerSession } from "next-auth";
+import { getMockSession } from "@/lib/mock-session";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import { AppShell } from "@/components/shell/AppShell";
 
 export default async function CoordinatorLayout({ children }: { children: ReactNode }) {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) redirect("/login");
 
   const membership = session.user.memberships.find((m) => m.role === "Coordinator") ?? session.user.memberships[0];

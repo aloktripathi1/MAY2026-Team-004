@@ -1,13 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Btn } from "@/components/ui/primitives";
 import { createEventAction, type NewEventState } from "./actions";
 
-const initialState: NewEventState = {};
+const TAGS = ["Contest", "Music", "Debate", "Workshop", "Sponsored", "Off-campus", "Hybrid", "Online"];
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Btn disabled={pending}>{pending ? "Publishing..." : "Publish event"}</Btn>;
+}
 
 export function NewEventForm() {
-  const [state, formAction] = useFormState(createEventAction, initialState);
+  const [tags, setTags] = useState<string[]>([]);
+  const [state, formAction] = useFormState<NewEventState, FormData>(createEventAction, {});
+
+  function toggleTag(t: string) {
+    setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
 
   return (
     <form action={formAction}>
@@ -23,10 +34,26 @@ export function NewEventForm() {
       </div>
       <div className="mt-6">
         <div className="text-mono-label mb-2">Tags</div>
+        <input type="hidden" name="tags" value={tags.join(",")} />
         <div className="flex flex-wrap gap-1.5">
-          {["Contest", "Music", "Debate", "Workshop", "Sponsored", "Off-campus", "Hybrid", "Online"].map(t => (
-            <button key={t} type="button" className="rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary">{t}</button>
-          ))}
+          {TAGS.map(t => {
+            const selected = tags.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleTag(t)}
+                aria-pressed={selected}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  selected
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-hairline bg-surface text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
       </div>
       {state.error && <p className="mt-3 text-xs text-destructive">{state.error}</p>}
@@ -35,11 +62,6 @@ export function NewEventForm() {
       </div>
     </form>
   );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <Btn disabled={pending}>{pending ? "Publishing…" : "Publish event"}</Btn>;
 }
 
 function Field({

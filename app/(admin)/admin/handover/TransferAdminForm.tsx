@@ -5,13 +5,20 @@ import { KeyRound } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { transferAdminAction, type TransferState } from "./actions";
 
-const initialState: TransferState = {};
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Btn size="sm" variant="outline" className="w-full" disabled={pending}>
+      <KeyRound className="h-4 w-4" /> {pending ? "Transferring..." : "Transfer admin"}
+    </Btn>
+  );
+}
 
 export function TransferAdminForm({ candidates }: { candidates: { membershipId: string; name: string; role: string }[] }) {
-  const [state, formAction] = useFormState(transferAdminAction, initialState);
+  const [state, formAction] = useFormState<TransferState, FormData>(transferAdminAction, {});
 
   if (state.ok) {
-    return <div className="text-sm text-success">Admin role transferred. You are now Coordinator for this club.</div>;
+    return <div className="text-sm text-success">Transfer complete — the role change took effect immediately.</div>;
   }
 
   return (
@@ -22,17 +29,8 @@ export function TransferAdminForm({ candidates }: { candidates: { membershipId: 
           <option key={c.membershipId} value={c.membershipId}>{c.name} — {c.role}</option>
         ))}
       </select>
-      {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+      {state.error && <div className="text-xs text-destructive">{state.error}</div>}
       <SubmitButton />
     </form>
-  );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Btn size="sm" variant="outline" className="w-full" disabled={pending}>
-      <KeyRound className="h-4 w-4" /> {pending ? "Transferring…" : "Transfer admin"}
-    </Btn>
   );
 }

@@ -1,6 +1,7 @@
-import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
+export async function GET() {
+  return Response.json({ mode: "mock", message: "M2 frontend build: real auth is intentionally disabled." });
+}
 
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+export async function POST() {
+  return Response.json({ mode: "mock", message: "M2 frontend build: real auth is intentionally disabled." });
+}

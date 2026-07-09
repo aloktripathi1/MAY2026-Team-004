@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
+import { getMockSession } from "@/lib/mock-session";
 import { ArrowLeft, CalendarClock, MapPin, Users2 } from "lucide-react";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { StatusPill } from "@/components/ui/primitives";
+import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 import { RsvpButton } from "./RsvpButton";
 
@@ -28,10 +28,25 @@ export default async function EventDetail({ params }: { params: { id: string } }
   const event = await getEvent(params.id);
   if (!event) notFound();
 
-  const session = await getServerSession(authOptions);
-  const myRsvp = await prisma.rsvp.findUnique({
-    where: { userId_eventId: { userId: session!.user.id, eventId: event.id } },
-  });
+  const session = getMockSession();
+  const [myRsvp, attendees, organizers] = await Promise.all([
+    prisma.rsvp.findUnique({
+      where: { userId_eventId: { userId: session!.user.id, eventId: event.id } },
+    }),
+    prisma.rsvp.findMany({
+      where: { eventId: event.id },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+      take: 8,
+    }),
+    prisma.membership.findMany({
+      where: { clubId: event.clubId, role: { in: ["Admin", "Coordinator"] } },
+      include: { user: true },
+      orderBy: { role: "asc" },
+    }),
+  ]);
+
+  const extraCount = Math.max(event._count.rsvps - attendees.length, 0);
 
   return (
     <>
@@ -41,7 +56,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="relative flex min-h-[280px] flex-col justify-end p-8 md:min-h-[380px] md:p-12">
           <div className="mb-3 flex gap-1.5">
-            {event.tags.split(",").map((t) => <span key={t} className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur">{t}</span>)}
+            {normalizeEventTags(event.tags).map((t) => <span key={t} className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur">{t}</span>)}
             <StatusPill tone={event.approval === "approved" ? "green" : event.approval === "pending" ? "amber" : "slate"}>
               {event.approval === "approved" ? "Approved" : event.approval === "pending" ? "Pending approval" : "No approval needed"}
             </StatusPill>
@@ -66,14 +81,27 @@ export default async function EventDetail({ params }: { params: { id: string } }
 
           <div className="glass-strong rounded-2xl p-6">
             <div className="text-mono-label mb-4">Who's going</div>
-            <div className="flex flex-wrap gap-2">
-              {["AR", "KM", "ID", "AS", "MN", "DK", "VS", `+ ${Math.max(event._count.rsvps - 7, 0)}`].map((i, idx) => (
-                <div key={idx} className="grid h-9 w-9 place-items-center rounded-full text-xs font-semibold ring-2 ring-background"
-                  style={{ background: `oklch(0.72 0.18 ${(idx * 47) % 360} / 25%)`, color: `oklch(0.9 0.2 ${(idx * 47) % 360})` }}>
-                  {i}
-                </div>
-              ))}
-            </div>
+            {attendees.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No one's RSVP'd yet — be the first.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {attendees.map((r, idx) => (
+                  <div
+                    key={r.id}
+                    title={r.user.name}
+                    className="grid h-9 w-9 place-items-center rounded-full text-xs font-semibold ring-2 ring-background"
+                    style={{ background: `oklch(0.72 0.18 ${(idx * 47) % 360} / 25%)`, color: `oklch(0.9 0.2 ${(idx * 47) % 360})` }}
+                  >
+                    {r.user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase()}
+                  </div>
+                ))}
+                {extraCount > 0 && (
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 text-xs font-semibold text-muted-foreground ring-2 ring-background">
+                    +{extraCount}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -92,8 +120,9 @@ export default async function EventDetail({ params }: { params: { id: string } }
           <div className="glass rounded-2xl p-6">
             <div className="text-mono-label mb-3">Organizers</div>
             <div className="space-y-3">
-              {["Ananya Rao — Head", "Kabir Menon — Coord", "Ishita D. — Volunteer"].map(o => (
-                <div key={o} className="text-sm text-muted-foreground">{o}</div>
+              {organizers.length === 0 && <div className="text-sm text-muted-foreground">No organizers assigned yet.</div>}
+              {organizers.map((m) => (
+                <div key={m.id} className="text-sm text-muted-foreground">{m.user.name} — {m.role}</div>
               ))}
             </div>
           </div>

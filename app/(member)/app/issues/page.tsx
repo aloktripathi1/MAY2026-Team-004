@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { formatIssueStatus } from "@/lib/format";
 import { IssueForm } from "./IssueForm";
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function IssuesPage() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const myIssues = await prisma.issue.findMany({
     where: { raisedById: session!.user.id },
     orderBy: { createdAt: "desc" },
@@ -38,7 +38,7 @@ export default async function IssuesPage() {
               <div className="mt-1 text-xs text-muted-foreground">Raised by {i.raisedBy.name}</div>
             </div>
             <StatusPill tone={i.priority === "High" ? "magenta" : i.priority === "Med" ? "amber" : "slate"}>{i.priority}</StatusPill>
-            <StatusPill tone={i.status === "Resolved" ? "green" : i.status === "InProgress" ? "amber" : "magenta"}>{i.status}</StatusPill>
+            <StatusPill tone={i.status === "Resolved" ? "green" : i.status === "InProgress" ? "amber" : "magenta"}>{formatIssueStatus(i.status)}</StatusPill>
           </GlassCard>
         ))}
       </div>

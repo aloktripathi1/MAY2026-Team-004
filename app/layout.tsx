@@ -22,6 +22,8 @@ export const viewport = {
   themeColor: "#7a1a1a",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">

@@ -2,8 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 
@@ -16,7 +15,7 @@ const schema = z.object({
 export type AnnouncementFormState = { error?: string };
 
 export async function createAnnouncementAction(_prevState: AnnouncementFormState, formData: FormData): Promise<AnnouncementFormState> {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");

@@ -1,14 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
-import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Btn } from "@/components/ui/primitives";
-import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
 
 export function AuthShell({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
@@ -25,7 +22,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             </p>
             <div className="mt-8 text-sm text-muted-foreground">— Team Dhurandhar</div>
           </div>
-          <div className="text-xs text-muted-foreground">v1.0 · Milestone 2 · IITM BS</div>
+          <div className="text-xs text-muted-foreground">Sangam · IITM BS</div>
         </div>
       </div>
 
@@ -40,7 +37,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             {isSignup ? <>Join the <span className="text-primary italic">confluence.</span></> : <>Sign in to <span className="text-primary italic">sangam.</span></>}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {isSignup ? "Verified with your IITM BS credentials. Takes 30 seconds." : "Use your IITM BS credentials."}
+            {isSignup ? "M2 mock signup. No account is created yet." : "M2 mock login. Any demo credential will continue."}
           </p>
 
           {isSignup ? <SignupForm /> : <LoginForm />}
@@ -59,6 +56,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
 
 function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -67,18 +65,15 @@ function LoginForm() {
     setError(null);
     setPending(true);
     const formData = new FormData(e.currentTarget);
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
     setPending(false);
-    if (result?.error) {
-      setError("Incorrect email or password.");
+    if (!email || !password) {
+      setError("Enter any demo email and password.");
       return;
     }
-    router.push("/app");
-    router.refresh();
+    const callbackUrl = searchParams.get("callbackUrl");
+    router.push(callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/app");
   }
 
   return (
@@ -93,26 +88,27 @@ function LoginForm() {
   );
 }
 
-const initialSignupState: SignupState = {};
+const INTERESTS = ["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"];
 
 function SignupForm() {
   const router = useRouter();
-  const [state, formAction] = useFormState(signupAction, initialSignupState);
-  const [redirecting, setRedirecting] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [pending, setPending] = useState(false);
 
-  useEffect(() => {
-    if (!state.ok || redirecting) return;
-    setRedirecting(true);
-    const email = (document.getElementById("signup-email") as HTMLInputElement)?.value;
-    const password = (document.getElementById("signup-password") as HTMLInputElement)?.value;
-    signIn("credentials", { email, password, redirect: false }).then(() => {
+  function toggleInterest(t: string) {
+    setInterests((prev) => (prev.includes(t) ? prev.filter((i) => i !== t) : [...prev, t]));
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    window.setTimeout(() => {
       router.push("/app");
-      router.refresh();
-    });
-  }, [state.ok, redirecting, router]);
+    }, 250);
+  }
 
   return (
-    <form className="mt-8 space-y-4" action={formAction}>
+    <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
       <Field label="Full name" name="name" placeholder="Ananya Rao" />
       <Field label="Institutional email" name="email" id="signup-email" placeholder="23f1000123@ds.study.iitm.ac.in" type="email" />
       <Field label="Roll number" name="rollNumber" placeholder="23f1000123" />
@@ -120,25 +116,30 @@ function SignupForm() {
       <div>
         <div className="text-mono-label mb-2">Pick 2–3 interests</div>
         <div className="flex flex-wrap gap-1.5">
-          {["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"].map(t => (
-            <button key={t} type="button" className="rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/60 hover:bg-primary/10 hover:text-primary">
-              {t}
-            </button>
-          ))}
+          {INTERESTS.map(t => {
+            const selected = interests.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleInterest(t)}
+                aria-pressed={selected}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  selected
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-hairline bg-surface text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
       </div>
-      {state.error && <p className="text-xs text-destructive">{state.error}</p>}
-      <SubmitButton />
+      <Btn size="lg" className="mt-2 w-full" disabled={pending}>
+        {pending ? "Creating demo…" : "Create demo account"} <ArrowRight className="h-4 w-4" />
+      </Btn>
     </form>
-  );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Btn size="lg" className="mt-2 w-full" disabled={pending}>
-      {pending ? "Creating account…" : "Create account"} <ArrowRight className="h-4 w-4" />
-    </Btn>
   );
 }
 

@@ -3,10 +3,10 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { serializeEventTags } from "@/lib/event-tags";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -15,12 +15,13 @@ const eventSchema = z.object({
   time: z.string().min(1, "Time is required"),
   venue: z.string().min(1, "Venue is required"),
   capacity: z.coerce.number().int().positive(),
+  tags: z.string().optional().default(""),
 });
 
 export type NewEventState = { error?: string };
 
 export async function createEventAction(_prevState: NewEventState, formData: FormData): Promise<NewEventState> {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Coordinator");
@@ -33,12 +34,17 @@ export async function createEventAction(_prevState: NewEventState, formData: For
     time: formData.get("time"),
     venue: formData.get("venue"),
     capacity: formData.get("capacity"),
+    tags: formData.get("tags"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
   const { title, description, date, time, venue, capacity } = parsed.data;
+  const tags = parsed.data.tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString(36);
 
   const event = await prisma.event.create({
@@ -52,7 +58,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
       capacity,
       clubId: membership.clubId,
       cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 60%,#f97316 100%)",
-      tags: "",
+      tags: serializeEventTags(tags),
       status: "upcoming",
       approval: "pending",
     },

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
+import { getMockSession } from "@/lib/mock-session";
 import { Pin } from "lucide-react";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
+import { formatTimeAgo } from "@/lib/format";
 import { AnnouncementForm } from "./AnnouncementForm";
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AnnouncementsPage() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 
@@ -40,7 +40,7 @@ export default async function AnnouncementsPage() {
               <GlassCard key={a.id} className="p-4">
                 <div className="mb-1.5 flex items-center gap-2">
                   {a.pinned && <Pin className="h-3 w-3 text-primary" />}
-                  <span className="ml-auto text-mono-label !text-[10px] text-muted-foreground/60">{a.createdAt.toLocaleDateString()}</span>
+                  <span className="ml-auto text-mono-label !text-[10px] text-muted-foreground/60">{formatTimeAgo(a.createdAt)}</span>
                 </div>
                 <div className="text-sm font-medium">{a.title}</div>
                 <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.body}</div>

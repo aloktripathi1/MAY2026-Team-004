@@ -36,6 +36,8 @@ Two Prisma schemas, kept manually in sync:
 
 Scripts always target the SQLite schema by default (`bun run dev`, `bun run db:migrate`, `bun run db:studio`); use `bun run db:migrate:prod` / `next build` (which runs `prisma generate --schema=prisma/schema.postgres.prisma`) for the Postgres path.
 
+**Always run `bun run dev` / `bun run build`, never `next dev` / `next build` directly.** The generated Prisma Client is whichever schema was generated *last* — `build` generates it for Postgres, `dev` regenerates it for SQLite. If you invoke the raw `next` binary and skip that regeneration step (e.g. running `next dev` right after `next build`), every DB query throws `PrismaClientInitializationError` and the app shows the generic "Something broke mid-flow" error page. If you ever hit that, run `bun run db:migrate` (or `npx prisma generate --schema=prisma/schema.sqlite.prisma`) to fix the client, then restart the dev server.
+
 ## Project Structure
 
 ```

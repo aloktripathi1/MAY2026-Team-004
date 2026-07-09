@@ -106,8 +106,8 @@ export function AppShell({
                   {user.split(" ").map(s => s[0]).slice(0, 2).join("")}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-sidebar-foreground">{user}</div>
-                  <div className="truncate text-xs text-sidebar-foreground/65">{club}</div>
+                  <div className="truncate text-sm font-medium text-sidebar-foreground" title={user}>{user}</div>
+                  <div className="truncate text-xs text-sidebar-foreground/65" title={club}>{club}</div>
                 </div>
               </div>
             </div>
