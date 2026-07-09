@@ -17,17 +17,25 @@ export interface Club {
   lastEvent: string;
   founded: string;
   description: string;
+  banner: string;
+}
+
+// Deterministic per-club placeholder photo (picsum.photos/seed/<slug> always
+// resolves to the same image for a given slug, so banners don't reshuffle
+// on every reload/rebuild).
+function bannerFor(slug: string): string {
+  return `https://picsum.photos/seed/${slug}/800/450`;
 }
 
 export const clubs: Club[] = [
-  { id: "c1", slug: "codechef", name: "CodeChef IITM BS", tagline: "Competitive programming, weekly contests.", category: "Technical", members: 412, active: true, hue: "122", emoji: "◉", lastEvent: "2 days ago", founded: "2021", description: "Weekly cook-offs, algorithm deep-dives, and interview prep circles. Home for anyone who thinks in edge cases." },
-  { id: "c2", slug: "paradox", name: "Paradox — Debate Society", tagline: "Parliamentary debate & MUN circuit.", category: "Literary", members: 186, active: true, hue: "5", emoji: "❋", lastEvent: "5 days ago", founded: "2020", description: "British Parliamentary, Asians, and MUN training. Weekly practice rounds. Traveling squad." },
-  { id: "c3", slug: "sarga", name: "Sarga — Music Circle", tagline: "Fusion, jams, semester showcases.", category: "Cultural", members: 234, active: true, hue: "260", emoji: "♪", lastEvent: "1 week ago", founded: "2019", description: "Instrumentalists, vocalists, producers. Open jam every Friday, big fusion show every semester." },
-  { id: "c4", slug: "kalakriti", name: "Kalakriti Design Guild", tagline: "Product, UI, illustration critique.", category: "Design", members: 98, active: true, hue: "85", emoji: "◐", lastEvent: "3 days ago", founded: "2022", description: "Portfolio reviews, Figma workshops, brand studies. Cross-pollination with product & marketing." },
-  { id: "c5", slug: "prakriti", name: "Prakriti — Sustainability", tagline: "Campus greening & climate action.", category: "Social", members: 156, active: true, hue: "155", emoji: "❦", lastEvent: "4 days ago", founded: "2021", description: "Zero-waste campaigns, tree drives, and climate literacy workshops for local schools." },
-  { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", members: 289, active: true, hue: "45", emoji: "◈", lastEvent: "Yesterday", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network." },
-  { id: "c7", slug: "quill", name: "Quill — Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", members: 74, active: false, hue: "320", emoji: "✦", lastEvent: "3 weeks ago", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome." },
-  { id: "c8", slug: "arena", name: "Arena — Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", members: 143, active: true, hue: "0", emoji: "♞", lastEvent: "6 days ago", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome." },
+  { id: "c1", slug: "codechef", name: "CodeChef IITM BS", tagline: "Competitive programming, weekly contests.", category: "Technical", members: 412, active: true, hue: "122", emoji: "◉", lastEvent: "2 days ago", founded: "2021", description: "Weekly cook-offs, algorithm deep-dives, and interview prep circles. Home for anyone who thinks in edge cases.", banner: bannerFor("codechef") },
+  { id: "c2", slug: "paradox", name: "Paradox — Debate Society", tagline: "Parliamentary debate & MUN circuit.", category: "Literary", members: 186, active: true, hue: "5", emoji: "❋", lastEvent: "5 days ago", founded: "2020", description: "British Parliamentary, Asians, and MUN training. Weekly practice rounds. Traveling squad.", banner: bannerFor("paradox") },
+  { id: "c3", slug: "sarga", name: "Sarga — Music Circle", tagline: "Fusion, jams, semester showcases.", category: "Cultural", members: 234, active: true, hue: "260", emoji: "♪", lastEvent: "1 week ago", founded: "2019", description: "Instrumentalists, vocalists, producers. Open jam every Friday, big fusion show every semester.", banner: bannerFor("sarga") },
+  { id: "c4", slug: "kalakriti", name: "Kalakriti Design Guild", tagline: "Product, UI, illustration critique.", category: "Design", members: 98, active: true, hue: "85", emoji: "◐", lastEvent: "3 days ago", founded: "2022", description: "Portfolio reviews, Figma workshops, brand studies. Cross-pollination with product & marketing.", banner: bannerFor("kalakriti") },
+  { id: "c5", slug: "prakriti", name: "Prakriti — Sustainability", tagline: "Campus greening & climate action.", category: "Social", members: 156, active: true, hue: "155", emoji: "❦", lastEvent: "4 days ago", founded: "2021", description: "Zero-waste campaigns, tree drives, and climate literacy workshops for local schools.", banner: bannerFor("prakriti") },
+  { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", members: 289, active: true, hue: "45", emoji: "◈", lastEvent: "Yesterday", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", banner: bannerFor("e-cell") },
+  { id: "c7", slug: "quill", name: "Quill — Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", members: 74, active: false, hue: "320", emoji: "✦", lastEvent: "3 weeks ago", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", banner: bannerFor("quill") },
+  { id: "c8", slug: "arena", name: "Arena — Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", members: 143, active: true, hue: "0", emoji: "♞", lastEvent: "6 days ago", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", banner: bannerFor("arena") },
 ];
 
 export type EventStatus = "upcoming" | "live" | "past";
