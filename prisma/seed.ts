@@ -1,4 +1,4 @@
-import { PrismaClient, type Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import {
   clubs, events, announcements, issues, tasks, members, resources, transparencyLog,
@@ -111,7 +111,7 @@ async function main() {
         status: e.status,
         capacity: e.capacity,
         cover: e.cover,
-        tags: serializeEventTags(e.tags) as Prisma.EventCreateInput["tags"],
+        tags: serializeEventTags(e.tags),
         description: e.description,
         approval: e.approval === "not-required" ? "notRequired" : e.approval,
       },

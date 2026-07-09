@@ -4,7 +4,6 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/lib/mock-session";
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { serializeEventTags } from "@/lib/event-tags";
@@ -59,7 +58,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
       capacity,
       clubId: membership.clubId,
       cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 60%,#f97316 100%)",
-      tags: serializeEventTags(tags) as Prisma.EventCreateInput["tags"],
+      tags: serializeEventTags(tags),
       status: "upcoming",
       approval: "pending",
     },
