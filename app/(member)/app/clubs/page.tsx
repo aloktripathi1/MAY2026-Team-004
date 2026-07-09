@@ -26,8 +26,8 @@ export default async function AppClubs() {
           {my.length === 0 && <div className="text-sm text-muted-foreground">You haven't joined any clubs yet.</div>}
           {my.map(c => (
             <GlassCard key={c.id} className="flex items-center gap-4">
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl"
-                   style={{ background: `oklch(0.72 0.18 ${c.hue} / 15%)`, color: `oklch(0.92 0.2 ${c.hue})` }}>{c.emoji}</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={c.banner} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover" loading="lazy" />
               <div className="min-w-0 flex-1">
                 <div className="text-base font-medium">{c.name}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">{c.tagline}</div>
@@ -41,10 +41,15 @@ export default async function AppClubs() {
         <div className="text-mono-label mb-3">Discover more</div>
         <div className="grid gap-3 md:grid-cols-3">
           {discover.map(c => (
-            <GlassCard key={c.id}>
-              <div className="mb-4 flex items-start justify-between">
-                <div className="text-3xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
-                <StatusPill tone={c.active ? "lime" : "slate"}>{c.active ? "Active" : "Quiet"}</StatusPill>
+            <GlassCard key={c.id} className="overflow-hidden">
+              <div className="relative -m-5 mb-4 h-28">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.banner} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                <div className="absolute inset-x-4 bottom-3 flex items-end justify-between">
+                  <div className="text-2xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
+                  <StatusPill tone={c.active ? "lime" : "slate"}>{c.active ? "Active" : "Quiet"}</StatusPill>
+                </div>
               </div>
               <div className="text-sm font-medium">{c.name}</div>
               <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>

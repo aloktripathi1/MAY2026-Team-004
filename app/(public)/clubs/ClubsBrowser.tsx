@@ -19,6 +19,7 @@ export type ClubListItem = {
   founded: string;
   description: string;
   members: number;
+  banner: string;
 };
 
 const categories = ["All", "Technical", "Cultural", "Sports", "Entrepreneurship", "Literary", "Social", "Design"];
@@ -70,10 +71,15 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.03, duration: 0.4 }}
           >
-            <GlassCard className="h-full">
-              <div className="mb-6 flex items-start justify-between">
-                <div className="text-4xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
-                <StatusPill tone={c.active ? "lime" : "slate"}>{c.active ? "Active" : "Quiet"}</StatusPill>
+            <GlassCard className="h-full overflow-hidden">
+              <div className="relative -m-5 mb-5 h-32">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.banner} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                <div className="absolute inset-x-4 bottom-3 flex items-end justify-between">
+                  <div className="text-3xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
+                  <StatusPill tone={c.active ? "lime" : "slate"}>{c.active ? "Active" : "Quiet"}</StatusPill>
+                </div>
               </div>
               <div className="text-base font-medium">{c.name}</div>
               <div className="mt-1 text-sm text-muted-foreground">{c.tagline}</div>
