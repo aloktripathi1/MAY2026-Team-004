@@ -190,22 +190,25 @@
     display: none;
   }
 
-  .animate-marquee {
-    animation: marquee 40s linear infinite;
-  }
-
   .pulse-dot {
     animation: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-}
 
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  .animate-logo-scroll {
+    animation: logo-scroll 36s linear infinite;
+  }
+  .animate-logo-scroll:hover {
+    animation-play-state: paused;
+  }
 }
 
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 oklch(0.76 0.13 78 / 55%); }
   70% { box-shadow: 0 0 0 12px oklch(0.76 0.13 78 / 0%); }
   100% { box-shadow: 0 0 0 0 oklch(0.76 0.13 78 / 0%); }
+}
+
+@keyframes logo-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
