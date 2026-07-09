@@ -8,7 +8,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, HelpCircle, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
-  Shield, Menu, X,
+  Shield, Menu, X, LogOut,
 } from "lucide-react";
 
 type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
@@ -138,6 +138,17 @@ export function AppShell({
                 );
               })}
             </nav>
+
+            <div className="mt-2 border-t border-white/10 pt-3">
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/65 transition hover:bg-white/10 hover:text-sidebar-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Log out</span>
+              </Link>
+            </div>
           </div>
         </aside>
 
