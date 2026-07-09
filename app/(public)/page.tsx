@@ -12,12 +12,11 @@ export default function Landing() {
     <div className="relative">
       <MarketingNav />
       <Hero />
-      <Marquee />
+      <StatsStrip />
       <Modules />
       <ClubsSection />
       <EventsSection />
       <RolesSection />
-      <TransparencyStrip />
       <CTA />
       <Footer />
     </div>
@@ -61,22 +60,22 @@ function Hero() {
         >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
             <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-primary" />
-            <span className="text-mono-label !text-[10px] !text-muted-foreground/80">Live</span>
-            <span className="text-foreground/60">Now open to all IITM BS clubs</span>
+            <span className="text-mono-label !text-[10px]">Live</span>
+            <span className="text-foreground/85">Open to any IITM BS club</span>
           </div>
           <h1 className="text-5xl leading-[0.95] tracking-[-0.03em] md:text-8xl">
             The <span className="text-display text-primary">confluence</span><br />
-            for every IITM BS <span className="text-display italic">society.</span>
+            for IITM BS <span className="text-display italic">societies.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
             One place for members, events, tasks and announcements — instead of six WhatsApp groups, three Google Forms and a spreadsheet nobody trusts.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-5">
             <Link href="/signup">
               <Btn size="lg" className="accent-glow">Get started free <ArrowUpRight className="h-4 w-4" /></Btn>
             </Link>
-            <Link href="/login">
-              <Btn size="lg" variant="outline">Sign in to explore</Btn>
+            <Link href="/login" className="text-sm font-medium text-foreground/80 underline-offset-4 transition hover:text-foreground hover:underline">
+              Sign in to explore
             </Link>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" /> Verified via IITM BS credentials
@@ -168,20 +167,23 @@ function FakeRightPreview() {
   );
 }
 
-function Marquee() {
-  const line = ["confluence", "not chaos", "members", "events", "tasks", "issues", "announcements", "one signal"];
-  const doubled = [...line, ...line];
+function StatsStrip() {
+  const stats: [string, string][] = [
+    ["1,592", "students reachable"],
+    ["8", "clubs onboarded"],
+    ["27", "events / month"],
+  ];
   return (
-    <div className="relative overflow-hidden border-y border-hairline bg-surface/40 py-6">
-      <div className="animate-marquee flex whitespace-nowrap">
-        {doubled.map((w, i) => (
-          <span key={i} className="flex items-center gap-6 px-6 text-display text-4xl text-muted-foreground/60 md:text-6xl">
-            <span className={i % 3 === 1 ? "text-primary" : ""}>{w}</span>
-            <span className="text-muted-foreground/30">✦</span>
-          </span>
+    <section className="mx-auto max-w-6xl px-5 pb-16">
+      <div className="grid gap-3 md:grid-cols-3">
+        {stats.map(([v, l]) => (
+          <div key={l} className="glass rounded-2xl p-5">
+            <div className="text-display text-4xl">{v}</div>
+            <div className="text-mono-label mt-1.5">{l}</div>
+          </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -240,7 +242,7 @@ function ClubsSection() {
       <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
         <div>
           <div className="text-mono-label mb-3">02 · Discovery</div>
-          <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">Eight active clubs. <span className="text-display text-primary italic">More every semester.</span></h2>
+          <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">Eight clubs onboarded. <span className="text-display text-primary italic">More every semester.</span></h2>
         </div>
         <Link href="/clubs" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline-flex">See all →</Link>
       </div>
@@ -266,6 +268,15 @@ function ClubsSection() {
   );
 }
 
+// Muted, on-brand cover for the landing page's event previews — reuses each
+// event's parent club hue (so the accent still means something) but pulled
+// into the same low-chroma, dark tonal range as --gradient-hero, instead of
+// the fully saturated per-event `cover` gradients used on the live event
+// pages (those stay vivid there; this page just needed a calmer palette).
+function mutedEventCover(hue: string): string {
+  return `linear-gradient(135deg, oklch(0.40 0.09 ${hue}) 0%, oklch(0.28 0.08 ${hue}) 100%)`;
+}
+
 function EventsSection() {
   const upcoming = events.filter(e => e.status === "upcoming").slice(0, 3);
   return (
@@ -275,29 +286,32 @@ function EventsSection() {
         <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">This week on campus.</h2>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
-        {upcoming.map((e) => (
-          <Link key={e.id} href={`/app/events/${e.slug}`}>
-            <GlassCard className="group h-full overflow-hidden p-0">
-              <div className="relative h-40 overflow-hidden" style={{ background: e.cover }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-3 left-3 flex gap-1.5">
-                  {e.tags.map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}
+        {upcoming.map((e) => {
+          const club = clubs.find((c) => c.slug === e.clubSlug);
+          return (
+            <Link key={e.id} href={`/app/events/${e.slug}`}>
+              <GlassCard className="group h-full overflow-hidden p-0">
+                <div className="relative h-40 overflow-hidden" style={{ background: mutedEventCover(club?.hue ?? "25") }}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-3 left-3 flex gap-1.5">
+                    {e.tags.map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}
+                  </div>
+                  <div className="absolute right-3 top-3 rounded-lg bg-black/50 px-2 py-1 text-mono-label !text-[10px] text-white backdrop-blur">
+                    {e.date.split(",")[0]}
+                  </div>
                 </div>
-                <div className="absolute right-3 top-3 rounded-lg bg-black/50 px-2 py-1 text-mono-label !text-[10px] text-white backdrop-blur">
-                  {e.date.split(",")[0]}
+                <div className="p-5">
+                  <div className="text-mono-label mb-2">{e.club}</div>
+                  <div className="text-base font-medium leading-snug">{e.title}</div>
+                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{e.time} · {e.venue}</span>
+                    <span className="text-primary">{e.going} going →</span>
+                  </div>
                 </div>
-              </div>
-              <div className="p-5">
-                <div className="text-mono-label mb-2">{e.club}</div>
-                <div className="text-base font-medium leading-snug">{e.title}</div>
-                <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{e.time} · {e.venue}</span>
-                  <span className="text-primary">{e.going} going →</span>
-                </div>
-              </div>
-            </GlassCard>
-          </Link>
-        ))}
+              </GlassCard>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
@@ -305,22 +319,22 @@ function EventsSection() {
 
 function RolesSection() {
   const roles = [
-    { name: "Club Admin", desc: "Full control of members, events, announcements. Sees the whole club at a glance.", link: "/admin", color: "5" },
-    { name: "Event Coordinator", desc: "Creates events, wrangles volunteers, books resources. Owns the day-of ops.", link: "/coordinator", color: "45" },
-    { name: "Member", desc: "RSVP, check in, raise issues, follow only the clubs you're in.", link: "/app", color: "122" },
-    { name: "Volunteer", desc: "See assigned tasks with deadlines. Update status without pinging the coord.", link: "/volunteer", color: "260" },
-    { name: "Faculty Mentor", desc: "Read-only oversight, event approvals, sanity checks. Nothing more.", link: "/faculty", color: "155" },
+    { name: "Club Admin", desc: "Full control of members, events, announcements. Sees the whole club at a glance.", color: "5" },
+    { name: "Event Coordinator", desc: "Creates events, wrangles volunteers, books resources. Owns the day-of ops.", color: "45" },
+    { name: "Member", desc: "RSVP, check in, raise issues, follow only the clubs you're in.", color: "122" },
+    { name: "Volunteer", desc: "See assigned tasks with deadlines. Update status without pinging the coord.", color: "260" },
+    { name: "Faculty Mentor", desc: "Read-only oversight, event approvals, sanity checks. Nothing more.", color: "155" },
   ];
   return (
     <section id="roles" className="mx-auto max-w-6xl px-5 py-24">
       <div className="mb-10">
         <div className="text-mono-label mb-3">04 · Built for every role</div>
         <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">One product. <span className="text-display italic text-primary">Five different views.</span></h2>
-        <p className="mt-3 max-w-lg text-muted-foreground">Click a role to see its actual dashboard — you'll sign in first, then land right there.</p>
+        <p className="mt-3 max-w-lg text-muted-foreground">Sign in once, and Sangam shows you exactly the view your role needs — nothing more.</p>
       </div>
       <div className="glass-strong overflow-hidden rounded-3xl">
         {roles.map((r, i) => (
-          <Link key={r.name} href={r.link} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 border-b border-hairline px-6 py-6 transition hover:bg-surface-2/40 last:border-b-0 md:grid-cols-[64px_1fr_auto] md:px-10">
+          <div key={r.name} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-6 border-b border-hairline px-6 py-6 last:border-b-0 md:grid-cols-[64px_1fr] md:px-10">
             <div
               className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-lg font-medium"
               style={{ background: `oklch(0.72 0.18 ${r.color} / 15%)`, color: `oklch(0.92 0.20 ${r.color})` }}
@@ -331,37 +345,13 @@ function RolesSection() {
               <div className="text-xl font-medium md:text-2xl">{r.name}</div>
               <div className="mt-1 text-sm text-muted-foreground">{r.desc}</div>
             </div>
-            <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:text-foreground" />
-          </Link>
+          </div>
         ))}
       </div>
-    </section>
-  );
-}
-
-function TransparencyStrip() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-24">
-      <div className="glass-strong relative overflow-hidden rounded-3xl p-10 md:p-16">
-        <div
-          className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full blur-3xl opacity-40"
-          style={{ background: "var(--gradient-hot)" }}
-        />
-        <div className="text-mono-label mb-4">05 · Transparency</div>
-        <h2 className="text-display max-w-2xl text-4xl leading-tight md:text-6xl">
-          Every event, its outcome, its spend, its people.
-        </h2>
-        <p className="mt-4 max-w-xl text-muted-foreground">
-          Sangam ships an outcome log by default. Next year's admin inherits history, not folklore. Handovers become one export, not three months of catching up.
-        </p>
-        <div className="mt-8 grid gap-2 md:grid-cols-3">
-          {[["1,592", "students"], ["8", "clubs"], ["27", "events / month"]].map(([v, l]) => (
-            <div key={l} className="rounded-2xl bg-background/40 p-5">
-              <div className="text-display text-5xl">{v}</div>
-              <div className="text-mono-label mt-2">{l}</div>
-            </div>
-          ))}
-        </div>
+      <div className="mt-6 text-center">
+        <Link href="/login">
+          <Btn size="lg" variant="outline">See it live, try any role <ArrowUpRight className="h-4 w-4" /></Btn>
+        </Link>
       </div>
     </section>
   );
@@ -373,9 +363,11 @@ function CTA() {
       <div className="text-center">
         <h2 className="text-display text-5xl leading-none md:text-7xl">Stop juggling tabs.</h2>
         <h2 className="text-5xl leading-none tracking-[-0.02em] md:text-7xl">Start running the club.</h2>
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
           <Link href="/signup"><Btn size="lg" className="accent-glow">Create your account</Btn></Link>
-          <Link href="/login"><Btn size="lg" variant="outline">Sign in</Btn></Link>
+          <Link href="/login" className="text-sm font-medium text-foreground/80 underline-offset-4 transition hover:text-foreground hover:underline">
+            Sign in
+          </Link>
         </div>
       </div>
     </section>
@@ -385,13 +377,12 @@ function CTA() {
 function Footer() {
   return (
     <footer className="border-t border-hairline">
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 md:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 md:grid-cols-[2fr_1fr_1fr]">
         <div>
           <div className="text-display text-3xl">sangam</div>
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">The confluence for IITM BS clubs. Built by Team Dhurandhar as a Software Engineering capstone.</p>
         </div>
         <FooterCol title="Product" links={[["Modules", "#modules"], ["Clubs", "/clubs"], ["Events", "#events"]]} />
-        <FooterCol title="Roles" links={[["Member", "/app"], ["Admin", "/admin"], ["Volunteer", "/volunteer"], ["Faculty", "/faculty"]]} />
         <FooterCol title="Legal" links={[["Terms", "#"], ["Privacy", "#"], ["Contact", "#"]]} />
       </div>
       <div className="border-t border-hairline">
