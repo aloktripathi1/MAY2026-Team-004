@@ -15,6 +15,14 @@ function noEmDash(s: string): string {
   return s.replace(/\s*—\s*/g, " · ");
 }
 
+// Short form of a club name for compact spots (e.g. the logo strip caption)
+// that can't fit "Paradox · Debate Society" — deliberately truncates to the
+// part before the separator, rather than normalizing it like noEmDash does.
+// The full name is still available elsewhere (e.g. the tooltip).
+function shortClubName(name: string): string {
+  return noEmDash(name).split(" · ")[0].trim();
+}
+
 export default function Landing() {
   return (
     <div className="relative">
@@ -255,7 +263,7 @@ function ClubLogoStrip() {
                   {c.emoji}
                 </span>
               </div>
-              <span className="text-mono-label !text-[9px] text-muted-foreground/70">{c.name.split("—")[0].trim()}</span>
+              <span className="text-mono-label !text-[9px] text-muted-foreground/70">{shortClubName(c.name)}</span>
             </div>
           ))}
         </div>
