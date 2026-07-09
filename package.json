@@ -2,8 +2,8 @@
   "name": "sangam",
   "private": true,
   "scripts": {
-    "dev": "prisma generate --schema=prisma/schema.sqlite.prisma && next dev",
-    "build": "prisma generate --schema=prisma/schema.postgres.prisma && next build",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -1,8 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import bcrypt from "bcrypt";
 import {
   clubs, events, announcements, issues, tasks, members, resources, transparencyLog,
 } from "../lib/seed-data";
+import { serializeEventTags } from "../lib/event-tags";
 
 const prisma = new PrismaClient();
 
@@ -110,7 +111,7 @@ async function main() {
         status: e.status,
         capacity: e.capacity,
         cover: e.cover,
-        tags: e.tags.join(","),
+        tags: serializeEventTags(e.tags) as Prisma.EventCreateInput["tags"],
         description: e.description,
         approval: e.approval === "not-required" ? "notRequired" : e.approval,
       },

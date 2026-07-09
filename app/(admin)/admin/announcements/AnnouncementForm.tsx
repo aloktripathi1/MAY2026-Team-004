@@ -6,13 +6,21 @@ import { Send } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { createAnnouncementAction, type AnnouncementFormState } from "./actions";
 
-const initialState: AnnouncementFormState = {};
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Btn disabled={pending}><Send className="h-4 w-4" /> {pending ? "Publishing..." : "Publish"}</Btn>;
+}
 
 export function AnnouncementForm() {
-  const [state, formAction] = useFormState(createAnnouncementAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction] = useFormState<AnnouncementFormState, FormData>(createAnnouncementAction, {});
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     if (!state.error) formRef.current?.reset();
   }, [state]);
 
@@ -30,9 +38,4 @@ export function AnnouncementForm() {
       </div>
     </form>
   );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <Btn disabled={pending}><Send className="h-4 w-4" /> {pending ? "Publishing…" : "Publish"}</Btn>;
 }

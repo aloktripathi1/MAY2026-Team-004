@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat } from "@/components/ui/primitives";
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function VolunteerHome() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const tasks = await prisma.task.findMany({
     where: { assigneeId: session!.user.id },
     orderBy: { dueAt: "asc" },

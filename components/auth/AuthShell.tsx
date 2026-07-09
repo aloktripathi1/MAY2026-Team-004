@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
-import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Btn } from "@/components/ui/primitives";
-import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
 
 export function AuthShell({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
@@ -40,7 +37,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             {isSignup ? <>Join the <span className="text-primary italic">confluence.</span></> : <>Sign in to <span className="text-primary italic">sangam.</span></>}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {isSignup ? "Verified with your IITM BS credentials. Takes 30 seconds." : "Use your IITM BS credentials."}
+            {isSignup ? "M2 mock signup. No account is created yet." : "M2 mock login. Any demo credential will continue."}
           </p>
 
           {isSignup ? <SignupForm /> : <LoginForm />}
@@ -68,23 +65,15 @@ function LoginForm() {
     setError(null);
     setPending(true);
     const formData = new FormData(e.currentTarget);
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
     setPending(false);
-    if (result?.error) {
-      setError("Incorrect email or password.");
+    if (!email || !password) {
+      setError("Enter any demo email and password.");
       return;
     }
-    // Honor the callbackUrl middleware attaches when it redirects an
-    // unauthenticated visit to /login (e.g. clicking "Faculty Mentor" on the
-    // landing page while signed out) so sign-in lands them where they meant
-    // to go, not always on the member dashboard.
     const callbackUrl = searchParams.get("callbackUrl");
     router.push(callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/app");
-    router.refresh();
   }
 
   return (
@@ -99,33 +88,27 @@ function LoginForm() {
   );
 }
 
-const initialSignupState: SignupState = {};
-
 const INTERESTS = ["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"];
 
 function SignupForm() {
   const router = useRouter();
-  const [state, formAction] = useFormState(signupAction, initialSignupState);
-  const [redirecting, setRedirecting] = useState(false);
   const [interests, setInterests] = useState<string[]>([]);
+  const [pending, setPending] = useState(false);
 
   function toggleInterest(t: string) {
     setInterests((prev) => (prev.includes(t) ? prev.filter((i) => i !== t) : [...prev, t]));
   }
 
-  useEffect(() => {
-    if (!state.ok || redirecting) return;
-    setRedirecting(true);
-    const email = (document.getElementById("signup-email") as HTMLInputElement)?.value;
-    const password = (document.getElementById("signup-password") as HTMLInputElement)?.value;
-    signIn("credentials", { email, password, redirect: false }).then(() => {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    window.setTimeout(() => {
       router.push("/app");
-      router.refresh();
-    });
-  }, [state.ok, redirecting, router]);
+    }, 250);
+  }
 
   return (
-    <form className="mt-8 space-y-4" action={formAction}>
+    <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
       <Field label="Full name" name="name" placeholder="Ananya Rao" />
       <Field label="Institutional email" name="email" id="signup-email" placeholder="23f1000123@ds.study.iitm.ac.in" type="email" />
       <Field label="Roll number" name="rollNumber" placeholder="23f1000123" />
@@ -153,18 +136,10 @@ function SignupForm() {
           })}
         </div>
       </div>
-      {state.error && <p className="text-xs text-destructive">{state.error}</p>}
-      <SubmitButton />
+      <Btn size="lg" className="mt-2 w-full" disabled={pending}>
+        {pending ? "Creating demo…" : "Create demo account"} <ArrowRight className="h-4 w-4" />
+      </Btn>
     </form>
-  );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Btn size="lg" className="mt-2 w-full" disabled={pending}>
-      {pending ? "Creating account…" : "Create account"} <ArrowRight className="h-4 w-4" />
-    </Btn>
   );
 }
 

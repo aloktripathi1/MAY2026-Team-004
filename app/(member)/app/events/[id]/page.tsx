@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
+import { getMockSession } from "@/lib/mock-session";
 import { ArrowLeft, CalendarClock, MapPin, Users2 } from "lucide-react";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { StatusPill } from "@/components/ui/primitives";
+import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 import { RsvpButton } from "./RsvpButton";
 
@@ -28,7 +28,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
   const event = await getEvent(params.id);
   if (!event) notFound();
 
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const [myRsvp, attendees, organizers] = await Promise.all([
     prisma.rsvp.findUnique({
       where: { userId_eventId: { userId: session!.user.id, eventId: event.id } },
@@ -56,7 +56,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="relative flex min-h-[280px] flex-col justify-end p-8 md:min-h-[380px] md:p-12">
           <div className="mb-3 flex gap-1.5">
-            {event.tags.split(",").map((t) => <span key={t} className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur">{t}</span>)}
+            {normalizeEventTags(event.tags).map((t) => <span key={t} className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur">{t}</span>)}
             <StatusPill tone={event.approval === "approved" ? "green" : event.approval === "pending" ? "amber" : "slate"}>
               {event.approval === "approved" ? "Approved" : event.approval === "pending" ? "Pending approval" : "No approval needed"}
             </StatusPill>

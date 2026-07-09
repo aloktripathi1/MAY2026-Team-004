@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+import { getMockSession } from "@/lib/mock-session";
 import { Plus } from "lucide-react";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -15,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CoordinatorHome() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 import { FacultyApprovalButtons } from "./FacultyApprovalButtons";
 
@@ -30,7 +31,7 @@ export default async function FacultyApprovals() {
                 <div className="text-lg font-medium">{e.title}</div>
                 <div className="mt-2 text-sm text-muted-foreground">{e.description}</div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {e.tags.split(",").filter(Boolean).map(t => <span key={t} className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted-foreground">{t}</span>)}
+                  {normalizeEventTags(e.tags).map(t => <span key={t} className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted-foreground">{t}</span>)}
                   <StatusPill tone="amber">Pending</StatusPill>
                 </div>
               </div>

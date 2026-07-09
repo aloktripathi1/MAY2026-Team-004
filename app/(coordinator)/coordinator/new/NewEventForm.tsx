@@ -5,12 +5,16 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Btn } from "@/components/ui/primitives";
 import { createEventAction, type NewEventState } from "./actions";
 
-const initialState: NewEventState = {};
 const TAGS = ["Contest", "Music", "Debate", "Workshop", "Sponsored", "Off-campus", "Hybrid", "Online"];
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Btn disabled={pending}>{pending ? "Publishing..." : "Publish event"}</Btn>;
+}
+
 export function NewEventForm() {
-  const [state, formAction] = useFormState(createEventAction, initialState);
   const [tags, setTags] = useState<string[]>([]);
+  const [state, formAction] = useFormState<NewEventState, FormData>(createEventAction, {});
 
   function toggleTag(t: string) {
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -58,11 +62,6 @@ export function NewEventForm() {
       </div>
     </form>
   );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <Btn disabled={pending}>{pending ? "Publishing…" : "Publish event"}</Btn>;
 }
 
 function Field({

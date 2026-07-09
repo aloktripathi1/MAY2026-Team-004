@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 
@@ -11,7 +10,7 @@ export type TransferState = { error?: string; ok?: boolean };
 // Atomically swaps the Admin role: current admin's membership demotes to
 // Coordinator, the chosen successor's membership promotes to Admin.
 export async function transferAdminAction(_prevState: TransferState, formData: FormData): Promise<TransferState> {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const currentMembership = getPrimaryClubMembership(session, "Admin");

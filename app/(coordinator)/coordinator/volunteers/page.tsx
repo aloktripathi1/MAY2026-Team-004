@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -16,7 +15,7 @@ const columns = ["todo", "doing", "done"] as const;
 const columnLabels: Record<(typeof columns)[number], string> = { todo: "To do", doing: "Doing", done: "Done" };
 
 export default async function VolunteersPage() {
-  const session = await getServerSession(authOptions);
+  const session = getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 
