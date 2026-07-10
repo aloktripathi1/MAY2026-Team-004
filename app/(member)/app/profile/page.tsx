@@ -3,6 +3,7 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill, Btn } from "@/components/ui/primitives";
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
 
 export const metadata: Metadata = {
   title: "Profile · Sangam",
@@ -34,7 +35,7 @@ export default async function ProfilePage() {
             <Row k="Email" v={user!.email} />
             <Row k="Joined" v={user!.createdAt.toLocaleDateString(undefined, { month: "short", year: "numeric" })} />
           </div>
-          <Btn className="mt-6 w-full" variant="outline">Edit details</Btn>
+          <EditProfileModal initialName={user!.name} />
         </div>
 
         <div className="space-y-6">
