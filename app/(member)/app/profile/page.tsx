@@ -3,6 +3,7 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill, Btn } from "@/components/ui/primitives";
+import { NotificationPreferences } from "./NotificationPreferences";
 
 export const metadata: Metadata = {
   title: "Profile · Sangam",
@@ -68,16 +69,7 @@ export default async function ProfilePage() {
 
           <GlassCard>
             <div className="text-mono-label mb-3">Notification preferences</div>
-            <div className="space-y-3">
-              {["Only clubs I'm in", "New events from suggested clubs", "Pinned admin announcements only"].map((t, i) => (
-                <label key={t} className="flex items-center justify-between text-sm">
-                  <span>{t}</span>
-                  <span className={`inline-flex h-5 w-9 items-center rounded-full ${i !== 2 ? "bg-secondary" : "bg-white/10"}`}>
-                    <span className={`h-4 w-4 rounded-full bg-background transition ${i !== 2 ? "translate-x-4" : "translate-x-0.5"}`} />
-                  </span>
-                </label>
-              ))}
-            </div>
+            <NotificationPreferences />
           </GlassCard>
         </div>
       </div>

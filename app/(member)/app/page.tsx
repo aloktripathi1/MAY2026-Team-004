@@ -53,9 +53,9 @@ export default async function MemberDashboard() {
             <h2 className="text-mono-label">Your week</h2>
             <Link href="/app/events" className="text-xs text-muted-foreground hover:text-foreground">See all →</Link>
           </div>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {upcoming.map(e => (
-              <Link key={e.id} href={`/app/events/${e.slug}`}>
+              <Link key={e.id} href={`/app/events/${e.slug}`} className="block">
                 <GlassCard className="group flex items-center gap-5 p-4">
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl text-center" style={{ background: e.cover }}>
                     <div className="text-mono-label !text-[9px] text-white/80">{formatWeekday(e.date)}</div>

@@ -114,7 +114,16 @@ export function AppShell({
 
             <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hidden">
               {items.map((item) => {
-                const active = currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to) && item.to.length > 1 && (currentPath.length === item.to.length || currentPath[item.to.length] === "/"));
+                const matches = (to: string) =>
+                  currentPath === to || (to !== "/" && currentPath.startsWith(`${to}/`));
+                const active =
+                  matches(item.to) &&
+                  !items.some(
+                    (other) =>
+                      other.to !== item.to &&
+                      other.to.length > item.to.length &&
+                      matches(other.to)
+                  );
                 return (
                   <Link
                     key={item.to}
@@ -125,7 +134,7 @@ export function AppShell({
                     {active && (
                       <motion.span
                         layoutId={`nav-${role}`}
-                        className="absolute inset-0 rounded-xl bg-white/[0.075] ring-1 ring-secondary/35"
+                        className="absolute inset-0 rounded-xl border border-secondary/50 bg-white/[0.075]"
                         transition={{ type: "spring", stiffness: 500, damping: 40 }}
                       />
                     )}
