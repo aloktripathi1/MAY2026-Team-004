@@ -1,3 +1,5 @@
+import { getAuthCookieUser } from "@/lib/auth-session";
+
 export type SessionMembership = { clubId: string; clubSlug: string; clubName: string; role: string };
 
 const memberships: SessionMembership[] = [
@@ -8,6 +10,21 @@ const memberships: SessionMembership[] = [
 ];
 
 export function getMockSession() {
+  const authUser = getAuthCookieUser();
+
+  if (authUser) {
+    return {
+      user: {
+        id: authUser.id,
+        name: authUser.name,
+        email: authUser.email,
+        isFaculty: authUser.isFaculty ?? false,
+        memberships: [],
+      },
+      expires: "2099-12-31T23:59:59.999Z",
+    };
+  }
+
   return {
     user: {
       // Must match the demo user's real id in lib/prisma.ts's derived `users`

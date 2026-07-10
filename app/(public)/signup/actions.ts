@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import { redirect } from "next/navigation";
+import { setAuthCookies } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 
 const signupSchema = z.object({
@@ -33,9 +35,10 @@ export async function signupAction(_prevState: SignupState, formData: FormData):
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  await prisma.user.create({
-    data: { name, email, rollNumber, hashedPassword },
+  const user = await prisma.user.create({
+    data: { name, email, rollNumber, hashedPassword, interests: "[]" },
   });
 
-  return { ok: true };
+  setAuthCookies({ id: user.id, name: user.name, email: user.email, isFaculty: user.isFaculty });
+  redirect("/signup/onboarding");
 }
