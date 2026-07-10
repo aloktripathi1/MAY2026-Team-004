@@ -25,10 +25,10 @@ export default async function AnnouncementsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Broadcast" title={<>Say something <span className="text-display text-primary italic">worth reading.</span></>} description="Only members of your club will see this. Pin the ones that matter." />
+      <PageHeader eyebrow="Broadcast" title={<>Say something <span className="text-secondary">worth reading.</span></>} description="Only members of your club will see this. Pin the ones that matter." />
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <GlassCard className="glass-strong p-6">
+        <GlassCard className="p-6">
           <AnnouncementForm />
         </GlassCard>
 
@@ -39,7 +39,7 @@ export default async function AnnouncementsPage() {
             {announcements.map(a => (
               <GlassCard key={a.id} className="p-4">
                 <div className="mb-1.5 flex items-center gap-2">
-                  {a.pinned && <Pin className="h-3 w-3 text-primary" />}
+                  {a.pinned && <Pin className="h-3 w-3 text-secondary" />}
                   <span className="ml-auto text-mono-label !text-[10px] text-muted-foreground/60">{formatTimeAgo(a.createdAt)}</span>
                 </div>
                 <div className="text-sm font-medium">{a.title}</div>

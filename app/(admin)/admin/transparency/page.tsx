@@ -25,11 +25,11 @@ export default async function TransparencyPage() {
     <>
       <PageHeader
         eyebrow="Public ledger"
-        title={<>Every event, <span className="text-display text-primary italic">accounted for.</span></>}
+        title={<>Every event, <span className="text-secondary">accounted for.</span></>}
         description="Outcome, spend, attendance. Auto-logged. Members and faculty can read this."
         actions={<Btn size="sm" variant="outline"><Download className="h-4 w-4" /> Export CSV</Btn>}
       />
-      <div className="glass-strong overflow-hidden rounded-2xl">
+      <div className="night-panel overflow-hidden rounded-2xl">
         {log.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No entries logged yet.</div>}
         {log.map((row, i) => (
           <div key={row.id} className="grid grid-cols-[1fr_120px_100px_120px] items-center gap-4 border-b border-hairline px-6 py-5 last:border-b-0 md:grid-cols-[2fr_140px_140px_140px_120px]">
