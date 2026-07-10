@@ -54,11 +54,11 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center px-4 py-6">
+        <div className="fixed inset-0 z-50 grid place-items-center px-4 py-6 text-white">
           <motion.button
             type="button"
             aria-label="Close modal"
-            className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default bg-[oklch(0.035_0.006_285_/_78%)] backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -72,30 +72,34 @@ export function Modal({
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={description ? descriptionId : undefined}
-            className={cn("glass-strong relative max-h-[min(88vh,760px)] w-full overflow-hidden rounded-3xl", sizeClass[size])}
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            className={cn(
+              "night-nav relative max-h-[min(88vh,760px)] w-full overflow-hidden rounded-2xl shadow-[0_42px_120px_-58px_oklch(0.47_0.16_24_/_75%),0_22px_80px_-60px_oklch(0.78_0.13_78_/_60%)]",
+              sizeClass[size],
+            )}
+            initial={{ opacity: 0, y: 14, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, y: 10, scale: 0.985 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-white/10 bg-white/[0.025] px-5 py-4">
               <div className="min-w-0">
-                <h2 id={titleId} className="text-lg font-semibold text-foreground">{title}</h2>
-                {description && <p id={descriptionId} className="mt-1 text-sm text-muted-foreground">{description}</p>}
+                <div className="text-mono-label mb-2 text-white/50">Sangam control</div>
+                <h2 id={titleId} className="text-lg font-semibold leading-6 text-white">{title}</h2>
+                {description && <p id={descriptionId} className="mt-1 max-w-prose text-sm leading-6 text-white/64">{description}</p>}
               </div>
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-hairline text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/12 bg-white/[0.04] text-white/62 transition duration-200 hover:border-white/22 hover:bg-white/[0.075] hover:text-white active:scale-[0.98]"
                 aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="max-h-[calc(min(88vh,760px)-9rem)] overflow-y-auto px-5 py-5">
+            <div className="max-h-[calc(min(88vh,760px)-9rem)] overflow-y-auto bg-[oklch(0.075_0.01_285_/_82%)] px-5 py-5 text-sm text-white/82">
               {children}
             </div>
-            {footer && <div className="border-t border-hairline px-5 py-4">{footer}</div>}
+            {footer && <div className="border-t border-white/10 bg-white/[0.025] px-5 py-4">{footer}</div>}
           </motion.div>
         </div>
       )}

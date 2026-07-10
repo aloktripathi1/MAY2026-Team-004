@@ -34,7 +34,11 @@ export function ConfirmationDialog({
       onOpenChange={onOpenChange}
       title={
         <span className="inline-flex items-center gap-2">
-          {destructive && <AlertTriangle className="h-4 w-4 text-destructive" />}
+          {destructive && (
+            <span className="grid h-7 w-7 place-items-center rounded-lg border border-destructive/30 bg-destructive/12">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            </span>
+          )}
           {title}
         </span>
       }
@@ -58,7 +62,11 @@ export function ConfirmationDialog({
         </div>
       }
     >
-      {children}
+      {children && (
+        <div className="night-panel rounded-xl p-4 text-sm leading-6 text-white/72">
+          {children}
+        </div>
+      )}
     </Modal>
   );
 }

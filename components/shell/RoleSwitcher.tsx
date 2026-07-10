@@ -52,13 +52,15 @@ export function RoleSwitcher({
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-left text-sidebar-foreground transition hover:bg-white/10"
+        className="night-nav flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sidebar-foreground transition duration-200 hover:border-secondary/30 hover:bg-white/[0.075] active:scale-[0.99]"
       >
         <span className="min-w-0">
-          <span className="text-mono-label block text-sidebar-foreground/60">Role</span>
-          <span className="block truncate text-sm font-medium">{current.label}</span>
+          <span className="text-mono-label block text-sidebar-foreground/55">Role context</span>
+          <span className="mt-0.5 block truncate text-sm font-semibold text-white">{current.label}</span>
         </span>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 text-sidebar-foreground/60 transition", open && "rotate-180")} />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04]">
+          <ChevronDown className={cn("h-4 w-4 text-secondary transition duration-200", open && "rotate-180")} />
+        </span>
       </button>
 
       <AnimatePresence>
@@ -68,7 +70,7 @@ export function RoleSwitcher({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.16 }}
-            className="glass-strong absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-2xl p-1.5"
+            className="night-nav absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-2xl p-1.5 shadow-[0_24px_80px_-48px_oklch(0_0_0_/_95%)]"
           >
             {roles.map((option) => {
               const active = option.role === currentRole || pathname === option.href;
@@ -78,12 +80,17 @@ export function RoleSwitcher({
                   href={option.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "block rounded-xl px-3 py-2.5 text-sm transition",
-                    active ? "bg-primary/10 text-foreground ring-1 ring-primary/25" : "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
+                    "group block rounded-xl px-3 py-2.5 text-sm transition duration-200",
+                    active
+                      ? "bg-white/[0.075] text-white ring-1 ring-secondary/35"
+                      : "text-white/62 hover:bg-white/[0.055] hover:text-white",
                   )}
                 >
-                  <span className="block font-medium">{option.label}</span>
-                  {option.context && <span className="mt-0.5 block truncate text-xs opacity-75">{option.context}</span>}
+                  <span className="flex items-center gap-2 font-semibold">
+                    <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-secondary" : "bg-white/24 group-hover:bg-secondary/70")} />
+                    {option.label}
+                  </span>
+                  {option.context && <span className="mt-1 block truncate pl-3.5 font-mono text-[11px] uppercase tracking-[0.08em] opacity-70">{option.context}</span>}
                 </Link>
               );
             })}
