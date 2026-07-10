@@ -1,409 +1,681 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "motion/react";
-import { ArrowUpRight, Calendar, Compass, Megaphone, Sparkles, Users2, Zap } from "lucide-react";
-import { clubs, events, announcements } from "@/lib/seed-data";
-import { Btn, GlassCard, StatusPill } from "@/components/ui/primitives";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  Clock3,
+  Compass,
+  LayoutDashboard,
+  Megaphone,
+  Menu,
+  Radio,
+  ShieldCheck,
+  Users2,
+  X,
+  Zap,
+} from "lucide-react";
+import { announcements, clubs, events, metrics, tasks, transparencyLog } from "@/lib/seed-data";
 import { pluralize } from "@/lib/format";
 
-// Seed data (club names, event/announcement titles) uses em-dashes as a
-// stylistic separator; this page swaps them for the app's other separator
-// convention (middot) at render time, without touching the shared strings
-// used elsewhere in the app.
-function noEmDash(s: string): string {
-  return s.replace(/\s*—\s*/g, " · ");
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500", "600", "700"],
+});
+
+function noEmDash(value: string): string {
+  return value.replace(/\s*—\s*/g, " / ");
 }
 
-// Short form of a club name for compact spots (e.g. the logo strip caption)
-// that can't fit "Paradox · Debate Society" — deliberately truncates to the
-// part before the separator, rather than normalizing it like noEmDash does.
-// The full name is still available elsewhere (e.g. the tooltip).
-function shortClubName(name: string): string {
-  return noEmDash(name).split(" · ")[0].trim();
-}
+const navLinks = [
+  { label: "Modules", href: "#modules", desc: "Membership, events, work and visibility", icon: LayoutDashboard },
+  { label: "Roles", href: "#roles", desc: "A focused view for every operator", icon: ShieldCheck },
+  { label: "Live", href: "#live", desc: "Counts, activity and current events", icon: Radio },
+];
 
 export default function Landing() {
   return (
-    <div className="relative">
+    <main className={`sangam-night ${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-screen overflow-hidden bg-background text-foreground`}>
       <MarketingNav />
       <Hero />
-      <StatsStrip />
+      <LiveActivity />
       <Modules />
-      <ClubsSection />
-      <EventsSection />
-      <RolesSection />
-      <CTA />
+      <Roles />
+      <Events />
+      <ClosingCTA />
       <Footer />
-    </div>
+    </main>
   );
 }
 
 function MarketingNav() {
+  const [scrolled, setScrolled] = useState(false);
+  const [productOpen, setProductOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 18);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!productOpen) return;
+    const onClick = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) setProductOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProductOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [productOpen]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   return (
-    <header className="sticky top-4 z-40 mx-auto flex max-w-6xl items-center justify-between rounded-full border border-hairline bg-background/60 px-4 py-2.5 backdrop-blur-2xl md:top-6 md:px-5">
-      <Link href="/" className="flex items-center gap-2">
-        <span className="text-display text-2xl leading-none">sangam</span>
-      </Link>
-      <nav className="hidden items-center gap-1 text-sm text-muted-foreground md:flex">
-        <a href="#modules" className="rounded-full px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Product</a>
-        <Link href="/clubs" className="rounded-full px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Clubs</Link>
-        <a href="#events" className="rounded-full px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Events</a>
-        <a href="#roles" className="rounded-full px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Roles</a>
-      </nav>
-      <div className="flex items-center gap-1.5">
-        <Link href="/login" className="hidden rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground sm:inline-flex">Sign in</Link>
-        <Link href="/signup" className="inline-flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90">
-          Join <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-    </header>
+    <>
+      <header ref={navRef} className="fixed inset-x-0 top-0 z-50 px-4 pt-3 md:px-6">
+        <div
+          className={`mx-auto flex max-w-6xl items-center justify-between transition-all duration-300 ${
+            scrolled
+              ? "night-nav h-14 rounded-2xl px-3 shadow-[0_18px_70px_-42px_rgba(0,0,0,0.95)] md:px-4"
+              : "h-16 px-1 md:px-0"
+          }`}
+        >
+          <Link href="/" className="group flex items-center gap-3" aria-label="Sangam home">
+            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary transition group-hover:border-secondary/45">
+              SG
+            </span>
+            <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
+          </Link>
+
+          <nav className="hidden items-center gap-1 md:flex">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProductOpen((value) => !value)}
+                aria-expanded={productOpen}
+                className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white"
+              >
+                Product
+                <ChevronDown className={`h-3.5 w-3.5 transition ${productOpen ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {productOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                    transition={{ duration: 0.16 }}
+                    className="night-nav absolute left-1/2 top-full mt-3 w-80 -translate-x-1/2 rounded-2xl p-2"
+                  >
+                    {navLinks.map((item) => (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setProductOpen(false)}
+                        className="group grid grid-cols-[36px_1fr] gap-3 rounded-xl p-3 transition hover:bg-white/[0.06]"
+                      >
+                        <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-secondary transition group-hover:border-secondary/40">
+                          <item.icon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-white">{item.label}</span>
+                          <span className="block text-xs leading-5 text-muted-foreground">{item.desc}</span>
+                        </span>
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <Link href="/clubs" className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white">
+              Clubs
+            </Link>
+            <Link href="#live" className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white">
+              Activity
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white sm:inline-flex">
+              Sign in
+            </Link>
+            <Link href="/signup" className="gold-cta inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-secondary-foreground">
+              Join <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-white md:hidden"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-background/96 px-5 py-4 backdrop-blur-2xl md:hidden"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-white/12 text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-12 space-y-3">
+              {[...navLinks, { label: "Clubs", href: "/clubs", desc: "Browse societies already onboarded", icon: Users2 }].map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="grid grid-cols-[44px_1fr] gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+                >
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/[0.06] text-secondary">
+                    <item.icon className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block text-lg font-semibold text-white">{item.label}</span>
+                    <span className="block text-sm text-muted-foreground">{item.desc}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <div className="absolute inset-x-5 bottom-6 grid gap-3">
+              <Link href="/signup" onClick={() => setMobileOpen(false)} className="gold-cta flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-secondary-foreground">
+                Join Sangam <ArrowUpRight className="h-4 w-4" />
+              </Link>
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/12 text-sm font-medium text-white">
+                Sign in
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
 function Hero() {
+  const shouldReduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const previewY = useTransform(scrollYProgress, [0, 0.28], [0, shouldReduceMotion ? 0 : -34]);
+
   return (
-    <section className="relative overflow-hidden px-5 pb-24 pt-16 md:pt-28">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{ backgroundImage: "var(--gradient-hero)" }}
-      />
+    <section className="relative px-4 pb-24 pt-28 sm:pb-28 md:px-6 md:pt-36 lg:pb-32">
+      <div className="hero-ambient" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <h1 className="text-5xl leading-[0.95] tracking-[-0.03em] md:text-8xl">
-            The <span className="text-display text-primary">confluence</span><br />
-            for IITM BS <span className="text-display italic">societies.</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Every club, one dashboard. No more chasing updates across WhatsApp groups, Google Forms, and spreadsheets nobody trusts.
-          </p>
-        </motion.div>
+        <div className="flex flex-col items-center gap-12 md:gap-16">
+          <motion.div
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+            animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full"
+          >
+            <p className="mono-label text-secondary">COMMUNITY OPERATIONS / IITM BS</p>
+            <h1 className="mt-5 max-w-5xl text-[clamp(4rem,10.7vw,9.6rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">
+              Run the club. Lose the chaos.
+            </h1>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
+              Sangam brings membership, events, volunteers, approvals and announcements into one controlled system for societies that have outgrown scattered chats.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link href="/signup" className="gold-cta inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-secondary-foreground">
+                Start with your society <ArrowUpRight className="h-4 w-4" />
+              </Link>
+              <Link href="/clubs" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/12 px-5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.05]">
+                Browse clubs
+              </Link>
+            </div>
+          </motion.div>
 
-        {/* Product surface preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="glass-strong relative mt-12 overflow-hidden rounded-3xl p-3 md:mt-16"
-        >
-          <div className="grid gap-3 md:grid-cols-[280px_1fr_260px]">
-            <FakeSidebarPreview />
-            <FakeCenterPreview />
-            <FakeRightPreview />
-          </div>
-          <div className="pointer-events-none absolute inset-x-0 -bottom-24 h-48 bg-gradient-to-t from-background to-transparent" />
-        </motion.div>
+          <motion.div
+            style={{ y: previewY }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 28, rotateX: 4 }}
+            animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0 }}
+            transition={{ delay: 0.1, duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+            className="hero-glass relative mx-auto w-full max-w-5xl overflow-hidden rounded-[28px] p-3"
+          >
+            <ProductPreview />
+          </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
-function FakeSidebarPreview() {
-  const items = ["Dashboard", "Events", "Browse clubs", "My issues", "FAQ", "Profile"];
+function ProductPreview() {
+  const [selectedEvent, setSelectedEvent] = useState(events[0].id);
+  const currentEvent = events.find((event) => event.id === selectedEvent) ?? events[0];
+
   return (
-    <div className="rounded-2xl border border-hairline bg-surface/70 p-4 backdrop-blur">
-      <div className="text-display mb-4 text-xl">sangam</div>
-      <div className="text-mono-label mb-3">Signed in · Member</div>
-      <ul className="space-y-1 text-sm">
-        {items.map((it, i) => (
-          <li key={it} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 ${i === 0 ? "bg-surface-2 text-foreground ring-1 ring-hairline" : "text-muted-foreground"}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-primary" : "bg-hairline"}`} />
-            {it}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-function FakeCenterPreview() {
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  return (
-    <div className="rounded-2xl border border-hairline bg-surface/40 p-5 backdrop-blur">
-      <div className="text-mono-label">This week</div>
-      <h3 className="text-display mt-2 text-3xl">{greeting}.</h3>
-      <div className="mt-5 grid grid-cols-3 gap-2 text-xs">
-        {[["Events", "4"], ["Tasks", "7"], ["Issues", "2"]].map(([l, v]) => (
-          <div key={l} className="rounded-xl bg-background/60 p-3">
-            <div className="text-muted-foreground">{l}</div>
-            <div className="text-display mt-1 text-2xl">{v}</div>
-          </div>
-        ))}
+    <div className="overflow-hidden rounded-[22px] border border-white/10 bg-[#0d0d10]">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <div>
+          <div className="mono-label !text-[0.62rem]">LIVE CONTROL ROOM</div>
+          <div className="mt-1 text-sm font-semibold text-white">Friday ops summary</div>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-primary/35 bg-primary/12 px-2.5 py-1.5 text-xs font-semibold text-white">
+          <span className="h-1.5 w-1.5 rounded-full bg-secondary shadow-[0_0_18px_rgba(222,174,86,0.9)]" />
+          synced
+        </div>
       </div>
-      <div className="mt-5 space-y-2">
-        {events.slice(0, 3).map((e) => (
-          <div key={e.id} className="flex items-center gap-3 rounded-xl bg-background/60 p-3">
-            <div className="h-10 w-10 shrink-0 rounded-lg" style={{ background: e.cover }} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm">{noEmDash(e.title)}</div>
-              <div className="text-mono-label !text-[9px]">{e.date} · {e.venue}</div>
-            </div>
-            <div className="text-xs text-primary">RSVP</div>
+      <div className="grid min-h-[560px] gap-px bg-white/10 md:grid-cols-[190px_1fr]">
+        <aside className="hidden bg-[#111115] p-4 md:block">
+          <div className="space-y-1">
+            {["Overview", "Membership", "Events", "Tasks", "Approvals"].map((item, index) => (
+              <div key={item} className={`rounded-lg px-3 py-2 text-sm ${index === 0 ? "bg-white/[0.07] text-white" : "text-muted-foreground"}`}>
+                {item}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-function FakeRightPreview() {
-  return (
-    <div className="rounded-2xl border border-hairline bg-surface/70 p-4 backdrop-blur">
-      <div className="text-mono-label mb-3">Announcements</div>
-      <div className="space-y-3">
-        {announcements.slice(0, 3).map((a) => (
-          <div key={a.id} className="rounded-xl bg-background/60 p-3">
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-mono-label !text-[9px]">{a.club}</span>
-              <span className="text-mono-label !text-[9px]">{a.timeAgo}</span>
-            </div>
-            <div className="text-xs leading-snug">{noEmDash(a.title)}</div>
+          <div className="mt-8 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+            <div className="mono-label !text-[0.58rem]">MEMBERS</div>
+            <div className="mt-3 text-3xl font-black tracking-[-0.04em] text-white">{metrics.totalMembers.toLocaleString("en-IN")}</div>
+            <div className="mt-1 text-xs text-muted-foreground">{metrics.activeMembers.toLocaleString("en-IN")} active this month</div>
           </div>
-        ))}
+        </aside>
+        <div className="bg-[#0f0f12] p-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Events", metrics.eventsThisMonth, "+12%"],
+              ["Open issues", metrics.openIssues, "triaged"],
+              ["Approvals", 6, "pending"],
+            ].map(([label, value, meta]) => (
+              <div key={label} className="rounded-xl border border-white/10 bg-white/[0.045] p-3">
+                <div className="mono-label !text-[0.58rem]">{label}</div>
+                <div className="mt-2 flex items-end justify-between gap-2">
+                  <span className="font-mono text-3xl font-semibold tracking-[-0.06em] text-white">{value}</span>
+                  <span className="text-xs text-secondary">{meta}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_190px]">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="mono-label !text-[0.58rem]">UPCOMING</div>
+                  <div className="mt-1 text-sm font-semibold text-white">Event command queue</div>
+                </div>
+                <CalendarDays className="h-4 w-4 text-secondary" />
+              </div>
+              <div className="mt-3 space-y-2">
+                {events.slice(0, 4).map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => setSelectedEvent(event.id)}
+                    className={`w-full rounded-xl border p-3 text-left transition ${
+                      selectedEvent === event.id
+                        ? "border-secondary/45 bg-secondary/10"
+                        : "border-white/10 bg-black/15 hover:border-white/20 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-white">{noEmDash(event.title)}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">{event.date} / {event.venue}</div>
+                      </div>
+                      <span className="font-mono text-xs text-secondary">{event.going}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="mono-label !text-[0.58rem]">SELECTED</div>
+              <div className="mt-3 text-lg font-bold leading-tight text-white">{noEmDash(currentEvent.title)}</div>
+              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-2"><span>Capacity</span><span className="text-white">{currentEvent.going}/{currentEvent.capacity}</span></div>
+                <div className="flex items-center justify-between gap-2"><span>Status</span><span className="text-secondary">{currentEvent.approval}</span></div>
+                <div className="flex items-center justify-between gap-2"><span>Venue</span><span className="text-right text-white">{currentEvent.venue}</span></div>
+              </div>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min(100, Math.round((currentEvent.going / currentEvent.capacity) * 100))}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="mono-label !text-[0.58rem]">ANNOUNCEMENTS</div>
+              <div className="mt-3 space-y-2">
+                {announcements.slice(0, 3).map((item) => (
+                  <div key={item.id} className="rounded-lg bg-black/18 px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-white">{item.club}</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{item.timeAgo}</span>
+                    </div>
+                    <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{noEmDash(item.title)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="mono-label !text-[0.58rem]">TASKS</div>
+              <div className="mt-3 space-y-2">
+                {tasks.slice(0, 3).map((task) => (
+                  <div key={task.id} className="flex items-center gap-2 rounded-lg bg-black/18 px-3 py-2">
+                    <CheckCircle2 className={`h-4 w-4 ${task.status === "done" ? "text-secondary" : "text-primary"}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-medium text-white">{task.title}</div>
+                      <div className="font-mono text-[10px] uppercase text-muted-foreground">{task.due}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatsStrip() {
-  const stats: [string, string][] = [
-    ["1,592", "students reachable"],
-    ["8", "clubs onboarded"],
-    ["27", "events / month"],
+function LiveActivity() {
+  const stats = [
+    { label: "students reachable", value: metrics.totalMembers },
+    { label: "clubs onboarded", value: clubs.length },
+    { label: "events this month", value: metrics.eventsThisMonth },
+    { label: "active members", value: metrics.activeMembers },
   ];
+
   return (
-    <section className="mx-auto max-w-6xl px-5 pb-16">
-      <div className="grid gap-3 md:grid-cols-3">
-        {stats.map(([v, l]) => (
-          <div key={l} className="glass rounded-2xl p-5">
-            <div className="text-display text-4xl">{v}</div>
-            <div className="text-mono-label mt-1.5">{l}</div>
-          </div>
-        ))}
+    <section id="live" className="relative px-4 py-20 md:px-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-[#101014] p-6">
+              <CountUp value={stat.value} />
+              <div className="mono-label mt-2">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
+  );
+}
+
+function CountUp({ value }: { value: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.5 });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const [display, setDisplay] = useState(shouldReduceMotion ? value : 0);
+
+  useEffect(() => {
+    if (!visible || shouldReduceMotion) {
+      if (shouldReduceMotion) setDisplay(value);
+      return;
+    }
+    let frame = 0;
+    const total = 44;
+    const tick = () => {
+      frame += 1;
+      const progress = 1 - Math.pow(1 - frame / total, 3);
+      setDisplay(Math.round(value * progress));
+      if (frame < total) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [shouldReduceMotion, value, visible]);
+
+  return (
+    <div ref={ref} className="font-mono text-4xl font-semibold tracking-[-0.08em] text-white md:text-5xl">
+      {display.toLocaleString("en-IN")}
+    </div>
   );
 }
 
 function Modules() {
   const modules = [
-    { icon: Users2, label: "Membership", desc: "Verified signup, directory, approval queues, CSV imports. Roll-number matched.", hue: "122" },
-    { icon: Calendar, label: "Events", desc: "Create, RSVP, check-in. Conflict detection, capacity locks, faculty approval flow.", hue: "5" },
-    { icon: Megaphone, label: "Announcements", desc: "Only what's relevant to clubs you're in. Pin the important. No spam.", hue: "260" },
-    { icon: Compass, label: "Discovery", desc: "Interest-based onboarding. Every club has an active/inactive signal you can trust.", hue: "45" },
-    { icon: Zap, label: "Volunteer ops", desc: "Assign tasks, track progress, log contributions for the year-end handover.", hue: "155" },
-    { icon: Sparkles, label: "Transparency", desc: "Every event's outcome, spend, and attendance: logged, searchable, exportable.", hue: "320" },
+    { icon: Users2, label: "Membership", number: "01", desc: "Verified joins, roll-number matching, approval queues and searchable directories without sheet drift.", large: true },
+    { icon: CalendarDays, label: "Events", number: "02", desc: "Create, approve, RSVP, track capacity and preserve the outcome after the crowd leaves.", large: true },
+    { icon: Zap, label: "Volunteer Ops", number: "03", desc: "Tasks move from coordinator memory into visible ownership and due dates." },
+    { icon: Megaphone, label: "Announcements", number: "04", desc: "Relevant updates reach the right members without another noisy broadcast group." },
+    { icon: Compass, label: "Discovery", number: "05", desc: "Members can see what is alive, what fits them and where to join next." },
+    { icon: ShieldCheck, label: "Transparency", number: "06", desc: "Attendance, spend, approvals and handover trails stay available semester after semester." },
   ];
+
   return (
-    <section id="modules" className="mx-auto max-w-6xl px-5 py-24 md:py-32">
-      <div className="mb-14 grid gap-6 md:grid-cols-2 md:items-end">
-        <div>
-          <div className="text-mono-label mb-3">01 · The modules</div>
-          <h2 className="text-4xl leading-tight tracking-[-0.02em] md:text-6xl">
-            Everything a society runs, <span className="text-display text-primary">under one roof.</span>
+    <section id="modules" className="px-4 py-24 md:px-6 md:py-32">
+      <div className="mx-auto max-w-6xl">
+        <div className="max-w-3xl">
+          <p className="mono-label text-secondary">01 / SYSTEM MAP</p>
+          <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
+            Six modules. One operating rhythm.
           </h2>
         </div>
-        <p className="text-muted-foreground md:pl-8">
-          Six modules, one shared design. Built for club heads who're tired of context-switching, and members who just want to know what's happening this Friday.
-        </p>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        {modules.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.5 }}
-          >
-            <GlassCard className="relative h-full overflow-hidden p-6">
-              <div className="mb-8 flex items-center justify-between">
-                <div
-                  className="grid h-10 w-10 place-items-center rounded-xl"
-                  style={{ background: `oklch(0.72 0.18 ${m.hue} / 20%)`, color: `oklch(0.92 0.20 ${m.hue})` }}
-                >
-                  <m.icon className="h-4 w-4" />
-                </div>
-                <span className="text-mono-label">0{i + 1}</span>
-              </div>
-              <div className="text-lg font-medium">{m.label}</div>
-              <p className="mt-1.5 text-sm text-muted-foreground">{m.desc}</p>
-            </GlassCard>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ClubLogoStrip() {
-  const doubled = [...clubs, ...clubs];
-  return (
-    <div className="mb-12">
-      <div className="mb-4 text-center text-mono-label text-muted-foreground/70">Active clubs on Sangam</div>
-      <div className="glass-strong relative overflow-hidden rounded-3xl py-8 shadow-[0_1px_2px_oklch(0.18_0.02_25_/_4%),0_16px_40px_-20px_oklch(0.18_0.02_25_/_18%)] [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
-        <div className="animate-logo-scroll flex w-max items-center gap-14 px-8">
-          {doubled.map((c, i) => (
-            <div key={`${c.id}-${i}`} title={noEmDash(c.name)} className="group flex shrink-0 flex-col items-center gap-2.5">
-              <div className="relative">
-                <div
-                  className="absolute -inset-1.5 rounded-full opacity-0 blur-md transition duration-300 group-hover:opacity-40"
-                  style={{ background: `oklch(0.72 0.18 ${c.hue})` }}
-                />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={c.banner}
-                  alt=""
-                  className="relative h-16 w-16 rounded-full object-cover shadow-md ring-2 ring-white transition duration-300 group-hover:scale-110 group-hover:ring-4"
-                  style={{ ["--tw-ring-color" as string]: `oklch(0.72 0.18 ${c.hue} / 50%)` }}
-                />
-                <span
-                  className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full text-xs ring-2 ring-background"
-                  style={{ background: `oklch(0.98 0.01 80)`, color: `oklch(0.5 0.18 ${c.hue})` }}
-                >
-                  {c.emoji}
+        <div className="mt-12 grid auto-rows-[minmax(230px,auto)] gap-3 md:grid-cols-4">
+          {modules.map((module) => (
+            <article
+              key={module.label}
+              className={`night-panel group flex min-h-[230px] flex-col justify-between rounded-2xl p-5 transition hover:border-secondary/35 ${
+                module.large ? "md:col-span-2 md:min-h-[310px]" : "md:col-span-1"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-secondary">
+                  <module.icon className="h-5 w-5" />
                 </span>
+                <span className="font-mono text-xs text-muted-foreground">{module.number}</span>
               </div>
-              <span className="text-mono-label !text-[9px] text-muted-foreground/70">{shortClubName(c.name)}</span>
-            </div>
+              <div>
+                <h3 className={`${module.large ? "text-3xl md:text-4xl" : "text-2xl"} font-black tracking-[-0.04em] text-white`}>
+                  {module.label}
+                </h3>
+                <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">{module.desc}</p>
+              </div>
+            </article>
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function ClubsSection() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-24">
-      <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-        <div>
-          <div className="text-mono-label mb-3">02 · Discovery</div>
-          <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">Eight clubs onboarded. <span className="text-display text-primary italic">More every semester.</span></h2>
-        </div>
-        <Link href="/clubs" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline-flex">See all →</Link>
-      </div>
-      <ClubLogoStrip />
-      <div className="grid gap-3 md:grid-cols-4">
-        {clubs.slice(0, 8).map((c) => (
-          <Link key={c.id} href="/clubs" className="group">
-            <GlassCard className="h-full">
-              <div className="mb-4 flex items-start justify-between">
-                <div className="text-3xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
-                <StatusPill tone={c.active ? "lime" : "slate"}>{c.active ? "Active" : "Quiet"}</StatusPill>
-              </div>
-              <div className="text-sm font-medium">{noEmDash(c.name)}</div>
-              <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.tagline}</div>
-              <div className="mt-4 flex items-center justify-between text-mono-label">
-                <span>{c.members} {pluralize(c.members, "member")}</span>
-                <span className="opacity-0 transition group-hover:opacity-100">Join →</span>
-              </div>
-            </GlassCard>
-          </Link>
-        ))}
-      </div>
     </section>
   );
 }
 
-function EventsSection() {
-  const upcoming = events.filter(e => e.status === "upcoming").slice(0, 3);
-  return (
-    <section id="events" className="mx-auto max-w-6xl px-5 py-24">
-      <div className="mb-10">
-        <div className="text-mono-label mb-3">03 · What's on</div>
-        <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">This week on campus.</h2>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        {upcoming.map((e) => {
-          const club = clubs.find((c) => c.slug === e.clubSlug);
-          return (
-            <Link key={e.id} href={`/app/events/${e.slug}`}>
-              <GlassCard className="group h-full overflow-hidden p-0">
-                <div className="relative h-40 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={e.photo}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0" style={{ background: `oklch(0.35 0.1 ${club?.hue ?? "25"} / 25%)` }} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute bottom-3 left-3 flex gap-1.5">
-                    {e.tags.map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}
-                  </div>
-                  <div className="absolute right-3 top-3 rounded-lg bg-black/50 px-2 py-1 text-mono-label !text-[10px] text-white backdrop-blur">
-                    {e.date.split(",")[0]}
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div className="text-mono-label mb-2">{noEmDash(e.club)}</div>
-                  <div className="text-base font-medium leading-snug">{noEmDash(e.title)}</div>
-                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{e.time} · {e.venue}</span>
-                    <span className="text-primary">{e.going} going →</span>
-                  </div>
-                </div>
-              </GlassCard>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function RolesSection() {
+function Roles() {
   const roles = [
-    { name: "Club Admin", desc: "Full control of members, events, announcements. Sees the whole club at a glance.", color: "5" },
-    { name: "Event Coordinator", desc: "Creates events, wrangles volunteers, books resources. Owns the day-of ops.", color: "45" },
-    { name: "Member", desc: "RSVP, check in, raise issues, follow only the clubs you're in.", color: "122" },
-    { name: "Volunteer", desc: "See assigned tasks with deadlines. Update status without pinging the coord.", color: "260" },
-    { name: "Faculty Mentor", desc: "Read-only oversight, event approvals, sanity checks. Nothing more.", color: "155" },
+    { name: "Club Admin", label: "Roster / calendar / finances", desc: "Own membership, publish events, approve announcements and prepare handovers from one high-context view." },
+    { name: "Coordinator", label: "Tasks / venues / volunteers", desc: "See capacity, approvals, resources and day-of responsibilities without digging through chat history." },
+    { name: "Member", label: "RSVP / clubs / support", desc: "Follow clubs, RSVP, raise issues and see only the updates that matter to their memberships." },
+    { name: "Faculty Mentor", label: "Approvals / oversight", desc: "Review event requests and transparency logs with enough context to say yes quickly." },
   ];
+  const [active, setActive] = useState(0);
+  const selected = roles[active];
+
   return (
-    <section id="roles" className="mx-auto max-w-6xl px-5 py-24">
-      <div className="mb-10">
-        <div className="text-mono-label mb-3">04 · Built for every role</div>
-        <h2 className="text-4xl tracking-[-0.02em] md:text-5xl">One product. <span className="text-display italic text-primary">Five different views.</span></h2>
-        <p className="mt-3 max-w-lg text-muted-foreground">Sign in once, and Sangam shows you exactly the view your role needs. Nothing more.</p>
-      </div>
-      <div className="glass-strong overflow-hidden rounded-3xl">
-        {roles.map((r, i) => (
-          <div key={r.name} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-6 border-b border-hairline px-6 py-6 last:border-b-0 md:grid-cols-[64px_1fr] md:px-10">
-            <div
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-lg font-medium"
-              style={{ background: `oklch(0.72 0.18 ${r.color} / 15%)`, color: `oklch(0.92 0.20 ${r.color})` }}
-            >
-              {String(i + 1).padStart(2, "0")}
+    <section id="roles" className="px-4 py-24 md:px-6 md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+        <div>
+          <p className="mono-label text-secondary">02 / ROLE VIEWS</p>
+          <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
+            Every role gets its own instrument panel.
+          </h2>
+          <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground">
+            Sangam changes shape around the person signing in, so work stays visible without giving everyone the same giant admin dashboard.
+          </p>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-[250px_1fr]">
+          <div className="space-y-2">
+            {roles.map((role, index) => (
+              <button
+                key={role.name}
+                type="button"
+                onMouseEnter={() => setActive(index)}
+                onFocus={() => setActive(index)}
+                onClick={() => setActive(index)}
+                className={`w-full rounded-xl border p-4 text-left transition ${
+                  active === index ? "border-secondary/45 bg-secondary/10 text-white" : "border-white/10 bg-white/[0.035] text-muted-foreground hover:border-white/20"
+                }`}
+              >
+                <span className="font-mono text-xs">{String(index + 1).padStart(2, "0")}</span>
+                <span className="mt-2 block text-base font-semibold">{role.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className="night-panel min-h-[430px] rounded-2xl p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="mono-label">{selected.label}</p>
+                <h3 className="mt-3 text-4xl font-black tracking-[-0.05em] text-white">{selected.name}</h3>
+              </div>
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/20 text-primary">
+                <LayoutDashboard className="h-5 w-5" />
+              </span>
             </div>
-            <div className="min-w-0">
-              <div className="text-xl font-medium md:text-2xl">{r.name}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{r.desc}</div>
+            <p className="mt-5 text-sm leading-7 text-muted-foreground">{selected.desc}</p>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="flex items-center justify-between">
+                <span className="mono-label !text-[0.62rem]">VIEW SNAPSHOT</span>
+                <Clock3 className="h-4 w-4 text-secondary" />
+              </div>
+              <div className="mt-4 space-y-3">
+                {roleRows(active).map((row) => (
+                  <div key={row[0]} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-white">{row[0]}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{row[1]}</div>
+                    </div>
+                    <span className="font-mono text-xs text-secondary">{row[2]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-      <div className="mt-6 text-center">
-        <Link href="/login">
-          <Btn size="lg" variant="outline">See it live, try any role <ArrowUpRight className="h-4 w-4" /></Btn>
-        </Link>
+        </div>
       </div>
     </section>
   );
 }
 
-function CTA() {
+function roleRows(active: number): [string, string, string][] {
+  const rows: [string, string, string][][] = [
+    [["Import review", "18 pending members from CSV", "18"], ["Fusion Night closeout", "Attendance and spend ready", "94%"], ["Handover", "2 unresolved permissions", "2"]],
+    [["Venue request", "Seminar Hall 3 awaits mentor signoff", "1"], ["Volunteer tasks", "3 stuck beyond due time", "3"], ["Capacity check", "Ignite seats remaining", "24"]],
+    [["Cook-Off #42", "RSVP open until Sunday 8 PM", "218"], ["Issue update", "Projector ticket moved to in progress", "new"], ["Clubs matched", "Based on interests", "5"]],
+    [["Event approval", "Startup Weekend budget attached", "open"], ["Transparency log", "Winter Debate Open archived", "done"], ["Risk notes", "Two venue conflicts detected", "2"]],
+  ];
+  return rows[active] ?? rows[0];
+}
+
+function Events() {
+  const upcoming = events.filter((event) => event.status === "upcoming").slice(0, 3);
+  const totalGoing = useMemo(() => upcoming.reduce((sum, event) => sum + event.going, 0), [upcoming]);
+
   return (
-    <section className="mx-auto max-w-6xl px-5 py-24">
-      <div className="text-center">
-        <h2 className="text-display text-5xl leading-none md:text-7xl">Stop juggling tabs.</h2>
-        <h2 className="text-5xl leading-none tracking-[-0.02em] md:text-7xl">Start running the club.</h2>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
-          <Link href="/signup"><Btn size="lg" className="accent-glow">Create your account</Btn></Link>
-          <Link href="/login" className="text-sm font-medium text-foreground/80 underline-offset-4 transition hover:text-foreground hover:underline">
-            Sign in
-          </Link>
+    <section className="px-4 py-24 md:px-6 md:py-32">
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-8 md:grid-cols-[1fr_320px] md:items-end">
+          <div>
+            <p className="mono-label text-secondary">03 / CURRENT SIGNAL</p>
+            <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
+              The week is already moving.
+            </h2>
+          </div>
+          <div className="night-panel rounded-2xl p-5">
+            <div className="font-mono text-5xl font-semibold tracking-[-0.08em] text-white">{totalGoing}</div>
+            <div className="mono-label mt-2">students across next 3 events</div>
+          </div>
+        </div>
+        <div className="mt-12 grid gap-3 md:grid-cols-3">
+          {upcoming.map((event) => (
+            <Link key={event.id} href={`/app/events/${event.slug}`} className="group night-panel overflow-hidden rounded-2xl transition hover:border-secondary/35">
+              <div className="relative aspect-[16/10] overflow-hidden bg-white/[0.04]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={event.photo} alt="" loading="lazy" className="h-full w-full object-cover opacity-[0.78] grayscale transition duration-500 group-hover:scale-105 group-hover:opacity-95 group-hover:grayscale-0" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#101014] via-[#101014]/10 to-transparent" />
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
+                  {event.tags.map((tag) => (
+                    <span key={tag} className="rounded-md border border-white/15 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="p-5">
+                <div className="mono-label">{noEmDash(event.club)}</div>
+                <h3 className="mt-3 text-2xl font-black leading-tight tracking-[-0.04em] text-white">{noEmDash(event.title)}</h3>
+                <div className="mt-5 flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                  <span>{event.date} / {event.time}</span>
+                  <span className="font-mono text-secondary">{event.going}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ClosingCTA() {
+  return (
+    <section className="relative px-4 py-28 md:px-6 md:py-36">
+      <div className="cta-ambient" aria-hidden="true" />
+      <div className="mx-auto max-w-6xl">
+        <div className="max-w-4xl">
+          <p className="mono-label text-secondary">READY WHEN THE SOCIETY IS</p>
+          <h2 className="mt-5 text-6xl font-black leading-[0.86] tracking-[-0.06em] text-white md:text-8xl">
+            Make the club legible.
+          </h2>
+          <p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">
+            Members know what is happening. Coordinators know what is stuck. Faculty can see the trail. That is the whole point.
+          </p>
+          <div className="mt-9">
+            <Link href="/signup" className="gold-cta inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-secondary-foreground">
+              Join Sangam <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -412,30 +684,36 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-hairline">
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 md:grid-cols-[2fr_1fr_1fr]">
+    <footer className="border-t border-white/10 px-4 md:px-6">
+      <div className="mx-auto grid max-w-6xl gap-10 py-14 md:grid-cols-[1fr_auto_auto]">
         <div>
-          <div className="text-display text-3xl">sangam</div>
-          <p className="mt-2 max-w-xs text-sm text-muted-foreground">The confluence for IITM BS clubs. Built by Team Dhurandhar as a Software Engineering capstone.</p>
+          <div className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</div>
+          <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+            A community operations platform for IITM BS societies, built by Team Dhurandhar.
+          </p>
+          <div className="mt-5 text-xs text-muted-foreground">
+            {transparencyLog.length} transparency logs archived / {clubs.length} clubs in the system
+          </div>
         </div>
-        <FooterCol title="Product" links={[["Modules", "#modules"], ["Clubs", "/clubs"], ["Events", "#events"]]} />
-        <FooterCol title="Legal" links={[["Terms", "#"], ["Privacy", "#"], ["Contact", "#"]]} />
+        <FooterCol title="Product" links={[["Modules", "#modules"], ["Roles", "#roles"], ["Live activity", "#live"], ["Clubs", "/clubs"]]} />
+        <FooterCol title="Access" links={[["Join", "/signup"], ["Sign in", "/login"], ["Events", "/app/events"]]} />
       </div>
-      <div className="border-t border-hairline">
-        <div className="mx-auto max-w-6xl px-5 py-5 text-center text-xs text-muted-foreground">
-          © 2026 Sangam · Team Dhurandhar · IITM BS
-        </div>
+      <div className="mx-auto max-w-6xl border-t border-white/10 py-5 text-xs text-muted-foreground">
+        2026 Sangam / IITM BS / {metrics.totalMembers.toLocaleString("en-IN")} reachable members
       </div>
     </footer>
   );
 }
+
 function FooterCol({ title, links }: { title: string; links: [string, string][] }) {
   return (
     <div>
-      <div className="text-mono-label mb-3">{title}</div>
+      <div className="mono-label mb-4">{title}</div>
       <ul className="space-y-2 text-sm text-muted-foreground">
-        {links.map(([l, h]) => (
-          <li key={l}><a href={h} className="transition hover:text-foreground">{l}</a></li>
+        {links.map(([label, href]) => (
+          <li key={label}>
+            <Link href={href} className="transition hover:text-white">{label}</Link>
+          </li>
         ))}
       </ul>
     </div>
