@@ -30,7 +30,7 @@ export default async function VolunteersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="People" title={<>Volunteers <span className="text-display text-primary italic">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
+      <PageHeader eyebrow="People" title={<>Volunteers <span className="text-secondary">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <div>
           <div className="text-mono-label mb-3">Team</div>
@@ -38,7 +38,7 @@ export default async function VolunteersPage() {
             {team.length === 0 && <div className="text-sm text-muted-foreground">No volunteers yet.</div>}
             {team.map(m => (
               <GlassCard key={m.id} className="flex items-center gap-3 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold bg-primary/15 text-primary">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
                   {m.user.name.split(" ").map(s => s[0]).join("")}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -54,7 +54,7 @@ export default async function VolunteersPage() {
           <div className="text-mono-label mb-3">Task board</div>
           <div className="grid gap-3 md:grid-cols-3">
             {columns.map(col => (
-              <div key={col} className="glass rounded-2xl p-3">
+              <div key={col} className="night-panel rounded-2xl p-3">
                 <div className="text-mono-label mb-3 flex items-center justify-between">
                   <span>{columnLabels[col]}</span>
                   <span>{tasks.filter(t => t.status === col).length}</span>
@@ -64,7 +64,7 @@ export default async function VolunteersPage() {
                     <div className="rounded-xl border border-dashed border-hairline p-3 text-center text-xs text-muted-foreground">Nothing here.</div>
                   )}
                   {tasks.filter(t => t.status === col).map(t => (
-                    <div key={t.id} className="rounded-xl border border-hairline bg-surface p-3">
+                    <div key={t.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
                       <div className="text-sm">{t.title}</div>
                       <div className="text-mono-label mt-1">{t.event.title}</div>
                       <div className="mt-2 flex items-center justify-between gap-2">

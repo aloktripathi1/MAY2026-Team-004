@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
     <>
       <PageHeader
         eyebrow="Command center"
-        title={<>The whole club, <span className="text-display text-primary italic">on one page.</span></>}
+        title={<>The whole club, <span className="text-secondary">on one page.</span></>}
         description="Members, events, tasks and issues — no more four-tab juggling."
         actions={<Link href="/admin/announcements"><Btn size="sm">New announcement</Btn></Link>}
       />
@@ -83,8 +83,8 @@ export default async function AdminDashboard() {
               <div className="flex h-40 items-end gap-2">
                 {weeklyAttendance.map((v, i) => (
                   <div key={i} className="group flex flex-1 flex-col items-center gap-2">
-                    <div className="w-full rounded-t-lg transition group-hover:opacity-80"
-                         style={{ height: `${(v / maxAttendance) * 100}%`, background: `linear-gradient(180deg, oklch(0.93 0.22 122) 0%, oklch(0.72 0.18 260) 100%)` }} />
+                    <div className="w-full rounded-t-lg bg-secondary transition group-hover:opacity-80"
+                         style={{ height: `${(v / maxAttendance) * 100}%` }} />
                     <div className="text-mono-label !text-[9px]">{["M","T","W","T","F","S","S"][i]}</div>
                   </div>
                 ))}
@@ -98,7 +98,7 @@ export default async function AdminDashboard() {
               <h2 className="text-mono-label">Upcoming events</h2>
               <Link href="/admin/approvals" className="text-xs text-muted-foreground hover:text-foreground">Approvals →</Link>
             </div>
-            <div className="glass divide-y divide-hairline rounded-2xl">
+            <div className="night-panel divide-y divide-hairline rounded-2xl">
               {upcomingEvents.length === 0 && <div className="p-4 text-sm text-muted-foreground">No upcoming events.</div>}
               {upcomingEvents.map(e => (
                 <div key={e.id} className="flex items-center gap-4 p-4">
@@ -120,20 +120,20 @@ export default async function AdminDashboard() {
           <GlassCard>
             <div className="mb-4 flex items-center justify-between">
               <div className="text-mono-label">Approval queue</div>
-              <Link href="/admin/approvals" className="text-xs text-primary hover:underline">Review →</Link>
+              <Link href="/admin/approvals" className="text-xs text-secondary hover:underline">Review →</Link>
             </div>
             <div className="space-y-3">
               {pendingMembers.length === 0 && <div className="text-sm text-muted-foreground">Nothing pending.</div>}
               {pendingMembers.map(m => (
                 <div key={m.id} className="flex items-center gap-3 border-b border-hairline pb-3 last:border-b-0 last:pb-0">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold bg-primary/15 text-primary">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
                     {m.user.name.split(" ").map(s => s[0]).join("")}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm">{m.user.name}</div>
                     <div className="text-xs text-muted-foreground">{m.user.rollNumber}</div>
                   </div>
-                  <Link href="/admin/approvals" className="text-xs text-primary hover:underline">Review</Link>
+                  <Link href="/admin/approvals" className="text-xs text-secondary hover:underline">Review</Link>
                 </div>
               ))}
             </div>
@@ -142,7 +142,7 @@ export default async function AdminDashboard() {
           <GlassCard>
             <div className="mb-4 flex items-center justify-between">
               <div className="text-mono-label">Recent posts</div>
-              <Link href="/admin/announcements" className="text-xs text-primary hover:underline">Compose →</Link>
+              <Link href="/admin/announcements" className="text-xs text-secondary hover:underline">Compose →</Link>
             </div>
             <div className="space-y-3">
               {announcements.length === 0 && <div className="text-sm text-muted-foreground">No posts yet.</div>}

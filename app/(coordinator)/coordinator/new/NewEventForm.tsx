@@ -44,10 +44,10 @@ export function NewEventForm() {
                 type="button"
                 onClick={() => toggleTag(t)}
                 aria-pressed={selected}
-                className={`rounded-full border px-3 py-1 text-xs transition ${
+                className={`rounded-lg border px-3 py-1.5 text-xs transition ${
                   selected
-                    ? "border-primary/60 bg-primary/10 text-primary"
-                    : "border-hairline bg-surface text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+                    ? "border-secondary/55 bg-secondary/12 text-secondary"
+                    : "border-white/12 bg-white/[0.035] text-muted-foreground hover:border-secondary/45 hover:bg-white/[0.06] hover:text-secondary"
                 }`}
               >
                 {t}
@@ -71,9 +71,9 @@ function Field({
     <label className="mt-4 block first:mt-0">
       <div className="text-mono-label mb-1.5">{label}</div>
       {area ? (
-        <textarea name={name} required rows={4} placeholder={placeholder} className="w-full rounded-xl border border-hairline bg-surface/60 px-4 py-2.5 text-sm outline-none focus:border-primary/60" />
+        <textarea name={name} required rows={4} placeholder={placeholder} className="w-full rounded-xl border border-white/12 bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       ) : (
-        <input name={name} required type={type} placeholder={placeholder} className="w-full rounded-xl border border-hairline bg-surface/60 px-4 py-2.5 text-sm outline-none focus:border-primary/60" />
+        <input name={name} required type={type} placeholder={placeholder} className="w-full rounded-xl border border-white/12 bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       )}
     </label>
   );

@@ -27,11 +27,11 @@ export function AnnouncementForm() {
   return (
     <form ref={formRef} action={formAction}>
       <div className="text-mono-label mb-3">Compose</div>
-      <input name="title" required placeholder="Headline — what's the one thing?" className="w-full rounded-xl border border-hairline bg-surface/60 px-4 py-3 text-base outline-none focus:border-primary/60" />
-      <textarea name="body" required rows={6} placeholder="Body — details, deadline, link…" className="mt-3 w-full rounded-xl border border-hairline bg-surface/60 px-4 py-3 text-sm outline-none focus:border-primary/60" />
+      <input name="title" required placeholder="Headline — what's the one thing?" className="w-full rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-base text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+      <textarea name="body" required rows={6} placeholder="Body — details, deadline, link…" className="mt-3 w-full rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       {state.error && <p className="mt-2 text-xs text-destructive">{state.error}</p>}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 rounded-full border border-hairline bg-surface px-3 py-1 text-xs text-muted-foreground">
+        <label className="flex items-center gap-2 rounded-lg border border-white/12 bg-white/[0.035] px-3 py-1.5 text-xs text-muted-foreground">
           <input type="checkbox" name="pinned" className="accent-primary" /> Pin this
         </label>
         <SubmitButton />
