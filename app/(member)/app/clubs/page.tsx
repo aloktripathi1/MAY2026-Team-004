@@ -3,6 +3,7 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { JoinRequestButton } from "./JoinRequestButton";
 
 export const metadata: Metadata = {
   title: "My clubs · Sangam",
@@ -13,7 +14,13 @@ export default async function AppClubs() {
   const session = getMockSession();
   const myClubIds = new Set(session!.user.memberships.map((m) => m.clubId));
 
-  const allClubs = await prisma.club.findMany({ orderBy: { name: "asc" } });
+  const [allClubs, pendingMemberships] = await Promise.all([
+    prisma.club.findMany({ orderBy: { name: "asc" } }),
+    prisma.membership.findMany({
+      where: { userId: session!.user.id, status: "Pending" },
+    }),
+  ]);
+  const pendingClubIds = new Set(pendingMemberships.map((m) => m.clubId));
   const my = allClubs.filter((c) => myClubIds.has(c.id));
   const discover = allClubs.filter((c) => !myClubIds.has(c.id));
 
@@ -53,7 +60,7 @@ export default async function AppClubs() {
               </div>
               <div className="text-sm font-medium">{c.name}</div>
               <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>
-              <button className="mt-4 w-full rounded-lg border border-white/12 bg-white/[0.035] py-2 text-xs font-semibold text-muted-foreground transition hover:border-secondary/40 hover:bg-white/[0.06] hover:text-secondary">Request to join →</button>
+              <JoinRequestButton clubId={c.id} initialRequested={pendingClubIds.has(c.id)} />
             </GlassCard>
           ))}
         </div>
