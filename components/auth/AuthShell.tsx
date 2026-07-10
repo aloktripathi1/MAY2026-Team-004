@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
 import { useFormState, useFormStatus } from "react-dom";
-import { loginAction, type LoginState } from "@/app/(public)/login/actions";
+import { demoRoleAction, loginAction, type LoginState } from "@/app/(public)/login/actions";
 import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
 import { Btn } from "@/components/ui/primitives";
 
@@ -111,16 +111,18 @@ function DemoRoleSwitcher() {
       </div>
       <div className="grid grid-cols-5 gap-1.5">
         {DEMO_ROLES.map(({ label, href, icon: Icon }) => (
-          <Link
-            key={label}
-            href={href}
-            title={`Continue as ${label}`}
-            aria-label={`Continue as ${label}`}
-            className="group flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-1.5 py-2 text-white/[0.58] transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
-          >
-            <Icon className="h-4 w-4" />
-            <span className="max-w-full truncate text-[10px] font-semibold leading-none">{label}</span>
-          </Link>
+          <form key={label} action={demoRoleAction}>
+            <input type="hidden" name="href" value={href} />
+            <button
+              type="submit"
+              title={`Continue as ${label}`}
+              aria-label={`Continue as ${label}`}
+              className="group flex min-h-16 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-1.5 py-2 text-white/[0.58] transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
+            >
+              <Icon className="h-4 w-4" />
+              <span className="max-w-full truncate text-[10px] font-semibold leading-none">{label}</span>
+            </button>
+          </form>
         ))}
       </div>
     </div>
