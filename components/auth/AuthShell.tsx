@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowRight, CheckCircle2, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
 import { useFormState, useFormStatus } from "react-dom";
 import { loginAction, type LoginState } from "@/app/(public)/login/actions";
 import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
@@ -11,6 +11,14 @@ import { Btn } from "@/components/ui/primitives";
 
 const initialLoginState: LoginState = {};
 const initialSignupState: SignupState = {};
+
+const DEMO_ROLES = [
+  { label: "Member", href: "/app", icon: User },
+  { label: "Coordinator", href: "/coordinator", icon: SquareKanban },
+  { label: "Volunteer", href: "/volunteer", icon: HandHelping },
+  { label: "Admin", href: "/admin", icon: ShieldCheck },
+  { label: "Faculty", href: "/faculty", icon: GraduationCap },
+];
 
 export function AuthShell({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
@@ -72,11 +80,12 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
               <p className="mt-3 text-sm leading-6 text-white/62">
                 {isSignup
                   ? "Create your account first. Interests move to the next step so recommendations can use real profile data."
-                  : "Use the account you created for Sangam. Demo role switching has been removed from auth."}
+                  : "Use your Sangam account, or jump into a demo role for quick QA passes."}
               </p>
             </div>
 
             {isSignup ? <SignupForm /> : <LoginForm />}
+            {!isSignup && <DemoRoleSwitcher />}
 
             <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5 text-xs text-white/56">
               <span>{isSignup ? "Already registered?" : "New to Sangam?"}</span>
@@ -88,6 +97,33 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
         </section>
       </div>
     </main>
+  );
+}
+
+function DemoRoleSwitcher() {
+  return (
+    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-mono-label text-white/50">Demo switcher</div>
+        <span className="rounded-md border border-secondary/25 bg-secondary/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-secondary">
+          QA
+        </span>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {DEMO_ROLES.map(({ label, href, icon: Icon }) => (
+          <Link
+            key={label}
+            href={href}
+            title={`Continue as ${label}`}
+            aria-label={`Continue as ${label}`}
+            className="group flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-black/15 px-1.5 py-2 text-white/58 transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
+          >
+            <Icon className="h-4 w-4" />
+            <span className="max-w-full truncate text-[10px] font-semibold leading-none">{label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 
