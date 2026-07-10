@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
@@ -57,6 +57,7 @@ export function AppShell({
   role, user = "Ananya Rao", club = "CodeChef IITM BS", children,
 }: { role: Role; user?: string; club?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
   const currentPath = usePathname();
   const items = navByRole[role];
   const meta = roleMeta[role];
@@ -66,12 +67,12 @@ export function AppShell({
       {/* Mobile top bar */}
       <div className="night-nav sticky top-0 z-40 flex items-center justify-between px-4 py-3 md:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
           <span className="text-[13px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
         </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="rounded-lg border border-white/12 bg-white/[0.04] p-2 text-white"
+          className="rounded-lg border border-white/[0.12] bg-white/[0.04] p-2 text-white"
           aria-label="Toggle menu"
         >
           {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -90,7 +91,7 @@ export function AppShell({
         >
           <div className="flex h-full flex-col p-6 text-sidebar-foreground">
             <Link href="/" className="mb-8 flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
               <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
             </Link>
 
@@ -162,8 +163,8 @@ export function AppShell({
         {/* Main */}
         <main className="min-w-0 flex-1">
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="mx-auto max-w-7xl px-5 py-8 md:px-10 md:py-12"
           >

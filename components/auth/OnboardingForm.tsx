@@ -32,7 +32,7 @@ export function OnboardingForm({ name }: { name: string }) {
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl flex-col justify-center">
         <Link href="/" className="mb-10 flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+          <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
           <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
         </Link>
 
@@ -44,14 +44,14 @@ export function OnboardingForm({ name }: { name: string }) {
           className="night-nav rounded-2xl p-5 shadow-[0_42px_120px_-58px_oklch(0.47_0.16_24_/_75%),0_22px_80px_-60px_oklch(0.78_0.13_78_/_60%)] md:p-7"
         >
           <div className="mb-8">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/12 bg-white/[0.055] text-secondary">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.055] text-secondary">
               <Sparkles className="h-5 w-5" />
             </div>
-            <div className="text-mono-label mb-3 text-white/52">Profile setup</div>
+            <div className="text-mono-label mb-3 text-white/[0.52]">Profile setup</div>
             <h1 className="text-4xl font-black leading-[0.95] tracking-[-0.05em] text-white sm:text-5xl">
               Tune your discover feed.
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/62">
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/[0.62]">
               Welcome, {name}. Pick the areas you want Sangam to prioritize when recommending clubs.
             </p>
           </div>
@@ -67,8 +67,8 @@ export function OnboardingForm({ name }: { name: string }) {
                   aria-pressed={active}
                   className={`rounded-xl border px-4 py-3 text-left text-sm font-semibold transition duration-200 active:scale-[0.99] ${
                     active
-                      ? "border-secondary/45 bg-secondary/14 text-secondary shadow-[0_18px_48px_-34px_oklch(0.78_0.13_78_/_90%)]"
-                      : "border-white/12 bg-white/[0.04] text-white/70 hover:border-white/22 hover:bg-white/[0.07] hover:text-white"
+                      ? "border-secondary/45 bg-secondary/[0.14] text-secondary shadow-[0_18px_48px_-34px_oklch(0.78_0.13_78_/_90%)]"
+                      : "border-white/[0.12] bg-white/[0.04] text-white/70 hover:border-white/[0.22] hover:bg-white/[0.07] hover:text-white"
                   }`}
                 >
                   {interest}
@@ -82,7 +82,7 @@ export function OnboardingForm({ name }: { name: string }) {
           ))}
 
           {state.error && selected.length === 0 && (
-            <div className="mt-5 rounded-xl border border-destructive/30 bg-destructive/12 px-3 py-2 text-xs leading-5 text-destructive">
+            <div className="mt-5 rounded-xl border border-destructive/30 bg-destructive/[0.12] px-3 py-2 text-xs leading-5 text-destructive">
               {state.error}
             </div>
           )}
