@@ -68,7 +68,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          <div className="glass rounded-2xl p-6">
+          <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-3">About</div>
             <p className="text-base leading-relaxed text-foreground/90">{event.description}</p>
           </div>
@@ -79,7 +79,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
             <InfoTile icon={Users2} label="Capacity" value={`${event._count.rsvps} / ${event.capacity}`} />
           </div>
 
-          <div className="glass-strong rounded-2xl p-6">
+          <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-4">Who's going</div>
             {attendees.length === 0 ? (
               <p className="text-sm text-muted-foreground">No one's RSVP'd yet — be the first.</p>
@@ -89,14 +89,14 @@ export default async function EventDetail({ params }: { params: { id: string } }
                   <div
                     key={r.id}
                     title={r.user.name}
-                    className="grid h-9 w-9 place-items-center rounded-full text-xs font-semibold ring-2 ring-background"
+                    className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-xs font-semibold ring-2 ring-background"
                     style={{ background: `oklch(0.72 0.18 ${(idx * 47) % 360} / 25%)`, color: `oklch(0.9 0.2 ${(idx * 47) % 360})` }}
                   >
                     {r.user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase()}
                   </div>
                 ))}
                 {extraCount > 0 && (
-                  <div className="grid h-9 w-9 place-items-center rounded-full bg-surface-3 text-xs font-semibold text-muted-foreground ring-2 ring-background">
+                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.06] text-xs font-semibold text-muted-foreground ring-2 ring-background">
                     +{extraCount}
                   </div>
                 )}
@@ -106,7 +106,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
         </div>
 
         <aside className="space-y-4">
-          <div className="glass-strong rounded-2xl p-6">
+          <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-2">Your RSVP</div>
             <RsvpButton
               eventId={event.id}
@@ -117,7 +117,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
             />
           </div>
 
-          <div className="glass rounded-2xl p-6">
+          <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-3">Organizers</div>
             <div className="space-y-3">
               {organizers.length === 0 && <div className="text-sm text-muted-foreground">No organizers assigned yet.</div>}
@@ -134,8 +134,8 @@ export default async function EventDetail({ params }: { params: { id: string } }
 
 function InfoTile({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="glass rounded-2xl p-5">
-      <Icon className="mb-3 h-4 w-4 text-primary" />
+    <div className="night-panel rounded-2xl p-5">
+      <Icon className="mb-3 h-4 w-4 text-secondary" />
       <div className="text-mono-label">{label}</div>
       <div className="mt-1 text-sm">{value}</div>
     </div>

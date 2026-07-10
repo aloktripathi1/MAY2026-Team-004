@@ -19,7 +19,7 @@ export default async function AppClubs() {
 
   return (
     <>
-      <PageHeader eyebrow="Membership" title={<>Your <span className="text-display text-primary italic">clubs.</span></>} description={`${my.length} you're in. ${discover.length} waiting to be discovered.`} />
+      <PageHeader eyebrow="Membership" title={<>Your <span className="text-secondary">clubs.</span></>} description={`${my.length} you're in. ${discover.length} waiting to be discovered.`} />
       <div>
         <div className="text-mono-label mb-3">You're a member of</div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -53,7 +53,7 @@ export default async function AppClubs() {
               </div>
               <div className="text-sm font-medium">{c.name}</div>
               <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>
-              <button className="mt-4 w-full rounded-xl bg-surface-2 py-2 text-xs transition hover:bg-primary hover:text-primary-foreground">Request to join →</button>
+              <button className="mt-4 w-full rounded-lg border border-white/12 bg-white/[0.035] py-2 text-xs font-semibold text-muted-foreground transition hover:border-secondary/40 hover:bg-white/[0.06] hover:text-secondary">Request to join →</button>
             </GlassCard>
           ))}
         </div>

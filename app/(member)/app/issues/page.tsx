@@ -23,7 +23,7 @@ export default async function IssuesPage() {
     <>
       <PageHeader
         eyebrow="Support"
-        title={<>Issues &amp; <span className="text-display text-primary italic">tickets.</span></>}
+        title={<>Issues &amp; <span className="text-secondary">tickets.</span></>}
       />
       <IssueForm />
       <div className="space-y-2">

@@ -21,7 +21,7 @@ export function RsvpButton({
   if (rsvped) {
     return (
       <>
-        <div className="flex items-center gap-2 text-primary">
+        <div className="flex items-center gap-2 text-secondary">
           <CheckCircle2 className="h-5 w-5" /> <span className="font-medium">You're in</span>
         </div>
         <div className="mt-2 text-xs text-muted-foreground">Confirmation sent to your institutional email. Add to calendar from your dashboard.</div>
@@ -34,7 +34,7 @@ export function RsvpButton({
 
   return (
     <>
-      <div className="text-display text-3xl">Grab a spot.</div>
+      <div className="text-3xl font-black tracking-[-0.05em] text-white">Grab a spot.</div>
       <div className="mt-2 text-xs text-muted-foreground">{capacity - going} of {capacity} left. Locks 2 hrs before start.</div>
       <Btn size="lg" onClick={toggle} disabled={pending} className="mt-4 w-full">
         <Ticket className="h-4 w-4" /> {pending ? "RSVPing..." : "RSVP now"}

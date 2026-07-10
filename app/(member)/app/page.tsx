@@ -34,7 +34,7 @@ export default async function MemberDashboard() {
     <>
       <PageHeader
         eyebrow={now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-        title={<>{greeting}, <span className="text-display text-primary italic">{firstName}.</span></>}
+        title={<>{greeting}, <span className="text-secondary">{firstName}.</span></>}
         description="Here's what's on this week across the clubs you belong to."
         actions={<Link href="/app/events"><Btn variant="outline" size="sm">This week →</Btn></Link>}
       />
@@ -73,7 +73,7 @@ export default async function MemberDashboard() {
                     <div className="text-mono-label">Going</div>
                     <div className="text-display text-2xl">{e._count.rsvps}</div>
                   </div>
-                  <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+                  <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-secondary" />
                 </GlassCard>
               </Link>
             ))}
@@ -87,11 +87,11 @@ export default async function MemberDashboard() {
               <h2 className="text-mono-label">Announcements</h2>
               <span className="text-mono-label">{announcements.length} new</span>
             </div>
-            <div className="glass-strong divide-y divide-hairline rounded-2xl">
+            <div className="night-panel divide-y divide-hairline rounded-2xl">
               {announcements.map(a => (
                 <div key={a.id} className="p-4">
                   <div className="mb-1.5 flex items-center gap-2">
-                    {a.pinned && <Pin className="h-3 w-3 text-primary" />}
+                    {a.pinned && <Pin className="h-3 w-3 text-secondary" />}
                     <span className="text-mono-label">{a.club.name}</span>
                     <span className="text-mono-label !normal-case !tracking-normal !text-[10px] text-muted-foreground/60">· {formatTimeAgo(a.createdAt)}</span>
                   </div>
@@ -107,7 +107,7 @@ export default async function MemberDashboard() {
               <h2 className="text-mono-label">My issues</h2>
               <Link href="/app/issues" className="text-xs text-muted-foreground hover:text-foreground">Manage →</Link>
             </div>
-            <div className="glass rounded-2xl">
+            <div className="night-panel rounded-2xl">
               {myIssues.length === 0 && <div className="p-4 text-sm text-muted-foreground">No issues raised.</div>}
               {myIssues.map(i => (
                 <div key={i.id} className="flex items-center gap-3 border-b border-hairline p-3 last:border-b-0">
