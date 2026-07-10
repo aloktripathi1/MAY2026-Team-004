@@ -22,9 +22,9 @@ export default async function NewEventPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Compose" title={<>Publish a <span className="text-display text-primary italic">new event.</span></>} description="Sangam will auto-check for venue clashes and route to faculty if needed." />
+      <PageHeader eyebrow="Compose" title={<>Publish a <span className="text-secondary">new event.</span></>} description="Sangam will auto-check for venue clashes and route to faculty if needed." />
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <GlassCard className="glass-strong p-6">
+        <GlassCard className="p-6">
           <NewEventForm />
         </GlassCard>
         <div className="space-y-4">
