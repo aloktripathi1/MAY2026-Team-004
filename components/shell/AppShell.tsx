@@ -10,8 +10,9 @@ import {
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
   Shield, Menu, X, LogOut,
 } from "lucide-react";
+import { RoleSwitcher, type AppRole, type RoleOption } from "@/components/shell/RoleSwitcher";
 
-type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
+type Role = AppRole;
 
 const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   member: [
@@ -55,8 +56,8 @@ const roleMeta: Record<Role, { name: string; hue: string; badge: string }> = {
 };
 
 export function AppShell({
-  role, user = "Ananya Rao", club = "CodeChef IITM BS", children,
-}: { role: Role; user?: string; club?: string; children: ReactNode }) {
+  role, user = "Ananya Rao", club = "CodeChef IITM BS", roleOptions = [], children,
+}: { role: Role; user?: string; club?: string; roleOptions?: RoleOption[]; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const currentPath = usePathname();
   const items = navByRole[role];
@@ -111,6 +112,8 @@ export function AppShell({
                 </div>
               </div>
             </div>
+
+            <RoleSwitcher currentRole={role} roles={roleOptions} />
 
             <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hidden">
               {items.map((item) => {
