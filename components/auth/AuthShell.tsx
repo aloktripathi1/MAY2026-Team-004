@@ -62,7 +62,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             initial={{ opacity: 0, y: 12, scale: 0.99 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="night-nav w-full max-w-md rounded-2xl p-5 shadow-[0_42px_120px_-58px_oklch(0.47_0.16_24_/_75%),0_22px_80px_-60px_oklch(0.78_0.13_78_/_60%)] md:p-6"
+            className="night-panel w-full max-w-md rounded-2xl p-5 md:p-6"
           >
             <Link href="/" className="mb-8 flex items-center gap-3 md:hidden">
               <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
@@ -102,7 +102,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
 
 function DemoRoleSwitcher() {
   return (
-    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+    <div className="mt-5 rounded-2xl border border-white/10 bg-black/15 p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="text-mono-label text-white/50">Demo switcher</div>
         <span className="rounded-md border border-secondary/25 bg-secondary/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-secondary">
@@ -116,7 +116,7 @@ function DemoRoleSwitcher() {
             href={href}
             title={`Continue as ${label}`}
             aria-label={`Continue as ${label}`}
-            className="group flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-black/15 px-1.5 py-2 text-white/58 transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
+            className="group flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-1.5 py-2 text-white/58 transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
           >
             <Icon className="h-4 w-4" />
             <span className="max-w-full truncate text-[10px] font-semibold leading-none">{label}</span>
