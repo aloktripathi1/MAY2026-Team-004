@@ -144,6 +144,131 @@
 }
 
 @layer utilities {
+  .sangam-night {
+    --background: 0.055 0.008 285;
+    --foreground: 0.965 0.006 80;
+    --surface: 0.105 0.01 285;
+    --surface-2: 0.14 0.012 285;
+    --surface-3: 0.18 0.012 285;
+    --hairline: oklch(1 0 0 / 10%);
+    --card: 0.105 0.01 285;
+    --card-foreground: 0.965 0.006 80;
+    --popover: 0.105 0.01 285;
+    --popover-foreground: 0.965 0.006 80;
+    --primary: 0.47 0.16 24;
+    --primary-foreground: 0.985 0.006 80;
+    --primary-glow: 0.54 0.17 24;
+    --secondary: 0.78 0.13 78;
+    --secondary-foreground: 0.16 0.018 55;
+    --accent: 0.78 0.13 78;
+    --accent-foreground: 0.16 0.018 55;
+    --muted: 0.22 0.01 285;
+    --muted-foreground: 0.72 0.014 70;
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 12%);
+    --ring: oklch(0.78 0.13 78 / 55%);
+    color-scheme: dark;
+    font-family: var(--font-sans);
+  }
+
+  .sangam-night .mono-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: oklch(var(--muted-foreground));
+  }
+
+  .sangam-night .night-nav {
+    background: oklch(0.12 0.012 285 / 76%);
+    border: 1px solid oklch(1 0 0 / 10%);
+    backdrop-filter: blur(18px) saturate(135%);
+  }
+
+  .sangam-night .hero-glass {
+    background:
+      linear-gradient(180deg, oklch(1 0 0 / 12%), oklch(1 0 0 / 5%)),
+      oklch(0.12 0.012 285 / 72%);
+    border: 1px solid oklch(1 0 0 / 14%);
+    backdrop-filter: blur(16px) saturate(130%);
+    box-shadow:
+      0 42px 140px -60px oklch(0.47 0.16 24 / 70%),
+      0 26px 90px -62px oklch(0.78 0.13 78 / 55%),
+      0 0 0 1px oklch(1 0 0 / 5%) inset;
+  }
+
+  .sangam-night .night-panel {
+    background: linear-gradient(180deg, oklch(1 0 0 / 5%), oklch(1 0 0 / 2%)), oklch(0.105 0.01 285);
+    border: 1px solid oklch(1 0 0 / 10%);
+  }
+
+  .sangam-night .gold-cta {
+    background:
+      radial-gradient(circle at 50% 0%, oklch(0.92 0.11 83 / 60%), transparent 55%),
+      linear-gradient(180deg, oklch(var(--secondary)), oklch(0.67 0.13 70));
+    box-shadow:
+      0 0 0 1px oklch(1 0 0 / 18%) inset,
+      0 16px 45px -24px oklch(0.78 0.13 78 / 90%);
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  }
+
+  .sangam-night .gold-cta:hover {
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 1px oklch(1 0 0 / 22%) inset,
+      0 22px 60px -26px oklch(0.78 0.13 78 / 95%);
+  }
+
+  .sangam-night .hero-ambient,
+  .sangam-night .cta-ambient {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .sangam-night .hero-ambient::before {
+    content: "";
+    position: absolute;
+    inset: -18% -12% 24% -12%;
+    background:
+      radial-gradient(circle at 76% 30%, oklch(0.47 0.16 24 / 30%), transparent 34%),
+      radial-gradient(circle at 50% 10%, oklch(0.78 0.13 78 / 13%), transparent 28%),
+      linear-gradient(180deg, oklch(0.09 0.012 285), oklch(0.055 0.008 285) 72%);
+  }
+
+  .sangam-night .hero-ambient::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(oklch(1 0 0 / 3%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 3%) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 70% 52% at 54% 28%, black, transparent 75%);
+  }
+
+  .sangam-night .cta-ambient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 35%, oklch(0.47 0.16 24 / 24%), transparent 30%),
+      radial-gradient(circle at 72% 58%, oklch(0.78 0.13 78 / 12%), transparent 26%);
+  }
+
+  .sangam-night section > .mx-auto,
+  .sangam-night footer > .mx-auto,
+  .sangam-night header > .mx-auto,
+  .sangam-night .hero-glass,
+  .sangam-night .relative > .mx-auto {
+    position: relative;
+    z-index: 1;
+  }
+
   .glass {
     background: color-mix(in oklab, oklch(var(--surface)) 92%, transparent);
     backdrop-filter: blur(12px) saturate(120%);
