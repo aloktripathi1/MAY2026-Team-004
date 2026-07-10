@@ -32,7 +32,7 @@ export default async function FacultyHome() {
 
   return (
     <>
-      <PageHeader eyebrow="Read-only" title={<>Club activity, <span className="text-display text-primary italic">at a glance.</span></>} description="Signals. Not surveillance." />
+      <PageHeader eyebrow="Read-only" title={<>Club activity, <span className="text-secondary">at a glance.</span></>} description="Signals. Not surveillance." />
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label="Clubs monitored" value={clubs.length} hue="155" />
         <Stat label="Events this month" value={eventsThisMonth} hue="122" />
@@ -60,7 +60,7 @@ export default async function FacultyHome() {
         </div>
         <div>
           <div className="text-mono-label mb-3">Recent event outcomes</div>
-          <div className="glass-strong divide-y divide-hairline rounded-2xl">
+          <div className="night-panel divide-y divide-hairline rounded-2xl">
             {recentEvents.map(e => (
               <div key={e.id} className="p-4">
                 <div className="text-mono-label mb-1">{e.club.name}</div>
@@ -69,7 +69,7 @@ export default async function FacultyHome() {
               </div>
             ))}
           </div>
-          <Link href="/faculty/approvals" className="mt-4 inline-flex text-xs text-primary hover:underline">Review approvals →</Link>
+          <Link href="/faculty/approvals" className="mt-4 inline-flex text-xs text-secondary hover:underline">Review approvals →</Link>
         </div>
       </div>
     </>
