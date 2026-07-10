@@ -114,7 +114,7 @@ function ClubDiscoveryCard({ club: c, recommended = false }: { club: DiscoverClu
       </div>
       <div className="text-sm font-medium text-white">{c.name}</div>
       <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>
-      <button className="mt-4 w-full rounded-lg border border-white/12 bg-white/[0.035] py-2 text-xs font-semibold text-white/78 transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary">
+      <button className="mt-4 w-full rounded-lg border border-white/[0.12] bg-white/[0.035] py-2 text-xs font-semibold text-white/[0.78] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary">
         Request to join
       </button>
     </GlassCard>

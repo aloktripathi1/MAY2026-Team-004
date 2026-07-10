@@ -28,7 +28,7 @@ export default async function CoordinatorHome() {
     <>
       <PageHeader
         eyebrow="Ops"
-        title={<>Run the day, <span className="text-display text-primary italic">without the drama.</span></>}
+        title={<>Run the day, <span className="text-secondary">without the drama.</span></>}
         actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
       />
       <div className="grid gap-3 md:grid-cols-3">
@@ -51,8 +51,8 @@ export default async function CoordinatorHome() {
                   </div>
                   <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
                 </div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-3">
-                  <div className="h-full rounded-full" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%`, background: "var(--gradient-accent)" }} />
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%` }} />
                 </div>
               </GlassCard>
             ))}

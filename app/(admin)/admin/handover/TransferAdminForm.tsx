@@ -23,7 +23,7 @@ export function TransferAdminForm({ candidates }: { candidates: { membershipId: 
 
   return (
     <form action={formAction} className="space-y-3">
-      <select name="successorMembershipId" required className="w-full rounded-xl border border-hairline bg-surface/60 px-4 py-2.5 text-sm outline-none focus:border-primary/60">
+      <select name="successorMembershipId" required className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition focus:border-secondary/55">
         <option value="">Choose successor…</option>
         {candidates.map((c) => (
           <option key={c.membershipId} value={c.membershipId}>{c.name} — {c.role}</option>

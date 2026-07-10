@@ -33,16 +33,16 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 px-5 py-6 md:grid-cols-[1fr_470px] md:gap-10 md:px-8 lg:px-10">
         <section className="hidden flex-col justify-between py-6 md:flex">
           <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+            <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
             <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
           </Link>
 
           <div className="max-w-3xl pb-12">
-            <div className="text-mono-label mb-5 text-white/52">Community operations / IITM BS</div>
+            <div className="text-mono-label mb-5 text-white/[0.52]">Community operations / IITM BS</div>
             <h1 className="max-w-3xl text-6xl font-black leading-[0.92] tracking-[-0.06em] text-white lg:text-7xl">
               {isSignup ? "Enter the control room." : "Welcome back to the room."}
             </h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-white/64">
+            <p className="mt-6 max-w-xl text-base leading-7 text-white/[0.64]">
               Sangam keeps club membership, events, tasks, approvals, and announcements in one calm operating system.
             </p>
           </div>
@@ -51,7 +51,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             {["Verified accounts", "Guided onboarding", "Personalized discovery"].map((item) => (
               <div key={item} className="night-panel rounded-2xl p-4">
                 <CheckCircle2 className="mb-3 h-4 w-4 text-secondary" />
-                <div className="text-xs font-medium leading-5 text-white/76">{item}</div>
+                <div className="text-xs font-medium leading-5 text-white/[0.76]">{item}</div>
               </div>
             ))}
           </div>
@@ -65,19 +65,19 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             className="night-panel w-full max-w-md rounded-2xl p-5 md:p-6"
           >
             <Link href="/" className="mb-8 flex items-center gap-3 md:hidden">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
               <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
             </Link>
 
             <div className="mb-8">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/12 bg-white/[0.055] text-secondary">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.055] text-secondary">
                 {isSignup ? <Sparkles className="h-5 w-5" /> : <LockKeyhole className="h-5 w-5" />}
               </div>
-              <div className="text-mono-label mb-3 text-white/52">{isSignup ? "Create account" : "Secure sign in"}</div>
+              <div className="text-mono-label mb-3 text-white/[0.52]">{isSignup ? "Create account" : "Secure sign in"}</div>
               <h2 className="text-4xl font-black leading-[0.95] tracking-[-0.05em] text-white">
                 {isSignup ? "Join Sangam." : "Sign in."}
               </h2>
-              <p className="mt-3 text-sm leading-6 text-white/62">
+              <p className="mt-3 text-sm leading-6 text-white/[0.62]">
                 {isSignup
                   ? "Create your account first. Interests move to the next step so recommendations can use real profile data."
                   : "Use your Sangam account, or jump into a demo role for quick QA passes."}
@@ -87,7 +87,7 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             {isSignup ? <SignupForm /> : <LoginForm />}
             {!isSignup && <DemoRoleSwitcher />}
 
-            <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5 text-xs text-white/56">
+            <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5 text-xs text-white/[0.56]">
               <span>{isSignup ? "Already registered?" : "New to Sangam?"}</span>
               <Link href={isSignup ? "/login" : "/signup"} className="font-semibold text-secondary transition hover:text-white">
                 {isSignup ? "Sign in" : "Create account"}
@@ -116,7 +116,7 @@ function DemoRoleSwitcher() {
             href={href}
             title={`Continue as ${label}`}
             aria-label={`Continue as ${label}`}
-            className="group flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-1.5 py-2 text-white/58 transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
+            className="group flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-1.5 py-2 text-white/[0.58] transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
           >
             <Icon className="h-4 w-4" />
             <span className="max-w-full truncate text-[10px] font-semibold leading-none">{label}</span>
@@ -171,7 +171,7 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
 function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <div className="rounded-xl border border-destructive/30 bg-destructive/12 px-3 py-2 text-xs leading-5 text-destructive">
+    <div className="rounded-xl border border-destructive/30 bg-destructive/[0.12] px-3 py-2 text-xs leading-5 text-destructive">
       {message}
     </div>
   );
@@ -182,14 +182,14 @@ function Field({
 }: { label: string; name: string; id?: string; placeholder: string; type?: string }) {
   return (
     <label className="block">
-      <div className="text-mono-label mb-1.5 text-white/54">{label}</div>
+      <div className="text-mono-label mb-1.5 text-white/[0.54]">{label}</div>
       <input
         id={id}
         name={name}
         type={type}
         required
         placeholder={placeholder}
-        className="w-full rounded-xl border border-white/12 bg-white/[0.045] px-4 py-3 text-sm text-white outline-none transition duration-200 placeholder:text-white/28 focus:border-secondary/45 focus:bg-white/[0.07] focus:ring-4 focus:ring-secondary/10"
+        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.045] px-4 py-3 text-sm text-white outline-none transition duration-200 placeholder:text-white/[0.28] focus:border-secondary/45 focus:bg-white/[0.07] focus:ring-4 focus:ring-secondary/10"
       />
     </label>
   );

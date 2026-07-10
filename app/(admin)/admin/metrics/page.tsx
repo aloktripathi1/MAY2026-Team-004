@@ -34,7 +34,7 @@ export default async function MetricsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Signal, not noise" title={<>The <span className="text-display text-primary italic">state</span> of the union.</>} description="Real membership and activity signals across every club." />
+      <PageHeader eyebrow="Signal, not noise" title={<>The <span className="text-secondary">state</span> of the union.</>} description="Real membership and activity signals across every club." />
 
       <div className="grid gap-3 md:grid-cols-3">
         <Stat label="Total clubs" value={clubs.length} hue="122" />
@@ -55,10 +55,10 @@ export default async function MetricsPage() {
               <div key={c.id}>
                 <div className="mb-1 flex justify-between text-xs">
                   <span>{c.name}</span>
-                  <span className="text-primary">{c._count.memberships}</span>
+                  <span className="text-secondary">{c._count.memberships}</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-surface-3">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${(c._count.memberships / maxMembers) * 100}%`, background: "var(--gradient-accent)" }} />
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full rounded-full bg-secondary transition-all" style={{ width: `${(c._count.memberships / maxMembers) * 100}%` }} />
                 </div>
               </div>
             ))}
@@ -71,7 +71,7 @@ export default async function MetricsPage() {
             {dayBuckets.map((v, i) => {
               const opacity = Math.max(0.06, Math.min(1, v / 5));
               return (
-                <div key={i} className="aspect-square rounded-md" style={{ background: `oklch(0.93 0.22 122 / ${opacity})` }} title={`${v} events`} />
+                <div key={i} className="aspect-square rounded-md bg-secondary" style={{ opacity }} title={`${v} events`} />
               );
             })}
           </div>

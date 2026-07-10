@@ -39,7 +39,7 @@ export default async function HandoverPage() {
     <>
       <PageHeader
         eyebrow="Year-end"
-        title={<>Handover, <span className="text-display text-primary italic">without the folklore.</span></>}
+        title={<>Handover, <span className="text-secondary">without the folklore.</span></>}
         description="One export, five steps. Your successor inherits history, not just vibes."
         actions={<Btn><Download className="h-4 w-4" /> Full data export</Btn>}
       />
@@ -47,10 +47,10 @@ export default async function HandoverPage() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div>
           <div className="text-mono-label mb-3">Checklist · {steps.filter(s => s.done).length} / {steps.length} done</div>
-          <div className="glass-strong divide-y divide-hairline rounded-2xl">
+          <div className="night-panel divide-y divide-hairline rounded-2xl">
             {steps.map((s, i) => (
               <div key={i} className="flex items-center gap-4 p-5">
-                <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ring-2 ${s.done ? "bg-primary text-primary-foreground ring-primary/40" : "bg-surface-2 text-muted-foreground ring-hairline"}`}>
+                <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ring-1 ${s.done ? "bg-secondary text-secondary-foreground ring-secondary/35" : "bg-white/[0.045] text-muted-foreground ring-white/10"}`}>
                   {s.done ? "✓" : i + 1}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -71,7 +71,7 @@ export default async function HandoverPage() {
               <TransferAdminForm candidates={candidates.map((c) => ({ membershipId: c.id, name: c.user.name, role: c.role }))} />
             )}
           </GlassCard>
-          <GlassCard className="bg-primary/5 ring-1 ring-primary/20">
+          <GlassCard className="border-secondary/25 bg-secondary/[0.08]">
             <StatusPill tone="lime">Verified</StatusPill>
             <div className="mt-3 text-sm">
               Transfer takes effect immediately: your role becomes Coordinator, the successor becomes Admin.

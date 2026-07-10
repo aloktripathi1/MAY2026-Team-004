@@ -22,7 +22,7 @@ export function MembershipApprovalButtons({ membershipId }: { membershipId: stri
         disabled={Boolean(choice) || pending}
         title={choice ?? membershipId}
         onClick={() => decide("Active", "Approved")}
-        className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+        className="gold-cta grid h-8 w-8 place-items-center rounded-lg text-secondary-foreground transition disabled:opacity-50"
       >
         <Check className="h-4 w-4" />
       </button>
@@ -30,7 +30,7 @@ export function MembershipApprovalButtons({ membershipId }: { membershipId: stri
         disabled={Boolean(choice) || pending}
         title={choice ?? membershipId}
         onClick={() => decide("Inactive", "Rejected")}
-        className="grid h-8 w-8 place-items-center rounded-full border border-hairline transition hover:bg-destructive/20 hover:text-destructive disabled:opacity-50"
+        className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.035] transition hover:border-destructive/45 hover:bg-destructive/[0.14] hover:text-destructive disabled:opacity-50"
       >
         <X className="h-4 w-4" />
       </button>

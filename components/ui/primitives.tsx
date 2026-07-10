@@ -3,15 +3,15 @@ import { cn } from "@/lib/utils";
 
 export function StatusPill({ tone, children }: { tone: "lime" | "magenta" | "blue" | "amber" | "slate" | "green"; children: ReactNode }) {
   const map: Record<string, string> = {
-    lime: "bg-primary/12 text-primary ring-primary/25",
-    magenta: "bg-secondary/15 text-secondary ring-secondary/30",
-    blue: "bg-accent/15 text-accent ring-accent/30",
-    amber: "bg-warning/12 text-warning ring-warning/30",
-    slate: "bg-surface-3 text-muted-foreground ring-hairline",
-    green: "bg-success/12 text-success ring-success/30",
+    lime: "bg-success/[0.12] text-success ring-success/[0.28]",
+    magenta: "bg-primary/[0.16] text-white ring-primary/30",
+    blue: "bg-accent/[0.12] text-accent ring-accent/[0.28]",
+    amber: "bg-secondary/[0.14] text-secondary ring-secondary/[0.32]",
+    slate: "bg-white/[0.045] text-muted-foreground ring-white/10",
+    green: "bg-success/[0.12] text-success ring-success/[0.28]",
   };
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider ring-1", map[tone])}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] ring-1", map[tone])}>
       <span className="h-1 w-1 rounded-full bg-current" />
       {children}
     </span>
@@ -24,8 +24,8 @@ export function GlassCard({
   return (
     <div
       className={cn(
-        "glass rounded-2xl p-5 transition duration-300",
-        hover && "hover:-translate-y-0.5 hover:bg-surface-2/70 hover:ring-1 hover:ring-hairline",
+        "night-panel rounded-2xl p-5 transition duration-200",
+        hover && "hover:-translate-y-0.5 hover:border-secondary/35 hover:bg-surface-2/70",
         className,
       )}
     >
@@ -36,15 +36,15 @@ export function GlassCard({
 
 export function Stat({ label, value, delta, hue = "122" }: { label: string; value: string | number; delta?: string; hue?: string }) {
   return (
-    <div className="glass relative overflow-hidden rounded-2xl p-5">
+    <div className="night-panel relative overflow-hidden rounded-2xl p-5">
       <div className="text-mono-label">{label}</div>
       <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-display text-4xl leading-none">{value}</span>
-        {delta && <span className="text-xs text-success">▲ {delta}</span>}
+        <span className="font-mono text-4xl font-semibold leading-none tracking-[-0.08em] text-white">{value}</span>
+        {delta && <span className="text-xs text-secondary">{delta}</span>}
       </div>
       <div
-        className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl opacity-40"
-        style={{ background: `oklch(0.78 0.2 ${hue})` }}
+        className="pointer-events-none absolute right-4 top-4 h-1.5 w-1.5 rounded-full opacity-80"
+        style={{ background: `oklch(0.72 0.14 ${hue})` }}
       />
     </div>
   );
@@ -58,13 +58,13 @@ export function Btn({
   children: ReactNode;
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const base = "inline-flex items-center justify-center gap-2 font-medium rounded-full transition active:scale-[0.98]";
-  const sizes = { sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-6 py-3 text-sm" };
+  const base = "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
+  const sizes = { sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-5 py-3 text-sm" };
   const variants = {
-    primary: "bg-primary text-primary-foreground hover:opacity-90 shadow-[0_0_0_1px_oklch(0.93_0.22_122_/_60%)_inset]",
-    hot: "bg-secondary text-secondary-foreground hover:opacity-90",
-    outline: "border border-hairline bg-surface text-foreground hover:bg-surface-2",
-    ghost: "text-muted-foreground hover:text-foreground hover:bg-surface-2",
+    primary: "gold-cta text-secondary-foreground",
+    hot: "bg-primary text-primary-foreground shadow-[0_16px_42px_-28px_oklch(0.47_0.16_24_/_85%)] hover:bg-primary/90",
+    outline: "border border-white/[0.12] bg-white/[0.035] text-foreground hover:border-white/[0.24] hover:bg-white/[0.06]",
+    ghost: "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
   };
   return (
     <button className={cn(base, sizes[size], variants[variant], className)} {...props}>
