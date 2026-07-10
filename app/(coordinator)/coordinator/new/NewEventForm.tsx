@@ -46,8 +46,8 @@ export function NewEventForm() {
                 aria-pressed={selected}
                 className={`rounded-lg border px-3 py-1.5 text-xs transition ${
                   selected
-                    ? "border-secondary/55 bg-secondary/12 text-secondary"
-                    : "border-white/12 bg-white/[0.035] text-muted-foreground hover:border-secondary/45 hover:bg-white/[0.06] hover:text-secondary"
+                    ? "border-secondary/55 bg-secondary/[0.12] text-secondary"
+                    : "border-white/[0.12] bg-white/[0.035] text-muted-foreground hover:border-secondary/45 hover:bg-white/[0.06] hover:text-secondary"
                 }`}
               >
                 {t}
@@ -71,9 +71,9 @@ function Field({
     <label className="mt-4 block first:mt-0">
       <div className="text-mono-label mb-1.5">{label}</div>
       {area ? (
-        <textarea name={name} required rows={4} placeholder={placeholder} className="w-full rounded-xl border border-white/12 bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+        <textarea name={name} required rows={4} placeholder={placeholder} className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       ) : (
-        <input name={name} required type={type} placeholder={placeholder} className="w-full rounded-xl border border-white/12 bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+        <input name={name} required type={type} placeholder={placeholder} className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       )}
     </label>
   );

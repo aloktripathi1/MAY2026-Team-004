@@ -316,7 +316,11 @@ Avoid:
 - Blur-heavy repeated cards.
 - Decorative particles/orbs that do not explain structure.
 
-Respect `prefers-reduced-motion` for any nonessential motion.
+Respect `prefers-reduced-motion` for any nonessential motion. The shared
+`AppShell` applies a single, subtle content entrance (fade + 8px rise) on
+navigation as a deliberate exception; it is gated on `useReducedMotion` and is
+skipped entirely when the user prefers reduced motion. Do not stack additional
+page-wide or per-section fade-ups on top of it.
 
 ## Contrast Notes
 
@@ -338,29 +342,24 @@ Known rule:
 
 ## Branch Rollout Workflow
 
-Keep applying the system role by role, with a dedicated branch and PR for each purpose.
+The system was applied role by role, each on a dedicated branch. All role passes
+are now complete and consolidated onto `main`.
 
-Completed/current stack:
+Completed:
 
 - `landing-page`: approved landing redesign.
-- `admin-dashboard`: global tokens/root fonts/shared shell/primitives plus admin reference implementation. PR base: `landing-page`.
-- `coordinator-dashboard`: coordinator screens and shared task status controls. PR base: `admin-dashboard`.
+- `admin-dashboard`: global tokens/root fonts/shared shell/primitives plus admin reference implementation.
+- `coordinator-dashboard`: coordinator screens and shared task status controls.
+- `member-dashboard`: member app screens (home, clubs, events, issues, profile).
+- `volunteer-dashboard`: volunteer screens.
+- `faculty-dashboard`: faculty screens.
+- `auth-pages`: auth flow redesign.
 
-Continue with the same pattern:
-
-- Create the next branch from the latest stacked branch if previous PRs are not merged.
-- Keep each branch scoped to one role or area.
-- Validate before pushing.
-- Push branch.
-- Open a draft PR against the previous branch in the stack.
-
-Recommended next branches:
-
-- `member-dashboard`
-- `volunteer-dashboard`
-- `faculty-dashboard`
-- `auth-pages`
-- `shared-components-polish` if needed after role passes
+The stacked, role-by-role rollout is finished; there are no outstanding role
+branches. For future work, keep each change scoped to one role or area, validate
+before pushing, and open a PR directly against `main` (avoid stacking PRs on
+unmerged branches, which previously caused squash-merged design work to be lost).
+Remaining follow-up if needed: `shared-components-polish` after the role passes.
 
 ## Validation Checklist
 

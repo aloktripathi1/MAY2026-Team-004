@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -19,7 +20,20 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { announcements, clubs, events, metrics, tasks, transparencyLog } from "@/lib/seed-data";
+import { announcements, clubs, events, faqs, metrics, tasks, transparencyLog } from "@/lib/seed-data";
+import { pluralize } from "@/lib/format";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500", "600", "700"],
+});
 
 function noEmDash(value: string): string {
   return value.replace(/\s*—\s*/g, " / ");
@@ -33,13 +47,14 @@ const navLinks = [
 
 export default function Landing() {
   return (
-    <main className="sangam-night min-h-screen overflow-hidden bg-background text-foreground">
+    <main className={`sangam-night ${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-screen overflow-hidden bg-background text-foreground`}>
       <MarketingNav />
       <Hero />
       <LiveActivity />
       <Modules />
       <Roles />
       <Events />
+      <FAQ />
       <ClosingCTA />
       <Footer />
     </main>
@@ -93,7 +108,7 @@ function MarketingNav() {
           }`}
         >
           <Link href="/" className="group flex items-center gap-3" aria-label="Sangam home">
-            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary transition group-hover:border-secondary/45">
+            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary transition group-hover:border-secondary/45">
               SG
             </span>
             <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
@@ -172,7 +187,7 @@ function MarketingNav() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-background/96 px-5 py-4 backdrop-blur-2xl md:hidden"
+            className="fixed inset-0 z-[60] bg-background/[0.96] px-5 py-4 backdrop-blur-2xl md:hidden"
           >
             <div className="flex items-center justify-between">
               <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
@@ -180,7 +195,7 @@ function MarketingNav() {
                 type="button"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
-                className="grid h-10 w-10 place-items-center rounded-lg border border-white/12 text-white"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-white/[0.12] text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -207,7 +222,7 @@ function MarketingNav() {
               <Link href="/signup" onClick={() => setMobileOpen(false)} className="gold-cta flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-secondary-foreground">
                 Join Sangam <ArrowUpRight className="h-4 w-4" />
               </Link>
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/12 text-sm font-medium text-white">
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/[0.12] text-sm font-medium text-white">
                 Sign in
               </Link>
             </div>
@@ -235,7 +250,7 @@ function Hero() {
             className="w-full"
           >
             <p className="mono-label text-secondary">COMMUNITY OPERATIONS / IITM BS</p>
-            <h1 className="mt-5 max-w-5xl text-[clamp(4rem,10.7vw,9.6rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">
+            <h1 className="mt-5 max-w-5xl text-[clamp(3.75rem,9.8vw,8.8rem)] font-black leading-[0.86] tracking-[-0.06em] text-white">
               Run the club. Lose the chaos.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
@@ -245,7 +260,7 @@ function Hero() {
               <Link href="/signup" className="gold-cta inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-secondary-foreground">
                 Start with your society <ArrowUpRight className="h-4 w-4" />
               </Link>
-              <Link href="/clubs" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/12 px-5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.05]">
+              <Link href="/clubs" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/[0.12] px-5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.05]">
                 Browse clubs
               </Link>
             </div>
@@ -277,7 +292,7 @@ function ProductPreview() {
           <div className="mono-label !text-[0.62rem]">LIVE CONTROL ROOM</div>
           <div className="mt-1 text-sm font-semibold text-white">Friday ops summary</div>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-primary/35 bg-primary/12 px-2.5 py-1.5 text-xs font-semibold text-white">
+        <div className="flex items-center gap-2 rounded-lg border border-primary/35 bg-primary/[0.12] px-2.5 py-1.5 text-xs font-semibold text-white">
           <span className="h-1.5 w-1.5 rounded-full bg-secondary shadow-[0_0_18px_rgba(222,174,86,0.9)]" />
           synced
         </div>
@@ -365,7 +380,7 @@ function ProductPreview() {
               <div className="mono-label !text-[0.58rem]">ANNOUNCEMENTS</div>
               <div className="mt-3 space-y-2">
                 {announcements.slice(0, 3).map((item) => (
-                  <div key={item.id} className="rounded-lg bg-black/18 px-3 py-2">
+                  <div key={item.id} className="rounded-lg bg-black/[0.18] px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-white">{item.club}</span>
                       <span className="font-mono text-[10px] text-muted-foreground">{item.timeAgo}</span>
@@ -379,7 +394,7 @@ function ProductPreview() {
               <div className="mono-label !text-[0.58rem]">TASKS</div>
               <div className="mt-3 space-y-2">
                 {tasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 rounded-lg bg-black/18 px-3 py-2">
+                  <div key={task.id} className="flex items-center gap-2 rounded-lg bg-black/[0.18] px-3 py-2">
                     <CheckCircle2 className={`h-4 w-4 ${task.status === "done" ? "text-secondary" : "text-primary"}`} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-xs font-medium text-white">{task.title}</div>
@@ -638,6 +653,64 @@ function Events() {
               </div>
             </Link>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FAQ() {
+  const [open, setOpen] = useState(0);
+
+  return (
+    <section id="faq" className="px-4 py-24 md:px-6 md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <div>
+          <p className="mono-label text-secondary">04 / QUESTIONS</p>
+          <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
+            Things people actually ask.
+          </h2>
+          <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground">
+            The member help-center questions now live upfront, before someone has to sign in to understand the basics.
+          </p>
+        </div>
+
+        <div className="night-panel overflow-hidden rounded-2xl">
+          {faqs.map((faq, index) => {
+            const active = open === index;
+            return (
+              <button
+                key={faq.q}
+                type="button"
+                onClick={() => setOpen(active ? -1 : index)}
+                className="block w-full border-b border-white/10 text-left last:border-b-0"
+              >
+                <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-5 transition hover:bg-white/[0.035] md:px-6">
+                  <span className="text-base font-semibold leading-6 text-white">{faq.q}</span>
+                  <span className={`grid h-8 w-8 place-items-center rounded-lg border transition ${
+                    active ? "border-secondary/40 bg-secondary/[0.12] text-secondary" : "border-white/10 bg-white/[0.04] text-muted-foreground"
+                  }`}>
+                    <ChevronDown className={`h-4 w-4 transition ${active ? "rotate-180" : ""}`} />
+                  </span>
+                </div>
+                <AnimatePresence initial={false}>
+                  {active && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-sm leading-6 text-muted-foreground md:px-6">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>
