@@ -79,6 +79,7 @@ model User {
   name           String
   rollNumber     String?  @unique
   image          String?
+  interests      String   @default("[]")
   isFaculty      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
