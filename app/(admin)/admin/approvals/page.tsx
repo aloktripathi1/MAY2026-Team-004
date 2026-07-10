@@ -24,7 +24,7 @@ export default async function ApprovalsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Queues" title={<>Approvals <span className="text-display text-primary italic">to clear.</span></>} description="Membership requests + events needing sign-off. Handle these first thing every morning." />
+      <PageHeader eyebrow="Queues" title={<>Approvals <span className="text-secondary">to clear.</span></>} description="Membership requests + events needing sign-off. Handle these first thing every morning." />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
@@ -32,10 +32,10 @@ export default async function ApprovalsPage() {
             <h2 className="text-mono-label">Membership · {pendingMembers.length}</h2>
           </div>
           <div className="space-y-2">
-            {pendingMembers.length === 0 && <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">Inbox zero. Nice.</div>}
+            {pendingMembers.length === 0 && <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">Inbox zero. Nice.</div>}
             {pendingMembers.map(m => (
               <GlassCard key={m.id} className="flex items-center gap-4 p-4">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xs font-semibold bg-primary/15 text-primary">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
                   {m.user.name.split(" ").map(s => s[0]).join("")}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -53,7 +53,7 @@ export default async function ApprovalsPage() {
             <h2 className="text-mono-label">Events · {pendingEvents.length}</h2>
           </div>
           <div className="space-y-2">
-            {pendingEvents.length === 0 && <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">Inbox zero. Nice.</div>}
+            {pendingEvents.length === 0 && <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">Inbox zero. Nice.</div>}
             {pendingEvents.map(e => (
               <GlassCard key={e.id} className="p-4">
                 <div className="flex items-center gap-3">
