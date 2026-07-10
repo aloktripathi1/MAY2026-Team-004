@@ -234,8 +234,7 @@ function Hero() {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="w-full"
           >
-            <p className="mono-label text-secondary">COMMUNITY OPERATIONS / IITM BS</p>
-            <h1 className="mt-5 max-w-5xl text-[clamp(4rem,10.7vw,9.6rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">
+            <h1 className="max-w-5xl text-[clamp(4rem,10.7vw,9.6rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">
               Run the club. Lose the chaos.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
@@ -514,6 +513,7 @@ function Roles() {
     { name: "Club Admin", label: "Roster / calendar / finances", desc: "Own membership, publish events, approve announcements and prepare handovers from one high-context view." },
     { name: "Coordinator", label: "Tasks / venues / volunteers", desc: "See capacity, approvals, resources and day-of responsibilities without digging through chat history." },
     { name: "Member", label: "RSVP / clubs / support", desc: "Follow clubs, RSVP, raise issues and see only the updates that matter to their memberships." },
+    { name: "Volunteer", label: "Tasks / deadlines / updates", desc: "See assigned tasks with deadlines and update status directly, without pinging the coordinator for every change." },
     { name: "Faculty Mentor", label: "Approvals / oversight", desc: "Review event requests and transparency logs with enough context to say yes quickly." },
   ];
   const [active, setActive] = useState(0);
@@ -531,8 +531,8 @@ function Roles() {
             Sangam changes shape around the person signing in, so work stays visible without giving everyone the same giant admin dashboard.
           </p>
         </div>
-        <div className="grid gap-3 lg:grid-cols-[250px_1fr]">
-          <div className="space-y-2">
+        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
+          <div className="space-y-3">
             {roles.map((role, index) => (
               <button
                 key={role.name}
@@ -540,12 +540,12 @@ function Roles() {
                 onMouseEnter={() => setActive(index)}
                 onFocus={() => setActive(index)}
                 onClick={() => setActive(index)}
-                className={`w-full rounded-xl border p-4 text-left transition ${
+                className={`min-h-[88px] w-full rounded-2xl border p-5 text-left transition ${
                   active === index ? "border-secondary/45 bg-secondary/10 text-white" : "border-white/10 bg-white/[0.035] text-muted-foreground hover:border-white/20"
                 }`}
               >
                 <span className="font-mono text-xs">{String(index + 1).padStart(2, "0")}</span>
-                <span className="mt-2 block text-base font-semibold">{role.name}</span>
+                <span className="mt-3 block text-lg font-semibold">{role.name}</span>
               </button>
             ))}
           </div>
@@ -589,6 +589,7 @@ function roleRows(active: number): [string, string, string][] {
     [["Import review", "18 pending members from CSV", "18"], ["Fusion Night closeout", "Attendance and spend ready", "94%"], ["Handover", "2 unresolved permissions", "2"]],
     [["Venue request", "Seminar Hall 3 awaits mentor signoff", "1"], ["Volunteer tasks", "3 stuck beyond due time", "3"], ["Capacity check", "Ignite seats remaining", "24"]],
     [["Cook-Off #42", "RSVP open until Sunday 8 PM", "218"], ["Issue update", "Projector ticket moved to in progress", "new"], ["Clubs matched", "Based on interests", "5"]],
+    [["Task due today", "Set up amphitheatre PA system", "1"], ["Task update", "Print speaker badges, marked doing", "doing"], ["Weekly load", "3 tasks across 2 events", "3"]],
     [["Event approval", "Startup Weekend budget attached", "open"], ["Transparency log", "Winter Debate Open archived", "done"], ["Risk notes", "Two venue conflicts detected", "2"]],
   ];
   return rows[active] ?? rows[0];
