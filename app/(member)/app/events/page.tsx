@@ -25,12 +25,12 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
     <>
       <PageHeader
         eyebrow="What's on"
-        title={<>Every event, <span className="text-display text-primary italic">every club.</span></>}
+        title={<>Every event, <span className="text-secondary">every club.</span></>}
         actions={
-          <div className="glass rounded-full p-1">
+          <div className="night-panel rounded-xl p-1">
             {(["upcoming", "past"] as const).map(t => (
               <Link key={t} href={`/app/events?tab=${t}`}
-                className={`inline-block rounded-full px-3.5 py-1.5 text-xs capitalize transition ${tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                className={`inline-block rounded-lg px-3.5 py-1.5 text-xs capitalize transition ${tab === t ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 {t}
               </Link>
             ))}
