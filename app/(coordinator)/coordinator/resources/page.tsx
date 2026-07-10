@@ -17,7 +17,7 @@ export default async function ResourcesPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Booking" title={<>Halls, gear, <span className="text-display text-primary italic">no clashes.</span></>} description="Real-time conflict detection. Locks the slot the moment you confirm." />
+      <PageHeader eyebrow="Booking" title={<>Halls, gear, <span className="text-secondary">no clashes.</span></>} description="Real-time conflict detection. Locks the slot the moment you confirm." />
 
       <div className="text-mono-label mb-3">Venues</div>
       <div className="grid gap-3 md:grid-cols-3">
@@ -51,7 +51,7 @@ export default async function ResourcesPage() {
 
       <div className="mt-10">
         <div className="text-mono-label mb-3">Amphitheatre · this week</div>
-        <div className="glass-strong overflow-hidden rounded-2xl">
+        <div className="night-panel overflow-hidden rounded-2xl">
           <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-hairline">
             <div className="text-mono-label border-r border-hairline px-3 py-2">Slot</div>
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
@@ -65,7 +65,7 @@ export default async function ResourcesPage() {
                 const booked = (i + j) % 5 === 0 || (i === 5 && j === 4);
                 return (
                   <div key={j} className="border-r border-hairline p-1.5 last:border-r-0">
-                    <div className={`h-full rounded-md p-2 text-[10px] ${booked ? "bg-secondary/20 text-secondary" : "bg-surface/40 hover:bg-primary/10 hover:text-primary transition cursor-pointer"}`}>
+                    <div className={`h-full rounded-md p-2 text-[10px] ${booked ? "bg-secondary/20 text-secondary" : "cursor-pointer bg-white/[0.035] transition hover:bg-white/[0.06] hover:text-secondary"}`}>
                       {booked ? "Sarga" : ""}
                     </div>
                   </div>

@@ -24,7 +24,11 @@ export function TaskStatusButtons({ taskId, status }: { taskId: string; status: 
           title={taskId}
           disabled={pending}
           onClick={() => set(s)}
-          className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider transition disabled:opacity-50 ${currentStatus === s ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground"}`}
+          className={`rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] transition disabled:opacity-50 ${
+            currentStatus === s
+              ? "bg-secondary text-secondary-foreground"
+              : "border border-white/10 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+          }`}
         >
           {s}
         </button>
