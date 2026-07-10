@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
-  LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, HelpCircle, UserRound,
+  LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
   Shield, Menu, X, LogOut,
 } from "lucide-react";
@@ -19,7 +19,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
     { label: "Events", to: "/app/events", icon: CalendarDays },
     { label: "Browse clubs", to: "/app/clubs", icon: Compass },
     { label: "My issues", to: "/app/issues", icon: MessageSquareWarning },
-    { label: "FAQ", to: "/app/faq", icon: HelpCircle },
     { label: "Profile", to: "/app/profile", icon: UserRound },
   ],
   coordinator: [

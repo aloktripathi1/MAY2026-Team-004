@@ -20,7 +20,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { announcements, clubs, events, metrics, tasks, transparencyLog } from "@/lib/seed-data";
+import { announcements, clubs, events, faqs, metrics, tasks, transparencyLog } from "@/lib/seed-data";
 import { pluralize } from "@/lib/format";
 
 const spaceGrotesk = Space_Grotesk({
@@ -54,6 +54,7 @@ export default function Landing() {
       <Modules />
       <Roles />
       <Events />
+      <FAQ />
       <ClosingCTA />
       <Footer />
     </main>
@@ -249,7 +250,7 @@ function Hero() {
             className="w-full"
           >
             <p className="mono-label text-secondary">COMMUNITY OPERATIONS / IITM BS</p>
-            <h1 className="mt-5 max-w-5xl text-[clamp(4rem,10.7vw,9.6rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">
+            <h1 className="mt-5 max-w-5xl text-[clamp(3.75rem,9.8vw,8.8rem)] font-black leading-[0.86] tracking-[-0.06em] text-white">
               Run the club. Lose the chaos.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
@@ -652,6 +653,64 @@ function Events() {
               </div>
             </Link>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FAQ() {
+  const [open, setOpen] = useState(0);
+
+  return (
+    <section id="faq" className="px-4 py-24 md:px-6 md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <div>
+          <p className="mono-label text-secondary">04 / QUESTIONS</p>
+          <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
+            Things people actually ask.
+          </h2>
+          <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground">
+            The member help-center questions now live upfront, before someone has to sign in to understand the basics.
+          </p>
+        </div>
+
+        <div className="night-panel overflow-hidden rounded-2xl">
+          {faqs.map((faq, index) => {
+            const active = open === index;
+            return (
+              <button
+                key={faq.q}
+                type="button"
+                onClick={() => setOpen(active ? -1 : index)}
+                className="block w-full border-b border-white/10 text-left last:border-b-0"
+              >
+                <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-5 transition hover:bg-white/[0.035] md:px-6">
+                  <span className="text-base font-semibold leading-6 text-white">{faq.q}</span>
+                  <span className={`grid h-8 w-8 place-items-center rounded-lg border transition ${
+                    active ? "border-secondary/40 bg-secondary/12 text-secondary" : "border-white/10 bg-white/[0.04] text-muted-foreground"
+                  }`}>
+                    <ChevronDown className={`h-4 w-4 transition ${active ? "rotate-180" : ""}`} />
+                  </span>
+                </div>
+                <AnimatePresence initial={false}>
+                  {active && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-sm leading-6 text-muted-foreground md:px-6">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>
