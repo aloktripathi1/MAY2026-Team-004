@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description:
     "One place for IITM BS student clubs and societies to run members, events, tasks and announcements. No more scattered WhatsApp threads and Google Forms.",
   authors: [{ name: "Team Dhurandhar" }],
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/favicon.png" },
   openGraph: {
     title: "Sangam: the confluence for IITM BS clubs",
     description: "Members, events, tasks, announcements: one confluence for every IITM BS society.",

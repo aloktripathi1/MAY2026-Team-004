@@ -109,6 +109,8 @@ function buildMockDb() {
       // read silently resolved to `undefined`.
       raisedBy: raisedByUser,
       club,
+      assigneeId: undefined as string | undefined,
+      assignee: undefined as (typeof users)[number] | undefined,
     };
   });
 
