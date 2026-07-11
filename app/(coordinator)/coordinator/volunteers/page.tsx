@@ -3,8 +3,9 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, Btn } from "@/components/ui/primitives";
+import { GlassCard } from "@/components/ui/primitives";
 import { TaskStatusButtons } from "@/components/tasks/TaskStatusButtons";
+import { AssignTaskModal } from "@/components/coordinator/AssignTaskModal";
 
 export const metadata: Metadata = {
   title: "Volunteers · Sangam",
@@ -19,25 +20,33 @@ export default async function VolunteersPage() {
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 
-  const [team, tasks] = await Promise.all([
+  const [team, events] = await Promise.all([
     prisma.membership.findMany({
-      where: { clubId, role: { in: ["Volunteer", "Member"] } },
+      where: { clubId, role: "Volunteer" },
       include: { user: true },
       take: 6,
     }),
-    prisma.task.findMany({ where: { event: { clubId } }, include: { event: true, assignee: true } }),
+    prisma.event.findMany({ where: { clubId }, select: { id: true, title: true }, orderBy: { date: "asc" } }),
   ]);
+
+  const eventIds = events.map(e => e.id);
+  const tasks = await prisma.task.findMany({
+    where: { eventId: { in: eventIds } },
+    include: { event: true, assignee: true },
+  });
+
 
   return (
     <>
       <PageHeader eyebrow="People" title={<>Volunteers <span className="text-secondary">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+      <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+        {/* Team column */}
         <div>
           <div className="text-mono-label mb-3">Team</div>
           <div className="space-y-2">
             {team.length === 0 && <div className="text-sm text-muted-foreground">No volunteers yet.</div>}
             {team.map(m => (
-              <GlassCard key={m.id} className="flex items-center gap-3 p-3">
+              <GlassCard key={m.id} hover={false} className="flex items-center gap-3 p-3">
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
                   {m.user.name.split(" ").map(s => s[0]).join("")}
                 </div>
@@ -45,30 +54,36 @@ export default async function VolunteersPage() {
                   <div className="truncate text-sm font-medium">{m.user.name}</div>
                   <div className="text-xs text-muted-foreground">{m.role}</div>
                 </div>
-                <Btn size="sm" variant="outline">Assign</Btn>
+                <AssignTaskModal
+                  assigneeId={m.user.id}
+                  assigneeName={m.user.name}
+                  events={events}
+                />
               </GlassCard>
             ))}
           </div>
         </div>
+
+        {/* Task board */}
         <div>
           <div className="text-mono-label mb-3">Task board</div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             {columns.map(col => (
-              <div key={col} className="night-panel rounded-2xl p-3">
+              <div key={col} className="night-panel rounded-2xl p-4">
                 <div className="text-mono-label mb-3 flex items-center justify-between">
                   <span>{columnLabels[col]}</span>
-                  <span>{tasks.filter(t => t.status === col).length}</span>
+                  <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-xs">{tasks.filter(t => t.status === col).length}</span>
                 </div>
                 <div className="space-y-2">
                   {tasks.filter(t => t.status === col).length === 0 && (
-                    <div className="rounded-xl border border-dashed border-hairline p-3 text-center text-xs text-muted-foreground">Nothing here.</div>
+                    <div className="rounded-xl border border-dashed border-hairline p-4 text-center text-xs text-muted-foreground">Nothing here.</div>
                   )}
                   {tasks.filter(t => t.status === col).map(t => (
                     <div key={t.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                      <div className="text-sm">{t.title}</div>
-                      <div className="text-mono-label mt-1">{t.event.title}</div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">{t.assignee.name}</span>
+                      <div className="text-sm font-medium leading-snug">{t.title}</div>
+                      <div className="text-mono-label mt-1 truncate">{events.find(e => e.id === t.eventId)?.title ?? "—"}</div>
+                      <div className="mt-3 truncate text-xs text-muted-foreground">{t.assignee?.name ?? team.find(m => m.user.id === t.assigneeId)?.user.name ?? "—"}</div>
+                      <div className="mt-2">
                         <TaskStatusButtons taskId={t.id} status={t.status} />
                       </div>
                     </div>
