@@ -144,7 +144,7 @@ export const members: Member[] = [
   { id: "m5", name: "Meera Nair", roll: "23s1000654", role: "Coordinator", clubs: ["Kalakriti"], joined: "Aug 2023", status: "Active", avatar: "45" },
   { id: "m6", name: "Aarav Sen", roll: "22s1000111", role: "Member", clubs: ["Arena", "CodeChef"], joined: "Jul 2022", status: "Active", avatar: "155" },
   { id: "m7", name: "Diya Krishnan", roll: "24s1000908", role: "Member", clubs: ["Prakriti"], joined: "May 2024", status: "Pending", avatar: "320" },
-  { id: "m8", name: "Vikram Shah", roll: "23s1000202", role: "Member", clubs: ["E-Cell"], joined: "Sep 2023", status: "Inactive", avatar: "0" },
+  { id: "m8", name: "Vikram Shah", roll: "23s1000202", role: "Volunteer", clubs: ["E-Cell"], joined: "Sep 2023", status: "Active", avatar: "0" },
 ];
 
 export const faqs = [

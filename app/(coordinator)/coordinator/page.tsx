@@ -18,11 +18,17 @@ export default async function CoordinatorHome() {
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 
-  const [myEvents, tasks, volunteerCount] = await Promise.all([
+  const [myEvents, volunteerCount] = await Promise.all([
     prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { rsvps: true } } } }),
-    prisma.task.findMany({ where: { event: { clubId } }, include: { event: true } }),
     prisma.membership.count({ where: { clubId, role: { in: ["Volunteer", "Member"] } } }),
   ]);
+
+  const eventIds = myEvents.map(e => e.id);
+  const tasks = await prisma.task.findMany({
+    where: { eventId: { in: eventIds } },
+    include: { event: true },
+  });
+
 
   return (
     <>
@@ -67,7 +73,7 @@ export default async function CoordinatorHome() {
                 <div className={`h-2 w-2 shrink-0 rounded-full ${t.status === "done" ? "bg-success" : t.status === "doing" ? "bg-warning" : "bg-muted-foreground"}`} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">{t.title}</div>
-                  <div className="text-xs text-muted-foreground">{t.event.title}</div>
+                  <div className="text-xs text-muted-foreground">{myEvents.find(e => e.id === t.eventId)?.title ?? "—"}</div>
                 </div>
                 <StatusPill tone={t.status === "done" ? "green" : t.status === "doing" ? "amber" : "slate"}>{t.status}</StatusPill>
               </GlassCard>
