@@ -225,7 +225,7 @@ function Hero() {
   const previewY = useTransform(scrollYProgress, [0, 0.28], [0, shouldReduceMotion ? 0 : -34]);
 
   return (
-    <section className="relative px-4 pb-24 pt-32 sm:pb-28 md:px-6 md:pt-44 lg:pb-32">
+    <section className="relative px-4 pb-20 pt-32 md:px-6 md:pb-28 md:pt-44">
       <div className="hero-ambient" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col items-center gap-8 md:gap-10">
@@ -238,10 +238,10 @@ function Hero() {
             <h1 className="max-w-5xl text-[clamp(3.25rem,8.6vw,7.75rem)] font-black leading-[0.9] tracking-[-0.06em] text-white">
               Run the club.<br />Lose the chaos.
             </h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
+            <p className="mt-8 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
               Sangam brings membership, events, volunteers, approvals and announcements into one controlled system for societies that have outgrown scattered chats.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href="/signup" className="gold-cta inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-secondary-foreground">
                 Start with your society <ArrowUpRight className="h-4 w-4" />
               </Link>
@@ -405,7 +405,7 @@ function LiveActivity() {
   ];
 
   return (
-    <section id="live" className="relative px-4 py-20 md:px-6">
+    <section id="live" className="relative px-4 py-20 md:px-6 md:py-28">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4">
           {stats.map((stat) => (
@@ -473,7 +473,7 @@ function Modules() {
   ];
 
   return (
-    <section id="modules" className="px-4 py-24 md:px-6 md:py-32">
+    <section id="modules" className="px-4 py-20 md:px-6 md:py-28">
       <div className="mx-auto max-w-6xl">
         <div className="max-w-3xl">
           <p className="mono-label text-secondary">01 / SYSTEM MAP</p>
@@ -481,7 +481,7 @@ function Modules() {
             Six modules. One operating rhythm.
           </h2>
         </div>
-        <div className="mt-12 grid auto-rows-[minmax(230px,auto)] gap-3 md:grid-cols-4">
+        <div className="mt-8 grid auto-rows-[minmax(230px,auto)] gap-4 md:grid-cols-4">
           {modules.map((module) => (
             <article
               key={module.label}
@@ -521,7 +521,7 @@ function Roles() {
   const selected = roles[active];
 
   return (
-    <section id="roles" className="px-4 py-24 md:px-6 md:py-32">
+    <section id="roles" className="px-4 py-20 md:px-6 md:py-28">
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
         <div>
           <p className="mono-label text-secondary">02 / ROLE VIEWS</p>
@@ -554,13 +554,13 @@ function Roles() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="mono-label">{selected.label}</p>
-                <h3 className="mt-3 text-4xl font-black tracking-[-0.05em] text-white">{selected.name}</h3>
+                <h3 className="mt-4 text-4xl font-black tracking-[-0.05em] text-white">{selected.name}</h3>
               </div>
               <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/20 text-primary">
                 <LayoutDashboard className="h-5 w-5" />
               </span>
             </div>
-            <p className="mt-5 text-sm leading-7 text-muted-foreground">{selected.desc}</p>
+            <p className="mt-6 text-sm leading-7 text-muted-foreground">{selected.desc}</p>
             <div className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-4">
               <div className="flex items-center justify-between">
                 <span className="mono-label !text-[0.62rem]">VIEW SNAPSHOT</span>
@@ -601,7 +601,7 @@ function Events() {
   const totalGoing = useMemo(() => upcoming.reduce((sum, event) => sum + event.going, 0), [upcoming]);
 
   return (
-    <section className="px-4 py-24 md:px-6 md:py-32">
+    <section className="px-4 py-20 md:px-6 md:py-28">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-8 md:grid-cols-[1fr_320px] md:items-end">
           <div>
@@ -650,7 +650,7 @@ function FAQ() {
   const [open, setOpen] = useState(0);
 
   return (
-    <section id="faq" className="px-4 py-24 md:px-6 md:py-32">
+    <section id="faq" className="px-4 py-20 md:px-6 md:py-28">
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
         <div>
           <p className="mono-label text-secondary">04 / QUESTIONS</p>
@@ -706,18 +706,18 @@ function FAQ() {
 
 function ClosingCTA() {
   return (
-    <section className="relative px-4 py-28 md:px-6 md:py-36">
+    <section className="relative px-4 py-24 md:px-6 md:py-32">
       <div className="cta-ambient" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
         <div className="max-w-4xl">
           <p className="mono-label text-secondary">READY WHEN THE SOCIETY IS</p>
-          <h2 className="mt-5 text-6xl font-black leading-[0.86] tracking-[-0.06em] text-white md:text-8xl">
+          <h2 className="mt-4 text-6xl font-black leading-[0.86] tracking-[-0.06em] text-white md:text-8xl">
             Make the club legible.
           </h2>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">
+          <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
             Members know what is happening. Coordinators know what is stuck. Faculty can see the trail. That is the whole point.
           </p>
-          <div className="mt-9">
+          <div className="mt-8">
             <Link href="/signup" className="gold-cta inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-secondary-foreground">
               Join Sangam <ArrowUpRight className="h-4 w-4" />
             </Link>
@@ -734,14 +734,14 @@ function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 py-14 md:grid-cols-[1fr_auto_auto]">
         <div>
           <div className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</div>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+          <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
             A community operations platform for IITM BS societies, built by Team Dhurandhar.
           </p>
         </div>
         <FooterCol title="Product" links={[["Modules", "#modules"], ["Roles", "#roles"], ["Live activity", "#live"], ["Clubs", "/clubs"]]} />
         <FooterCol title="Access" links={[["Join", "/signup"], ["Sign in", "/login"], ["Events", "/app/events"]]} />
       </div>
-      <div className="mx-auto max-w-6xl border-t border-white/10 py-5 text-xs text-muted-foreground">
+      <div className="mx-auto max-w-6xl border-t border-white/10 py-6 text-xs text-muted-foreground">
         All rights reserved.
       </div>
     </footer>
