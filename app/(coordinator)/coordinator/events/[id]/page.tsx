@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   return { title: `Event dashboard · Sangam`, description: "Manage this event." };
 }
 
-export default async function CoordinatorEventDashboard({ params }: { params: { id: string } }) {
+export default async function CoordinatorEventDashboard({ params, searchParams }: { params: { id: string }; searchParams?: { success?: string } }) {
   const session = getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
@@ -51,6 +51,12 @@ export default async function CoordinatorEventDashboard({ params }: { params: { 
           </>
         }
       />
+
+      {searchParams?.success && (
+        <div className="mb-6 rounded-xl border border-success/20 bg-success/10 p-4 text-sm font-medium text-success">
+          🎉 Event published successfully!
+        </div>
+      )}
 
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label="Registered" value={rsvps.length} delta={`of ${event.capacity} capacity`} showDot={false} />
