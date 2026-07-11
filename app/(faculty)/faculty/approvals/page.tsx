@@ -20,12 +20,17 @@ export default async function FacultyApprovals() {
 
   return (
     <>
-      <PageHeader eyebrow="Sign-off queue" title={<>Events needing <span className="text-secondary">your nod.</span></>} description="Off-campus travel, sponsored events, and anything with faculty-only approval." />
+      <PageHeader eyebrow="Approval queue" title={<>Events needing <span className="text-secondary">your nod.</span></>} description="Off-campus travel, sponsored events, and anything with faculty-only approval." />
       <div className="space-y-4">
         {pending.map(e => (
           <GlassCard key={e.id} className="p-6">
             <div className="grid gap-4 md:grid-cols-[120px_1fr_auto]">
-              <div className="h-24 rounded-xl" style={{ background: e.cover }} />
+              <div className="relative h-24 overflow-hidden rounded-xl" style={{ background: e.cover }}>
+                {e.club.banner && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={e.club.banner} alt="" loading="lazy" className="h-full w-full object-cover" />
+                )}
+              </div>
               <div className="min-w-0">
                 <div className="text-mono-label mb-1">{e.club.name} · {formatEventDate(e.date)}</div>
                 <div className="text-lg font-medium">{e.title}</div>

@@ -59,8 +59,8 @@ export default async function EventDetail({ params }: { params: { id: string } }
         <div className="relative flex min-h-[280px] flex-col justify-end p-8 md:min-h-[380px] md:p-12">
           <div className="mb-3 flex gap-1.5">
             {normalizeEventTags(event.tags).map((t) => <span key={t} className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur">{t}</span>)}
-            <StatusPill tone={event.approval === "approved" ? "green" : event.approval === "pending" ? "amber" : "slate"}>
-              {event.approval === "approved" ? "Approved" : event.approval === "pending" ? "Pending approval" : "No approval needed"}
+            <StatusPill tone={event.approval === "approved" ? "green" : event.approval === "pending" ? "amber" : event.approval === "rejected" ? "magenta" : "slate"}>
+              {event.approval === "approved" ? "Approved" : event.approval === "pending" ? "Pending approval" : event.approval === "rejected" ? "Rejected" : "No approval needed"}
             </StatusPill>
           </div>
           <div className="text-mono-label mb-2 text-white/80">{event.club.name}</div>

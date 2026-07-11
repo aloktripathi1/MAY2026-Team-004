@@ -152,7 +152,7 @@ function MarketingNav() {
             <Link href="/login" className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white sm:inline-flex">
               Sign in
             </Link>
-            <Link href="/signup" className="gold-cta inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-secondary-foreground">
+            <Link href="/signup" className="gold-cta hidden h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-secondary-foreground sm:inline-flex">
               Join <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
             <button

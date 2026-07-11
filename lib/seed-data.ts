@@ -56,7 +56,7 @@ export interface Event {
   photo: string; // real theme-relevant photo, used on the landing page preview
   tags: string[];
   description: string;
-  approval: "approved" | "pending" | "not-required";
+  approval: "approved" | "pending" | "not-required" | "rejected";
 }
 
 export const events: Event[] = [
@@ -68,6 +68,8 @@ export const events: Event[] = [
   { id: "e6", slug: "climate-teach-in", title: "Climate Teach-In · Local Schools", clubSlug: "prakriti", club: "Prakriti — Sustainability", date: "Thu, Jul 16", isoDate: "2026-07-16", time: "10:00 AM", venue: "Off-campus · Adyar", status: "upcoming", going: 24, capacity: 40, cover: "linear-gradient(135deg,#22c55e 0%,#0891b2 100%)", photo: "/club-events/climate-teach-in.png", tags: ["Volunteer"], description: "Half-day teach-in at two neighborhood schools. Materials provided. Volunteers get transport reimbursement.", approval: "approved" },
   { id: "e7", slug: "chess-blitz-x", title: "Chess Blitz X · Arena", clubSlug: "arena", club: "Arena — Chess Club", date: "Sat, Jul 4", isoDate: "2026-07-04", time: "5:00 PM", venue: "Common Room", status: "past", going: 78, capacity: 80, cover: "linear-gradient(135deg,#334155 0%,#0f172a 100%)", photo: "/club-events/chess-blitz-x.png", tags: ["Sports"], description: "Nine rounds, 3+2 time control. Won by third-year Aarav Sen on tiebreaks.", approval: "not-required" },
   { id: "e8", slug: "sarga-open-jam", title: "Sarga Open Jam — June", clubSlug: "sarga", club: "Sarga — Music Circle", date: "Fri, Jun 27", isoDate: "2026-06-27", time: "7:30 PM", venue: "Amphitheatre", status: "past", going: 143, capacity: 150, cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 100%)", photo: "/club-events/sarga-open-jam.png", tags: ["Music"], description: "Twelve acts, one open mic. Recording available on the club drive.", approval: "not-required" },
+  { id: "e9", slug: "zine-launch-night", title: "Zine Launch Night · Quill", clubSlug: "quill", club: "Quill — Writers' Circle", date: "Fri, Jul 18", isoDate: "2026-07-18", time: "6:00 PM", venue: "Library Courtyard", status: "upcoming", going: 22, capacity: 60, cover: "linear-gradient(135deg,#a855f7 0%,#ec4899 100%)", photo: "https://loremflickr.com/800/450/books,writing?lock=19", tags: ["Literary", "Open"], description: "Launch of the summer zine, print copies handed out at the door. Off-campus vendor for printing, needs faculty sign-off.", approval: "pending" },
+  { id: "e10", slug: "inter-college-chess-meet", title: "Inter-College Chess Meet · Arena", clubSlug: "arena", club: "Arena — Chess Club", date: "Sat, Jul 19", isoDate: "2026-07-19", time: "10:00 AM", venue: "Off-campus · Chennai", status: "upcoming", going: 18, capacity: 30, cover: "linear-gradient(135deg,#334155 0%,#0f172a 100%)", photo: "https://loremflickr.com/800/450/chess?lock=20", tags: ["Sports", "Travel"], description: "Away fixture against three other campuses. Bus transport and away-day insurance need faculty approval before booking.", approval: "pending" },
 ];
 
 export interface Announcement {
