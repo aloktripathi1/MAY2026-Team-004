@@ -43,6 +43,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
           <Link key={e.id} href={`/app/events/${e.slug}`}>
             <GlassCard className="group overflow-hidden p-0">
               <div className="relative h-44 overflow-hidden" style={{ background: e.cover }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={e.photo} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute right-3 top-3 flex gap-1.5">
                   {normalizeEventTags(e.tags).map(t => <span key={t} className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur">{t}</span>)}

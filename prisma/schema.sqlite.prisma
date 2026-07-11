@@ -20,13 +20,17 @@ model User {
   name           String
   rollNumber     String?  @unique
   image          String?
+  interests      String   @default("[]")
+  notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}")
   isFaculty      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   memberships            Membership[]
-  issuesRaised           Issue[]
+  issuesRaised           Issue[]        @relation("IssueRaisedBy")
+  issuesAssigned         Issue[]        @relation("IssueAssignee")
   tasksAssigned          Task[]
+  contributions          Contribution[]
   announcementsAuthored  Announcement[]
   rsvps                  Rsvp[]
 }
@@ -79,13 +83,14 @@ model Event {
   cover       String
   tags        String // comma-joined (SQLite has no array type)
   description String
-  approval    String   @default("pending") // ApprovalStatus: approved|pending|notRequired
+  approval    String   @default("pending") // ApprovalStatus: approved|pending|notRequired|rejected
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  tasks Task[]
-  rsvps Rsvp[]
+  tasks          Task[]
+  contributions  Contribution[]
+  rsvps          Rsvp[]
   transparencyEntries TransparencyLogEntry[]
 }
 
@@ -110,6 +115,7 @@ model Announcement {
   authorId  String
   createdAt DateTime @default(now())
   pinned    Boolean  @default(false)
+  audience  String   @default("All")
 
   club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -121,11 +127,14 @@ model Issue {
   category    String // IssueCategory: Registration|Payment|Booking|Access|Other
   status      String   @default("Open") // IssueStatus: Open|InProgress|Resolved
   raisedById  String
+  assigneeId  String?
   clubId      String?
   createdAt   DateTime @default(now())
   priority    String   @default("Low") // Priority: Low|Med|High
+  attachments String   @default("[]") // JSON-encoded string[] — SQLite has no native array type
 
-  raisedBy User  @relation(fields: [raisedById], references: [id], onDelete: Cascade)
+  raisedBy User  @relation("IssueRaisedBy", fields: [raisedById], references: [id], onDelete: Cascade)
+  assignee User? @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   club     Club? @relation(fields: [clubId], references: [id], onDelete: SetNull)
 }
 
@@ -136,10 +145,23 @@ model Task {
   role       String
   dueAt      DateTime?
   status     String    @default("todo") // TaskStatus: todo|doing|done
+  priority   String    @default("Med") // Priority: Low|Med|High
   assigneeId String
 
   event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignee User  @relation(fields: [assigneeId], references: [id], onDelete: Cascade)
+}
+
+model Contribution {
+  id          String   @id @default(cuid())
+  userId      String
+  eventId     String
+  role        String
+  hoursLogged Float
+  verifiedAt  DateTime
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model Venue {

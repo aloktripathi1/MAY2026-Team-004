@@ -1,6 +1,7 @@
 import {
   announcements as seedAnnouncements,
   clubs as seedClubs,
+  contributions as seedContributions,
   events as seedEvents,
   issues as seedIssues,
   members as seedMembers,
@@ -37,7 +38,11 @@ function buildMockDb() {
       email: `${member.roll}@ds.study.iitm.ac.in`,
       name: member.name,
       rollNumber: member.roll,
+      hashedPassword: "",
+      interests: "[]",
+      notificationPrefs: "{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}",
       isFaculty: false,
+      image: undefined as string | undefined,
       createdAt: new Date(`1 ${member.joined}`),
     })),
     {
@@ -45,7 +50,11 @@ function buildMockDb() {
       email: "faculty.mentor@ds.study.iitm.ac.in",
       name: "Prof. R. Krishnan",
       rollNumber: null,
+      hashedPassword: "",
+      interests: "[]",
+      notificationPrefs: "{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}",
       isFaculty: true,
+      image: undefined as string | undefined,
       createdAt: new Date("2024-01-01"),
     },
   ];
@@ -105,6 +114,8 @@ function buildMockDb() {
       // read silently resolved to `undefined`.
       raisedBy: raisedByUser,
       club,
+      assigneeId: undefined as string | undefined,
+      assignee: undefined as (typeof users)[number] | undefined,
     };
   });
 
@@ -115,22 +126,45 @@ function buildMockDb() {
       ...task,
       eventId: event.id,
       assigneeId: assignee.id,
-      dueAt: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
+      dueAt: task.dueAt ? new Date(task.dueAt) : new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
+      priority: task.priority ?? "Med",
       event,
       assignee,
     };
   });
 
-  const rsvps = events.flatMap((event) =>
-    Array.from({ length: Math.min(event.going, 8) }, (_, index) => ({
-      id: `${event.id}-rsvp-${index}`,
+  const contributions = seedContributions.map((entry, index) => {
+    const event = events.find((e) => e.title.includes(entry.event)) ?? events[index % events.length];
+    const user = entry.assignee === "You" ? users[0] : (users.find((u) => u.name === entry.assignee) ?? users[0]);
+    return {
+      id: entry.id,
+      userId: user.id,
       eventId: event.id,
-      userId: users[index % seedMembers.length].id,
-      checkedIn: false,
-      createdAt: new Date(Date.now() - index * 18 * 60 * 60 * 1000),
-      user: users[index % seedMembers.length],
+      role: entry.role,
+      hoursLogged: entry.hoursLogged,
+      verifiedAt: new Date(entry.date),
+      user,
       event,
-    })),
+    };
+  });
+
+  // Pad attendance counts with filler members only. Skip the demo personas
+  // (Ananya u1, Kabir u2, Ishita u3) so role dashboards open with Register,
+  // not Requested, unless the signed-in user clicks Register themselves.
+  const rsvpPool = users.filter((user) => !user.isFaculty && !["u1", "u2", "u3"].includes(user.id));
+  const rsvps = events.flatMap((event) =>
+    Array.from({ length: Math.min(event.going, 8) }, (_, index) => {
+      const user = rsvpPool[index % rsvpPool.length];
+      return {
+        id: `${event.id}-rsvp-${index}`,
+        eventId: event.id,
+        userId: user.id,
+        checkedIn: false,
+        createdAt: new Date(Date.now() - index * 18 * 60 * 60 * 1000),
+        user,
+        event,
+      };
+    }),
   );
 
   const venues = seedResources
@@ -147,12 +181,20 @@ function buildMockDb() {
     clubId: clubs.find((club) => entry.club.includes(club.name.split(" ")[0]))?.id ?? clubs[0].id,
   }));
 
-  return { clubs, users, memberships, events, announcements, issues, tasks, rsvps, venues, equipment, logs };
+  return { clubs, users, memberships, events, announcements, issues, tasks, contributions, rsvps, venues, equipment, logs };
 }
 
-const globalForMockDb = globalThis as unknown as { __sangamMockDb?: ReturnType<typeof buildMockDb> };
-const db = globalForMockDb.__sangamMockDb ?? (globalForMockDb.__sangamMockDb = buildMockDb());
-const { clubs, users, memberships, events, announcements, issues, tasks, rsvps, venues, equipment, logs } = db;
+const MOCK_DB_VERSION = 3;
+const globalForMockDb = globalThis as unknown as {
+  __sangamMockDb?: ReturnType<typeof buildMockDb>;
+  __sangamMockDbVersion?: number;
+};
+if (globalForMockDb.__sangamMockDbVersion !== MOCK_DB_VERSION) {
+  globalForMockDb.__sangamMockDb = buildMockDb();
+  globalForMockDb.__sangamMockDbVersion = MOCK_DB_VERSION;
+}
+const db = globalForMockDb.__sangamMockDb!;
+const { clubs, users, memberships, events, announcements, issues, tasks, contributions, rsvps, venues, equipment, logs } = db;
 
 let mockIdCounter = 0;
 function nextMockId(prefix: string): string {
@@ -298,6 +340,7 @@ export const prisma = {
     },
   },
   task: table(tasks, "task"),
+  contribution: table(contributions, "contribution"),
   rsvp: {
     ...rsvpTable,
     findUnique: async (args?: AnyRecord) =>

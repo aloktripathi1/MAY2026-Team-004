@@ -10,10 +10,10 @@ export default async function CoordinatorLayout({ children }: { children: ReactN
   const membership = session.user.memberships.find((m) => m.role === "Coordinator") ?? session.user.memberships[0];
   if (!membership) redirect("/app");
 
-  const club = `${membership.clubName} · Coordinator`;
+  const club = membership.clubName;
 
   return (
-    <AppShell role="coordinator" user={session.user.name ?? "Coordinator"} club={club}>
+    <AppShell role="coordinator" user={membership.personaName} club={club}>
       {children}
     </AppShell>
   );

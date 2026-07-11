@@ -21,4 +21,6 @@ export async function toggleRsvpAction(eventId: string, eventSlug: string) {
   revalidatePath(`/app/events/${eventSlug}`);
   revalidatePath("/app/events");
   revalidatePath("/app");
+  revalidatePath("/volunteer/events");
+  revalidatePath("/volunteer");
 }

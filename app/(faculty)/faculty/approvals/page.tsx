@@ -20,18 +20,23 @@ export default async function FacultyApprovals() {
 
   return (
     <>
-      <PageHeader eyebrow="Sign-off queue" title={<>Events needing <span className="text-display text-primary italic">your nod.</span></>} description="Off-campus travel, sponsored events, and anything with faculty-only approval." />
+      <PageHeader eyebrow="Approval queue" title={<>Events needing <span className="text-secondary">your nod.</span></>} description="Off-campus travel, sponsored events, and anything with faculty-only approval." />
       <div className="space-y-4">
         {pending.map(e => (
           <GlassCard key={e.id} className="p-6">
             <div className="grid gap-4 md:grid-cols-[120px_1fr_auto]">
-              <div className="h-24 rounded-xl" style={{ background: e.cover }} />
+              <div className="relative h-24 overflow-hidden rounded-xl" style={{ background: e.cover }}>
+                {e.club.banner && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={e.club.banner} alt="" loading="lazy" className="h-full w-full object-cover" />
+                )}
+              </div>
               <div className="min-w-0">
                 <div className="text-mono-label mb-1">{e.club.name} · {formatEventDate(e.date)}</div>
                 <div className="text-lg font-medium">{e.title}</div>
                 <div className="mt-2 text-sm text-muted-foreground">{e.description}</div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {normalizeEventTags(e.tags).map(t => <span key={t} className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted-foreground">{t}</span>)}
+                  {normalizeEventTags(e.tags).map(t => <span key={t} className="rounded-md border border-white/10 bg-white/[0.035] px-2 py-1 text-[10px] text-muted-foreground">{t}</span>)}
                   <StatusPill tone="amber">Pending</StatusPill>
                 </div>
               </div>
@@ -39,7 +44,7 @@ export default async function FacultyApprovals() {
             </div>
           </GlassCard>
         ))}
-        {pending.length === 0 && <div className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground">Nothing to review. Enjoy your afternoon, Professor.</div>}
+        {pending.length === 0 && <div className="night-panel rounded-2xl p-10 text-center text-sm text-muted-foreground">Nothing to review. Enjoy your afternoon, Professor.</div>}
       </div>
     </>
   );

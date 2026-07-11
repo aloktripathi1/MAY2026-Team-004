@@ -9,7 +9,7 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
   if (!session.user.isFaculty) redirect("/app");
 
   return (
-    <AppShell role="faculty" user={session.user.name ?? "Faculty"} club="Faculty Mentor">
+    <AppShell role="faculty" user="Prof. R. Krishnan" club="IITM BS">
       {children}
     </AppShell>
   );

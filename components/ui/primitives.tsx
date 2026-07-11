@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils";
 
 export function StatusPill({ tone, children }: { tone: "lime" | "magenta" | "blue" | "amber" | "slate" | "green"; children: ReactNode }) {
   const map: Record<string, string> = {
-    lime: "bg-success/12 text-success ring-success/28",
-    magenta: "bg-primary/16 text-white ring-primary/30",
-    blue: "bg-accent/12 text-accent ring-accent/28",
-    amber: "bg-secondary/14 text-secondary ring-secondary/32",
+    lime: "bg-success/[0.12] text-success ring-success/[0.28]",
+    magenta: "bg-primary/[0.16] text-white ring-primary/30",
+    blue: "bg-accent/[0.12] text-accent ring-accent/[0.28]",
+    amber: "bg-secondary/[0.14] text-secondary ring-secondary/[0.32]",
     slate: "bg-white/[0.045] text-muted-foreground ring-white/10",
-    green: "bg-success/12 text-success ring-success/28",
+    green: "bg-success/[0.12] text-success ring-success/[0.28]",
   };
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] ring-1", map[tone])}>
@@ -65,7 +65,7 @@ export function Btn({
   const variants = {
     primary: "gold-cta text-secondary-foreground",
     hot: "bg-primary text-primary-foreground shadow-[0_16px_42px_-28px_oklch(0.47_0.16_24_/_85%)] hover:bg-primary/90",
-    outline: "border border-white/12 bg-white/[0.035] text-foreground hover:border-white/24 hover:bg-white/[0.06]",
+    outline: "border border-white/[0.12] bg-white/[0.035] text-foreground hover:border-white/[0.24] hover:bg-white/[0.06]",
     ghost: "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
   };
   return (
