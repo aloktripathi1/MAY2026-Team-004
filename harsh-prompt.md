@@ -82,3 +82,7 @@ On clicking register, show "requested" with closed color; set default as not req
 
 My current My Task tab is not what is in the wireframe, so use @design.md for design guide. Do not break exisiting code , functionality, ui or any other member dashboard. follow best practices for tech stack choosen. Make sure data remain consistent across the roles. Like it should not be like - if user has done something in this Volunteer dashboard, its not reflecting when neeeded.
 
+---
+
+Add a new section called COMPLETED under ASSIGNED TO ME section and move all the Completed task there (ticked off). User can click to complete the task and same modal moves to COMPLETED section with subtle animation. Do not break existing code and functionality.
+

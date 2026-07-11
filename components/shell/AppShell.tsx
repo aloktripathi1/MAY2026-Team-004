@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
@@ -140,7 +140,7 @@ export function AppShell({
                           transition={
                             reduceMotion
                               ? { duration: 0 }
-                              : { type: "spring", stiffness: 380, damping: 34, mass: 0.85 }
+                              : { type: "spring", stiffness: 320, damping: 36, mass: 0.9 }
                           }
                         />
                       )}
@@ -156,7 +156,7 @@ export function AppShell({
                         <motion.span
                           initial={reduceMotion ? false : { opacity: 0, scale: 0.5 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                          transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                           className="relative ml-auto h-1.5 w-1.5 rounded-full bg-secondary"
                         />
                       )}
@@ -187,21 +187,24 @@ export function AppShell({
           />
         )}
 
-        {/* Main — keyed by path so tab switches get the same subtle entrance */}
+        {/* Main — exit + enter so sidebar tab switches feel continuous */}
         <main className="min-w-0 flex-1">
-          <motion.div
-            key={currentPath}
-            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={
-              reduceMotion
-                ? { duration: 0 }
-                : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
-            }
-            className="mx-auto max-w-7xl px-5 py-8 md:px-10 md:py-12"
-          >
-            {children}
-          </motion.div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentPath}
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+              }
+              className="mx-auto max-w-7xl px-5 py-8 md:px-10 md:py-12"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

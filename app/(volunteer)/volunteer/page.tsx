@@ -3,7 +3,7 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
-import { TaskAssigneeRow } from "@/components/tasks/TaskAssigneeRow";
+import { AssignedTasksBoard } from "@/components/tasks/AssignedTasksBoard";
 import { formatContributionDate, pluralize } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export default async function VolunteerHome() {
   const session = getMockSession();
   const userId = session!.user.id;
 
-  const [tasksRaw, contributions, rsvps] = await Promise.all([
+  const [tasks, contributions, rsvps] = await Promise.all([
     prisma.task.findMany({
       where: { assigneeId: userId },
       orderBy: { dueAt: "asc" },
@@ -31,16 +31,6 @@ export default async function VolunteerHome() {
     }),
   ]);
 
-  // Active work first, then completed — still due-date ordered within each group.
-  const tasks = [...tasksRaw].sort((a, b) => {
-    const aDone = a.status === "done" ? 1 : 0;
-    const bDone = b.status === "done" ? 1 : 0;
-    if (aDone !== bDone) return aDone - bDone;
-    const aDue = a.dueAt ? new Date(a.dueAt).getTime() : Number.POSITIVE_INFINITY;
-    const bDue = b.dueAt ? new Date(b.dueAt).getTime() : Number.POSITIVE_INFINITY;
-    return aDue - bDue;
-  });
-
   const active = tasks.filter((t) => t.status !== "done").length;
   const done = tasks.length - active;
   const hoursLogged = contributions.reduce((sum, entry) => sum + Number(entry.hoursLogged), 0);
@@ -50,6 +40,15 @@ export default async function VolunteerHome() {
     ...contributions.map((c) => c.eventId),
     ...rsvps.map((r) => r.eventId),
   ]);
+
+  const assignedTasks = tasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    priority: t.priority ?? "Med",
+    status: t.status,
+    dueAt: t.dueAt,
+    eventTitle: t.event.title,
+  }));
 
   return (
     <>
@@ -65,29 +64,9 @@ export default async function VolunteerHome() {
         <Stat label="Hours contributed" value={`${hoursLogged}h`} hue="210" />
       </div>
 
-      <section className="mt-10">
-        <div className="mb-4">
-          <h2 className="text-mono-label">Assigned to me</h2>
-        </div>
-        <div className="space-y-2">
-          {tasks.length === 0 && (
-            <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">
-              No tasks assigned yet.
-            </div>
-          )}
-          {tasks.map((t) => (
-            <TaskAssigneeRow
-              key={t.id}
-              taskId={t.id}
-              title={t.title}
-              priority={t.priority ?? "Med"}
-              status={t.status}
-              dueAt={t.dueAt}
-              eventTitle={t.event.title}
-            />
-          ))}
-        </div>
-      </section>
+      <div className="mt-10">
+        <AssignedTasksBoard initialTasks={assignedTasks} />
+      </div>
 
       <section className="mt-10">
         <div className="mb-4">

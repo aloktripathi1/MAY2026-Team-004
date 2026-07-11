@@ -32,6 +32,7 @@ export function TaskAssigneeRow({
   status,
   dueAt,
   eventTitle,
+  onStatusChange,
 }: {
   taskId: string;
   title: string;
@@ -39,15 +40,18 @@ export function TaskAssigneeRow({
   status: string;
   dueAt: Date | null;
   eventTitle: string;
+  onStatusChange?: (status: "todo" | "doing" | "done") => void;
 }) {
   const [currentStatus, setCurrentStatus] = useState(status);
   const [pending, startTransition] = useTransition();
   const done = currentStatus === "done";
 
   function setStatus(next: "todo" | "doing" | "done") {
+    // Move the card between sections immediately; persist in the background.
+    setCurrentStatus(next);
+    onStatusChange?.(next);
     startTransition(async () => {
       await updateTaskStatusAction(taskId, next);
-      setCurrentStatus(next);
     });
   }
 
