@@ -25,7 +25,7 @@ export default async function ProfilePage() {
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="night-panel rounded-3xl p-6">
-          <div className="grid h-24 w-24 place-items-center rounded-2xl border border-secondary/25 bg-secondary/12 text-3xl font-semibold text-secondary">{initials}</div>
+          <div className="grid h-24 w-24 place-items-center rounded-2xl border border-secondary/25 bg-secondary/[0.12] text-3xl font-semibold text-secondary">{initials}</div>
           <div className="mt-4 text-3xl font-black leading-none tracking-[-0.05em] text-white">{user!.name}</div>
           <div className="text-mono-label mt-2">
             {user!.rollNumber ?? "—"} {primaryMembership ? `· ${primaryMembership.club.name} ${primaryMembership.role}` : ""}
@@ -43,7 +43,7 @@ export default async function ProfilePage() {
             <div className="flex flex-wrap gap-1.5">
               {["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"].map(t => (
                 <button key={t}
-                  className="rounded-lg border border-white/12 bg-white/[0.035] px-3 py-1.5 text-xs text-muted-foreground transition hover:border-secondary/40 hover:bg-white/[0.06] hover:text-secondary">
+                  className="rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 py-1.5 text-xs text-muted-foreground transition hover:border-secondary/40 hover:bg-white/[0.06] hover:text-secondary">
                   {t}
                 </button>
               ))}

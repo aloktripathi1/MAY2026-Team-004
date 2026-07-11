@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
-  LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, HelpCircle, UserRound,
+  LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
-  Shield, Menu, X, LogOut,
+  Shield, Menu, X, LogOut, Ticket,
 } from "lucide-react";
 
 type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
@@ -19,7 +19,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
     { label: "Events", to: "/app/events", icon: CalendarDays },
     { label: "Browse clubs", to: "/app/clubs", icon: Compass },
     { label: "My issues", to: "/app/issues", icon: MessageSquareWarning },
-    { label: "FAQ", to: "/app/faq", icon: HelpCircle },
     { label: "Profile", to: "/app/profile", icon: UserRound },
   ],
   coordinator: [
@@ -31,6 +30,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   admin: [
     { label: "Overview", to: "/admin", icon: LayoutDashboard },
     { label: "Members", to: "/admin/members", icon: Users2 },
+    { label: "Issues", to: "/admin/issues", icon: Ticket },
     { label: "Approvals", to: "/admin/approvals", icon: ClipboardCheck },
     { label: "Announcements", to: "/admin/announcements", icon: Megaphone },
     { label: "Metrics", to: "/admin/metrics", icon: LineChart },
@@ -58,6 +58,7 @@ export function AppShell({
   role, user = "Ananya Rao", club = "CodeChef IITM BS", children,
 }: { role: Role; user?: string; club?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
   const currentPath = usePathname();
   const items = navByRole[role];
   const meta = roleMeta[role];
@@ -67,12 +68,12 @@ export function AppShell({
       {/* Mobile top bar */}
       <div className="night-nav sticky top-0 z-40 flex items-center justify-between px-4 py-3 md:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
           <span className="text-[13px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
         </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="rounded-lg border border-white/12 bg-white/[0.04] p-2 text-white"
+          className="rounded-lg border border-white/[0.12] bg-white/[0.04] p-2 text-white"
           aria-label="Toggle menu"
         >
           {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -91,13 +92,12 @@ export function AppShell({
         >
           <div className="flex h-full flex-col p-6 text-sidebar-foreground">
             <Link href="/" className="mb-8 flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
               <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
             </Link>
 
             {/* Role card */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-              <div className="text-mono-label mb-2 text-sidebar-foreground/60">Signed in / {meta.name}</div>
               <div className="flex items-center gap-3">
                 <div
                   className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 text-sm font-semibold"
@@ -107,14 +107,23 @@ export function AppShell({
                 </div>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-sidebar-foreground" title={user}>{user}</div>
-                  <div className="truncate text-xs text-sidebar-foreground/65" title={club}>{club}</div>
+                  <div className="text-xs leading-snug text-sidebar-foreground/65" title={`${club} · ${meta.badge}`}>{club} · {meta.badge}</div>
                 </div>
               </div>
             </div>
 
             <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hidden">
               {items.map((item) => {
-                const active = currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to) && item.to.length > 1 && (currentPath.length === item.to.length || currentPath[item.to.length] === "/"));
+                const matches = (to: string) =>
+                  currentPath === to || (to !== "/" && currentPath.startsWith(`${to}/`));
+                const active =
+                  matches(item.to) &&
+                  !items.some(
+                    (other) =>
+                      other.to !== item.to &&
+                      other.to.length > item.to.length &&
+                      matches(other.to)
+                  );
                 return (
                   <Link
                     key={item.to}
@@ -125,7 +134,7 @@ export function AppShell({
                     {active && (
                       <motion.span
                         layoutId={`nav-${role}`}
-                        className="absolute inset-0 rounded-xl bg-white/[0.075] ring-1 ring-secondary/35"
+                        className="absolute inset-0 rounded-xl border border-secondary/50 bg-white/[0.075]"
                         transition={{ type: "spring", stiffness: 500, damping: 40 }}
                       />
                     )}
@@ -163,8 +172,8 @@ export function AppShell({
         {/* Main */}
         <main className="min-w-0 flex-1">
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="mx-auto max-w-7xl px-5 py-8 md:px-10 md:py-12"
           >

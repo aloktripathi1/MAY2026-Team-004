@@ -37,6 +37,8 @@ function buildMockDb() {
       email: `${member.roll}@ds.study.iitm.ac.in`,
       name: member.name,
       rollNumber: member.roll,
+      hashedPassword: "",
+      interests: "[]",
       isFaculty: false,
       createdAt: new Date(`1 ${member.joined}`),
     })),
@@ -45,6 +47,8 @@ function buildMockDb() {
       email: "faculty.mentor@ds.study.iitm.ac.in",
       name: "Prof. R. Krishnan",
       rollNumber: null,
+      hashedPassword: "",
+      interests: "[]",
       isFaculty: true,
       createdAt: new Date("2024-01-01"),
     },
@@ -105,6 +109,8 @@ function buildMockDb() {
       // read silently resolved to `undefined`.
       raisedBy: raisedByUser,
       club,
+      assigneeId: undefined as string | undefined,
+      assignee: undefined as (typeof users)[number] | undefined,
     };
   });
 
