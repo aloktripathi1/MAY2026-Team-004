@@ -96,6 +96,7 @@ export interface Issue {
   clubSlug?: string;
   timeAgo: string;
   priority: "Low" | "Med" | "High";
+  attachments?: string[];
 }
 export const issues: Issue[] = [
   { id: "i1", title: "Can't RSVP for Fusion Night — button loops", category: "Registration", status: "In progress", raisedBy: "You", timeAgo: "3h", priority: "Med" },

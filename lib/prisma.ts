@@ -39,7 +39,9 @@ function buildMockDb() {
       rollNumber: member.roll,
       hashedPassword: "",
       interests: "[]",
+      notificationPrefs: "{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}",
       isFaculty: false,
+      image: undefined as string | undefined,
       createdAt: new Date(`1 ${member.joined}`),
     })),
     {
@@ -49,7 +51,9 @@ function buildMockDb() {
       rollNumber: null,
       hashedPassword: "",
       interests: "[]",
+      notificationPrefs: "{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}",
       isFaculty: true,
+      image: undefined as string | undefined,
       createdAt: new Date("2024-01-01"),
     },
   ];
