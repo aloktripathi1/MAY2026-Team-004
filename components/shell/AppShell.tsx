@@ -131,9 +131,6 @@ export function AppShell({
                     )}
                     <item.icon className={`relative h-4 w-4 ${active ? "text-secondary" : ""}`} />
                     <span className={`relative ${active ? "font-semibold text-sidebar-foreground" : ""}`}>{item.label}</span>
-                    {active && (
-                      <span className="relative ml-auto h-1.5 w-1.5 rounded-full bg-secondary" />
-                    )}
                   </Link>
                 );
               })}
