@@ -126,6 +126,7 @@ function buildMockDb() {
       id: `${event.id}-rsvp-${index}`,
       eventId: event.id,
       userId: users[index % seedMembers.length].id,
+      checkedIn: false,
       createdAt: new Date(Date.now() - index * 18 * 60 * 60 * 1000),
       user: users[index % seedMembers.length],
       event,
@@ -307,7 +308,7 @@ export const prisma = {
     create: async ({ data }: AnyRecord) => {
       const user = users.find((u) => u.id === data.userId);
       const event = events.find((e) => e.id === data.eventId);
-      const record = { id: nextMockId("rsvp"), createdAt: new Date(), ...data, user, event };
+      const record = { id: nextMockId("rsvp"), createdAt: new Date(), checkedIn: false, ...data, user, event };
       rsvps.push(record);
       return record;
     },
