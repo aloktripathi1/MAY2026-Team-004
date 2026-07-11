@@ -38,7 +38,11 @@ function buildMockDb() {
       name: member.name,
       rollNumber: member.roll,
       hashedPassword: "",
-      interests: "[]",
+      // Demo primary user (Ananya / m1) starts with interests so profile & club
+      // recommendations aren't empty until someone opens Edit details.
+      interests: member.id === "m1"
+        ? JSON.stringify(["Technical", "Design", "Entrepreneurship"])
+        : "[]",
       isFaculty: false,
       createdAt: new Date(`1 ${member.joined}`),
     })),

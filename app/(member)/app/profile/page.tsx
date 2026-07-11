@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
+import { INTEREST_OPTIONS, parseInterests } from "@/lib/interests";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, StatusPill, Btn } from "@/components/ui/primitives";
+import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { NotificationPreferences } from "./NotificationPreferences";
+import { EditDetailsModal } from "./EditDetailsModal";
 
 export const metadata: Metadata = {
   title: "Profile · Sangam",
@@ -19,6 +21,7 @@ export default async function ProfilePage() {
 
   const initials = (user!.name.split(" ").map((s) => s[0]).slice(0, 2).join("") || "?").toUpperCase();
   const primaryMembership = user!.memberships[0];
+  const interests = parseInterests(user!.interests);
 
   return (
     <>
@@ -35,20 +38,32 @@ export default async function ProfilePage() {
             <Row k="Email" v={user!.email} />
             <Row k="Joined" v={user!.createdAt.toLocaleDateString(undefined, { month: "short", year: "numeric" })} />
           </div>
-          <Btn className="mt-6 w-full" variant="outline">Edit details</Btn>
+          <EditDetailsModal name={user!.name} interests={interests} />
         </div>
 
         <div className="space-y-6">
           <GlassCard>
             <div className="text-mono-label mb-3">Interests</div>
             <div className="flex flex-wrap gap-1.5">
-              {["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"].map(t => (
-                <button key={t}
-                  className="rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 py-1.5 text-xs text-muted-foreground transition hover:border-secondary/40 hover:bg-white/[0.06] hover:text-secondary">
-                  {t}
-                </button>
-              ))}
+              {INTEREST_OPTIONS.map((t) => {
+                const active = interests.includes(t);
+                return (
+                  <span
+                    key={t}
+                    className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                      active
+                        ? "border-secondary/40 bg-secondary/[0.12] text-secondary"
+                        : "border-white/[0.12] bg-white/[0.035] text-muted-foreground"
+                    }`}
+                  >
+                    {t}
+                  </span>
+                );
+              })}
             </div>
+            {interests.length === 0 && (
+              <p className="mt-3 text-xs text-muted-foreground">No interests set yet. Edit details to choose some.</p>
+            )}
           </GlassCard>
 
           <GlassCard>
