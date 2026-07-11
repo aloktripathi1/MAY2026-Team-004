@@ -1,18 +1,31 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { updateTaskStatusAction } from "@/lib/actions/tasks";
 
 const statuses = ["todo", "doing", "done"] as const;
 
-export function TaskStatusButtons({ taskId, status }: { taskId: string; status: string }) {
+export function TaskStatusButtons({
+  taskId,
+  status,
+  onStatusChange,
+}: {
+  taskId: string;
+  status: string;
+  onStatusChange?: (status: string) => void;
+}) {
   const [currentStatus, setCurrentStatus] = useState(status);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setCurrentStatus(status);
+  }, [status]);
 
   function set(s: string) {
     startTransition(async () => {
       await updateTaskStatusAction(taskId, s);
       setCurrentStatus(s);
+      onStatusChange?.(s);
     });
   }
 

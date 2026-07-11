@@ -70,6 +70,7 @@ export const events: Event[] = [
   { id: "e8", slug: "sarga-open-jam", title: "Sarga Open Jam — June", clubSlug: "sarga", club: "Sarga — Music Circle", date: "Fri, Jun 27", isoDate: "2026-06-27", time: "7:30 PM", venue: "Amphitheatre", status: "past", going: 143, capacity: 150, cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 100%)", photo: "/club-events/sarga-open-jam.png", tags: ["Music"], description: "Twelve acts, one open mic. Recording available on the club drive.", approval: "not-required" },
   { id: "e9", slug: "zine-launch-night", title: "Zine Launch Night · Quill", clubSlug: "quill", club: "Quill — Writers' Circle", date: "Fri, Jul 18", isoDate: "2026-07-18", time: "6:00 PM", venue: "Library Courtyard", status: "upcoming", going: 22, capacity: 60, cover: "linear-gradient(135deg,#a855f7 0%,#ec4899 100%)", photo: "https://loremflickr.com/800/450/books,writing?lock=19", tags: ["Literary", "Open"], description: "Launch of the summer zine, print copies handed out at the door. Off-campus vendor for printing, needs faculty sign-off.", approval: "pending" },
   { id: "e10", slug: "inter-college-chess-meet", title: "Inter-College Chess Meet · Arena", clubSlug: "arena", club: "Arena — Chess Club", date: "Sat, Jul 19", isoDate: "2026-07-19", time: "10:00 AM", venue: "Off-campus · Chennai", status: "upcoming", going: 18, capacity: 30, cover: "linear-gradient(135deg,#334155 0%,#0f172a 100%)", photo: "https://loremflickr.com/800/450/chess?lock=20", tags: ["Sports", "Travel"], description: "Away fixture against three other campuses. Bus transport and away-day insurance need faculty approval before booking.", approval: "pending" },
+  { id: "e11", slug: "annual-photo-exhibition", title: "Annual Photo Exhibition", clubSlug: "kalakriti", club: "Kalakriti Design Guild", date: "Mon, Jun 2", isoDate: "2026-06-02", time: "10:00 AM", venue: "Gallery Hall", status: "past", going: 64, capacity: 80, cover: "linear-gradient(135deg,#eab308 0%,#0ea5e9 100%)", photo: "https://loremflickr.com/800/450/photography,gallery?lock=19", tags: ["Design", "Exhibition"], description: "Semester showcase of member work. Volunteers handled setup, wall labels, and teardown.", approval: "not-required" },
 ];
 
 export interface Announcement {
@@ -114,14 +115,31 @@ export interface Task {
   event: string;
   role: string;
   due: string;
+  dueAt?: string; // ISO datetime when known; mock DB falls back to relative dates
   status: "todo" | "doing" | "done";
+  priority: "Low" | "Med" | "High";
   assignee: string;
 }
 export const tasks: Task[] = [
-  { id: "t1", title: "Set up amphitheatre PA system", event: "Fusion Night VI", role: "Tech ops", due: "Sat 5 PM", status: "todo", assignee: "You" },
-  { id: "t2", title: "Print speaker badges (60)", event: "BP Open Round", role: "Logistics", due: "Tue 4 PM", status: "doing", assignee: "You" },
-  { id: "t3", title: "Confirm mentor slots — Ignite", event: "Ignite 2026", role: "Coordination", due: "Fri", status: "doing", assignee: "You" },
-  { id: "t4", title: "Post cook-off writeup on Discord", event: "Cook-Off #41", role: "Content", due: "Done", status: "done", assignee: "You" },
+  { id: "t1", title: "Set up amphitheatre PA system", event: "Fusion Night VI", role: "Tech ops", due: "Sat 5 PM", dueAt: "2026-07-11T17:00:00", status: "doing", priority: "High", assignee: "You" },
+  { id: "t2", title: "Print speaker badges (60)", event: "BP Open Round", role: "Logistics", due: "Tue 4 PM", dueAt: "2026-07-14T16:00:00", status: "todo", priority: "High", assignee: "You" },
+  { id: "t3", title: "Confirm mentor slots — Ignite", event: "Ignite 2026", role: "Coordination", due: "Fri", dueAt: "2026-07-17T13:00:00", status: "todo", priority: "Med", assignee: "You" },
+  { id: "t4", title: "Post cook-off writeup on Discord", event: "Cook-Off #41", role: "Content", due: "Done", dueAt: "2026-07-10T18:00:00", status: "done", priority: "Med", assignee: "You" },
+];
+
+/** Verified volunteering hours — shared across volunteer dashboard + any future coordinator views. */
+export interface Contribution {
+  id: string;
+  event: string; // event title substring match, same pattern as tasks
+  role: string;
+  hoursLogged: number;
+  date: string; // ISO date of the shift
+  assignee: string;
+}
+export const contributions: Contribution[] = [
+  { id: "v1", event: "Sarga Open Jam", role: "Stage & green-room crew", hoursLogged: 10, date: "2026-06-27", assignee: "You" },
+  { id: "v2", event: "Chess Blitz X", role: "Registration desk", hoursLogged: 8, date: "2026-07-04", assignee: "You" },
+  { id: "v3", event: "Annual Photo Exhibition", role: "Setup & teardown", hoursLogged: 6, date: "2026-06-02", assignee: "You" },
 ];
 
 export interface Member {
