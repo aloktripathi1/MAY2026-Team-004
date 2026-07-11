@@ -26,7 +26,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
     { label: "Events", to: "/coordinator", icon: CalendarDays },
     { label: "New event", to: "/coordinator/new", icon: PlusSquare },
     { label: "Volunteers", to: "/coordinator/volunteers", icon: Users2 },
-    { label: "Resources", to: "/coordinator/resources", icon: Package },
   ],
   admin: [
     { label: "Overview", to: "/admin", icon: LayoutDashboard },

@@ -18,11 +18,16 @@ export default async function CoordinatorHome() {
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 
-  const [myEvents, tasks, volunteerCount] = await Promise.all([
+  const [myEvents, volunteerCount] = await Promise.all([
     prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { rsvps: true } } } }),
-    prisma.task.findMany({ where: { event: { clubId } }, include: { event: true } }),
     prisma.membership.count({ where: { clubId, role: { in: ["Volunteer", "Member"] } } }),
   ]);
+
+  const eventIds = myEvents.map(e => e.id);
+  const tasks = await prisma.task.findMany({
+    where: { eventId: { in: eventIds } },
+    include: { event: true },
+  });
 
   return (
     <>
