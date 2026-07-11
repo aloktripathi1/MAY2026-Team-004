@@ -28,11 +28,7 @@ export function AssignedTasksBoard({ initialTasks }: { initialTasks: AssignedTas
   const reduceMotion = useReducedMotion();
   const [tasks, setTasks] = useState(initialTasks);
 
-  const { active, completed } = useMemo(() => {
-    const activeTasks = tasks.filter((t) => t.status !== "done").sort(sortByDue);
-    const completedTasks = tasks.filter((t) => t.status === "done").sort(sortByDue);
-    return { active: activeTasks, completed: completedTasks };
-  }, [tasks]);
+  const active = useMemo(() => tasks.filter((t) => t.status !== "done").sort(sortByDue), [tasks]);
 
   function handleStatusChange(taskId: string, status: string) {
     setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status } : task)));
@@ -89,21 +85,12 @@ export function AssignedTasksBoard({ initialTasks }: { initialTasks: AssignedTas
   }
 
   const content = (
-    <>
-      <section>
-        <div className="mb-4">
-          <h2 className="text-mono-label">Assigned to me</h2>
-        </div>
-        {renderList(active, "No active tasks right now.")}
-      </section>
-
-      <section className="mt-10">
-        <div className="mb-4">
-          <h2 className="text-mono-label">Completed</h2>
-        </div>
-        {renderList(completed, "No completed tasks yet.")}
-      </section>
-    </>
+    <section>
+      <div className="mb-4">
+        <h2 className="text-mono-label">Assigned to me</h2>
+      </div>
+      {renderList(active, "No active tasks right now.")}
+    </section>
   );
 
   if (reduceMotion) return content;

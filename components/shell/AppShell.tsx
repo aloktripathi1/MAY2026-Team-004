@@ -152,14 +152,6 @@ export function AppShell({
                       >
                         {item.label}
                       </span>
-                      {active && (
-                        <motion.span
-                          initial={reduceMotion ? false : { opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                          className="relative ml-auto h-1.5 w-1.5 rounded-full bg-secondary"
-                        />
-                      )}
                     </Link>
                   );
                 })}
