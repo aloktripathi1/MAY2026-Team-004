@@ -84,6 +84,7 @@ export interface Announcement {
   club: string;
   timeAgo: string;
   pinned?: boolean;
+  audience?: "All" | "Coordinators" | "Volunteers";
 }
 export const announcements: Announcement[] = [
   { id: "a1", title: "Ignite 2026 registrations close Wednesday", body: "120 seats. 96 filled. If you're pitching, submit your one-liner by Tue 11 PM or you forfeit the slot.", clubSlug: "e-cell", club: "E-Cell IITM BS", timeAgo: "2h", pinned: true },

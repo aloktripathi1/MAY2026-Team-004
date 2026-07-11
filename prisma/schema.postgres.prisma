@@ -34,6 +34,12 @@ enum MembershipStatus {
   Inactive
 }
 
+enum AnnouncementAudience {
+  All
+  Coordinators
+  Volunteers
+}
+
 enum EventStatus {
   upcoming
   live
@@ -85,7 +91,8 @@ model User {
   updatedAt      DateTime @updatedAt
 
   memberships            Membership[]
-  issuesRaised           Issue[]
+  issuesRaised           Issue[]        @relation("IssueRaisedBy")
+  issuesAssigned         Issue[]        @relation("IssueAssignee")
   tasksAssigned          Task[]
   announcementsAuthored  Announcement[]
   rsvps                  Rsvp[]
@@ -169,6 +176,7 @@ model Announcement {
   authorId  String
   createdAt DateTime @default(now())
   pinned    Boolean  @default(false)
+  audience  AnnouncementAudience @default(All)
 
   club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -180,11 +188,13 @@ model Issue {
   category    IssueCategory
   status      IssueStatus   @default(Open)
   raisedById  String
+  assigneeId  String?
   clubId      String?
   createdAt   DateTime      @default(now())
   priority    Priority      @default(Low)
 
-  raisedBy User  @relation(fields: [raisedById], references: [id], onDelete: Cascade)
+  raisedBy User  @relation("IssueRaisedBy", fields: [raisedById], references: [id], onDelete: Cascade)
+  assignee User? @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   club     Club? @relation(fields: [clubId], references: [id], onDelete: SetNull)
 }
 

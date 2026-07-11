@@ -8,7 +8,7 @@ export default async function VolunteerLayout({ children }: { children: ReactNod
   if (!session?.user) redirect("/login");
 
   const volunteerMembership = session.user.memberships.find((m) => m.role === "Volunteer") ?? session.user.memberships[0];
-  const club = volunteerMembership ? `${volunteerMembership.clubName} · Volunteer` : "Sangam · Volunteer";
+  const club = volunteerMembership ? volunteerMembership.clubName : "Sangam";
 
   return (
     <AppShell role="volunteer" user={session.user.name ?? "Volunteer"} club={club}>

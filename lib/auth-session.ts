@@ -27,6 +27,14 @@ export function setAuthCookies(user: AuthCookieUser) {
   store.set(AUTH_USER_FACULTY_COOKIE, user.isFaculty ? "1" : "0", cookieOptions);
 }
 
+export function clearAuthCookies() {
+  const store = cookies();
+  store.delete(AUTH_USER_ID_COOKIE);
+  store.delete(AUTH_USER_NAME_COOKIE);
+  store.delete(AUTH_USER_EMAIL_COOKIE);
+  store.delete(AUTH_USER_FACULTY_COOKIE);
+}
+
 export function getAuthCookieUser(): AuthCookieUser | null {
   const store = cookies();
   const id = store.get(AUTH_USER_ID_COOKIE)?.value;
