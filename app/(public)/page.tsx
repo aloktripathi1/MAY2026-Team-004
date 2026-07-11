@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -21,6 +22,18 @@ import {
 } from "lucide-react";
 import { announcements, clubs, events, faqs, metrics, tasks } from "@/lib/seed-data";
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500", "600", "700"],
+});
+
 function noEmDash(value: string): string {
   return value.replace(/\s*—\s*/g, " / ");
 }
@@ -33,7 +46,7 @@ const navLinks = [
 
 export default function Landing() {
   return (
-    <main className="sangam-night min-h-screen overflow-hidden bg-background text-foreground">
+    <main className={`sangam-night ${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-screen overflow-hidden bg-background text-foreground`}>
       <MarketingNav />
       <Hero />
       <LiveActivity />
@@ -94,7 +107,7 @@ function MarketingNav() {
           }`}
         >
           <Link href="/" className="group flex items-center gap-3" aria-label="Sangam home">
-            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/12 bg-white/[0.06] text-[13px] font-black text-secondary transition group-hover:border-secondary/45">
+            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary transition group-hover:border-secondary/45">
               SG
             </span>
             <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
@@ -173,7 +186,7 @@ function MarketingNav() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-background/96 px-5 py-4 backdrop-blur-2xl md:hidden"
+            className="fixed inset-0 z-[60] bg-background/[0.96] px-5 py-4 backdrop-blur-2xl md:hidden"
           >
             <div className="flex items-center justify-between">
               <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
@@ -181,7 +194,7 @@ function MarketingNav() {
                 type="button"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
-                className="grid h-10 w-10 place-items-center rounded-lg border border-white/12 text-white"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-white/[0.12] text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -208,7 +221,7 @@ function MarketingNav() {
               <Link href="/signup" onClick={() => setMobileOpen(false)} className="gold-cta flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-secondary-foreground">
                 Join Sangam <ArrowUpRight className="h-4 w-4" />
               </Link>
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/12 text-sm font-medium text-white">
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/[0.12] text-sm font-medium text-white">
                 Sign in
               </Link>
             </div>
@@ -245,7 +258,7 @@ function Hero() {
               <Link href="/signup" className="gold-cta inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-secondary-foreground">
                 Start with your society <ArrowUpRight className="h-4 w-4" />
               </Link>
-              <Link href="/clubs" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/12 px-5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.05]">
+              <Link href="/clubs" className="inline-flex h-12 items-center justify-center rounded-xl border border-white/[0.12] px-5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.05]">
                 Browse clubs
               </Link>
             </div>
@@ -277,7 +290,7 @@ function ProductPreview() {
           <div className="mono-label !text-[0.62rem]">LIVE CONTROL ROOM</div>
           <div className="mt-1 text-sm font-semibold text-white">Friday ops summary</div>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-primary/35 bg-primary/12 px-2.5 py-1.5 text-xs font-semibold text-white">
+        <div className="flex items-center gap-2 rounded-lg border border-primary/35 bg-primary/[0.12] px-2.5 py-1.5 text-xs font-semibold text-white">
           <span className="h-1.5 w-1.5 rounded-full bg-secondary shadow-[0_0_18px_rgba(222,174,86,0.9)]" />
           synced
         </div>
@@ -365,7 +378,7 @@ function ProductPreview() {
               <div className="mono-label !text-[0.58rem]">ANNOUNCEMENTS</div>
               <div className="mt-3 space-y-2">
                 {announcements.slice(0, 3).map((item) => (
-                  <div key={item.id} className="rounded-lg bg-black/18 px-3 py-2">
+                  <div key={item.id} className="rounded-lg bg-black/[0.18] px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-white">{item.club}</span>
                       <span className="font-mono text-[10px] text-muted-foreground">{item.timeAgo}</span>
@@ -379,7 +392,7 @@ function ProductPreview() {
               <div className="mono-label !text-[0.58rem]">TASKS</div>
               <div className="mt-3 space-y-2">
                 {tasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 rounded-lg bg-black/18 px-3 py-2">
+                  <div key={task.id} className="flex items-center gap-2 rounded-lg bg-black/[0.18] px-3 py-2">
                     <CheckCircle2 className={`h-4 w-4 ${task.status === "done" ? "text-secondary" : "text-primary"}`} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-xs font-medium text-white">{task.title}</div>
