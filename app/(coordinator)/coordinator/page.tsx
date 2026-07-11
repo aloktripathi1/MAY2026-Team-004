@@ -18,11 +18,16 @@ export default async function CoordinatorHome() {
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 
-  const [myEvents, tasks, volunteerCount] = await Promise.all([
+  const [myEvents, volunteerCount] = await Promise.all([
     prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { rsvps: true } } } }),
-    prisma.task.findMany({ where: { event: { clubId } }, include: { event: true } }),
     prisma.membership.count({ where: { clubId, role: { in: ["Volunteer", "Member"] } } }),
   ]);
+
+  const eventIds = myEvents.map(e => e.id);
+  const tasks = await prisma.task.findMany({
+    where: { eventId: { in: eventIds } },
+    include: { event: true },
+  });
 
   return (
     <>
@@ -32,9 +37,9 @@ export default async function CoordinatorHome() {
         actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
       />
       <div className="grid gap-3 md:grid-cols-3">
-        <Stat label="Live events" value={myEvents.length} hue="122" />
-        <Stat label="Volunteers assigned" value={volunteerCount} hue="5" />
-        <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} hue="45" />
+        <Stat label="Live events" value={myEvents.length} showDot={false} />
+        <Stat label="Volunteers assigned" value={volunteerCount} showDot={false} />
+        <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} showDot={false} />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
@@ -42,19 +47,24 @@ export default async function CoordinatorHome() {
           <div className="space-y-2">
             {myEvents.length === 0 && <div className="text-sm text-muted-foreground">No upcoming events.</div>}
             {myEvents.map(e => (
-              <GlassCard key={e.id} className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 shrink-0 rounded-lg" style={{ background: e.cover }} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{e.title}</div>
-                    <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>
+              <Link key={e.id} href={`/coordinator/events/${e.slug}`}>
+                <GlassCard className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg" style={{ background: e.cover }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{e.title}</div>
+                      <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>
+                    </div>
+                    <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
                   </div>
-                  <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
-                </div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%` }} />
-                </div>
-              </GlassCard>
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%` }} />
+                  </div>
+                </GlassCard>
+              </Link>
             ))}
           </div>
         </div>
@@ -67,7 +77,7 @@ export default async function CoordinatorHome() {
                 <div className={`h-2 w-2 shrink-0 rounded-full ${t.status === "done" ? "bg-success" : t.status === "doing" ? "bg-warning" : "bg-muted-foreground"}`} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">{t.title}</div>
-                  <div className="text-xs text-muted-foreground">{t.event.title}</div>
+                  <div className="text-xs text-muted-foreground">{myEvents.find(e => e.id === t.eventId)?.title ?? "—"}</div>
                 </div>
                 <StatusPill tone={t.status === "done" ? "green" : t.status === "doing" ? "amber" : "slate"}>{t.status}</StatusPill>
               </GlassCard>

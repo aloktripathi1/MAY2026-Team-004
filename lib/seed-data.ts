@@ -125,6 +125,10 @@ export const tasks: Task[] = [
   { id: "t2", title: "Print speaker badges (60)", event: "BP Open Round", role: "Logistics", due: "Tue 4 PM", dueAt: "2026-07-14T16:00:00", status: "todo", priority: "High", assignee: "You" },
   { id: "t3", title: "Confirm mentor slots — Ignite", event: "Ignite 2026", role: "Coordination", due: "Fri", dueAt: "2026-07-17T13:00:00", status: "todo", priority: "Med", assignee: "You" },
   { id: "t4", title: "Post cook-off writeup on Discord", event: "Cook-Off #41", role: "Content", due: "Done", dueAt: "2026-07-10T18:00:00", status: "done", priority: "Med", assignee: "You" },
+  { id: "t5", title: "Set up registration desk — Ignite", event: "Ignite 2026", role: "Logistics", due: "Fri 8 AM", dueAt: "2026-07-17T08:00:00", status: "todo", priority: "Med", assignee: "Vikram Shah" },
+  { id: "t6", title: "Coordinate sponsor booth setup", event: "Ignite 2026", role: "Logistics", due: "Fri 9 AM", dueAt: "2026-07-17T09:00:00", status: "todo", priority: "Med", assignee: "Sneha Pillai" },
+  { id: "t7", title: "Brief judges on scoring rubric", event: "Ignite 2026", role: "Coordination", due: "Sat 2 PM", dueAt: "2026-07-18T14:00:00", status: "doing", priority: "High", assignee: "Arjun Verma" },
+  { id: "t8", title: "Print participant name badges", event: "Ignite 2026", role: "Logistics", due: "Done", dueAt: "2026-07-16T18:00:00", status: "done", priority: "Low", assignee: "Priya Ramesh" },
 ];
 
 /** Verified volunteering hours — shared across volunteer dashboard + any future coordinator views. */
@@ -160,7 +164,10 @@ export const members: Member[] = [
   { id: "m5", name: "Meera Nair", roll: "23s1000654", role: "Coordinator", clubs: ["Kalakriti"], joined: "Aug 2023", status: "Active", avatar: "45" },
   { id: "m6", name: "Aarav Sen", roll: "22s1000111", role: "Member", clubs: ["Arena", "CodeChef"], joined: "Jul 2022", status: "Active", avatar: "155" },
   { id: "m7", name: "Diya Krishnan", roll: "24s1000908", role: "Member", clubs: ["Prakriti"], joined: "May 2024", status: "Pending", avatar: "320" },
-  { id: "m8", name: "Vikram Shah", roll: "23s1000202", role: "Member", clubs: ["E-Cell"], joined: "Sep 2023", status: "Inactive", avatar: "0" },
+  { id: "m8", name: "Vikram Shah", roll: "23s1000202", role: "Volunteer", clubs: ["E-Cell"], joined: "Sep 2023", status: "Active", avatar: "0" },
+  { id: "m9", name: "Sneha Pillai", roll: "24s1000512", role: "Volunteer", clubs: ["E-Cell"], joined: "Oct 2023", status: "Active", avatar: "200" },
+  { id: "m10", name: "Arjun Verma", roll: "23s1000833", role: "Volunteer", clubs: ["E-Cell"], joined: "Nov 2023", status: "Active", avatar: "300" },
+  { id: "m11", name: "Priya Ramesh", roll: "24s1000275", role: "Volunteer", clubs: ["E-Cell"], joined: "Jan 2024", status: "Active", avatar: "60" },
 ];
 
 export const faqs = [
