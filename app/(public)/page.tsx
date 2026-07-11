@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -22,18 +21,6 @@ import {
 } from "lucide-react";
 import { announcements, clubs, events, faqs, metrics, tasks } from "@/lib/seed-data";
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  weight: ["400", "500", "600", "700"],
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  weight: ["400", "500", "600", "700"],
-});
-
 function noEmDash(value: string): string {
   return value.replace(/\s*—\s*/g, " / ");
 }
@@ -46,7 +33,7 @@ const navLinks = [
 
 export default function Landing() {
   return (
-    <main className={`sangam-night ${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-screen overflow-hidden bg-background text-foreground`}>
+    <main className="sangam-night min-h-screen overflow-hidden bg-background text-foreground">
       <MarketingNav />
       <Hero />
       <LiveActivity />

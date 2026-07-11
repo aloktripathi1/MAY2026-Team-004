@@ -53,6 +53,8 @@ export default async function EventDetail({ params }: { params: { id: string } }
       <Link href="/app/events" className="text-mono-label mb-6 inline-flex items-center gap-1.5 hover:text-foreground"><ArrowLeft className="h-3 w-3" /> All events</Link>
 
       <div className="relative overflow-hidden rounded-3xl" style={{ background: event.cover }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={event.photo} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="relative flex min-h-[280px] flex-col justify-end p-8 md:min-h-[380px] md:p-12">
           <div className="mb-3 flex gap-1.5">
