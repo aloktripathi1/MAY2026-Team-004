@@ -603,8 +603,8 @@ function Events() {
   return (
     <section className="px-4 py-20 md:px-6 md:py-28">
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-8 md:grid-cols-[1fr_320px] md:items-end">
-          <div>
+        <div className="grid gap-3 md:grid-cols-3 md:items-end">
+          <div className="md:col-span-2">
             <p className="mono-label text-secondary">03 / CURRENT SIGNAL</p>
             <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
               The week is already moving.
@@ -615,7 +615,7 @@ function Events() {
             <div className="mono-label mt-2">students across next 3 events</div>
           </div>
         </div>
-        <div className="mt-12 grid gap-3 md:grid-cols-3">
+        <div className="mt-8 grid gap-3 md:grid-cols-3">
           {upcoming.map((event) => (
             <Link key={event.id} href={`/app/events/${event.slug}`} className="group night-panel overflow-hidden rounded-2xl transition hover:border-secondary/35">
               <div className="relative aspect-[16/10] overflow-hidden bg-white/[0.04]">
