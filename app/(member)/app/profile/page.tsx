@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, StatusPill, Btn } from "@/components/ui/primitives";
+import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { EditProfileButton } from "./EditProfileButton";
+import { NotificationPreferences } from "./NotificationPreferences";
+import { parseNotificationPrefs } from "@/lib/notification-prefs";
 
 export const metadata: Metadata = {
   title: "Profile · Sangam",
@@ -25,7 +28,14 @@ export default async function ProfilePage() {
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="night-panel rounded-3xl p-6">
-          <div className="grid h-24 w-24 place-items-center rounded-2xl border border-secondary/25 bg-secondary/[0.12] text-3xl font-semibold text-secondary">{initials}</div>
+          <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border border-secondary/25 bg-secondary/[0.12] text-3xl font-semibold text-secondary">
+            {user!.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user!.image} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initials
+            )}
+          </div>
           <div className="mt-4 text-3xl font-black leading-none tracking-[-0.05em] text-white">{user!.name}</div>
           <div className="text-mono-label mt-2">
             {user!.rollNumber ?? "—"} {primaryMembership ? `· ${primaryMembership.club.name} ${primaryMembership.role}` : ""}
@@ -34,7 +44,7 @@ export default async function ProfilePage() {
             <Row k="Email" v={user!.email} />
             <Row k="Joined" v={user!.createdAt.toLocaleDateString(undefined, { month: "short", year: "numeric" })} />
           </div>
-          <Btn className="mt-6 w-full" variant="outline">Edit details</Btn>
+          <EditProfileButton name={user!.name} image={user!.image} initials={initials} />
         </div>
 
         <div className="space-y-6">
@@ -68,16 +78,7 @@ export default async function ProfilePage() {
 
           <GlassCard>
             <div className="text-mono-label mb-3">Notification preferences</div>
-            <div className="space-y-3">
-              {["Only clubs I'm in", "New events from suggested clubs", "Pinned admin announcements only"].map((t, i) => (
-                <label key={t} className="flex items-center justify-between text-sm">
-                  <span>{t}</span>
-                  <span className={`inline-flex h-5 w-9 items-center rounded-full ${i !== 2 ? "bg-secondary" : "bg-white/10"}`}>
-                    <span className={`h-4 w-4 rounded-full bg-background transition ${i !== 2 ? "translate-x-4" : "translate-x-0.5"}`} />
-                  </span>
-                </label>
-              ))}
-            </div>
+            <NotificationPreferences initial={parseNotificationPrefs(user!.notificationPrefs)} />
           </GlassCard>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { UserPlus } from "lucide-react";
+import { ChevronDown, UserPlus } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
 import { addMemberAction, type MemberFormState } from "./actions";
@@ -40,16 +40,19 @@ export function AddMemberModal({ open, onClose }: { open: boolean; onClose: () =
           <Field label="Roll number" name="roll" placeholder="23s1000123" />
           <label className="block">
             <div className="text-mono-label mb-1.5">Role</div>
-            <select
-              name="role"
-              defaultValue="Member"
-              className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition focus:border-secondary/55"
-            >
-              <option>Member</option>
-              <option>Volunteer</option>
-              <option>Coordinator</option>
-              <option>Admin</option>
-            </select>
+            <div className="relative">
+              <select
+                name="role"
+                defaultValue="Member"
+                className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55"
+              >
+                <option>Member</option>
+                <option>Volunteer</option>
+                <option>Coordinator</option>
+                <option>Admin</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </label>
         </div>
         <div className="mt-3">

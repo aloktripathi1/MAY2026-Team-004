@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { Send } from "lucide-react";
+import { ChevronDown, Send } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { createAnnouncementAction, type AnnouncementFormState } from "./actions";
 
@@ -31,11 +31,14 @@ export function AnnouncementForm({ memberCount }: { memberCount: number }) {
       <textarea name="body" required rows={6} placeholder="Body — details, deadline, link…" className="mt-3 w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       <label className="mt-3 block">
         <div className="text-mono-label mb-1.5">Send to</div>
-        <select name="audience" defaultValue="All" className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition focus:border-secondary/55">
-          <option value="All">All members ({memberCount})</option>
-          <option value="Coordinators">Coordinators only</option>
-          <option value="Volunteers">Volunteers</option>
-        </select>
+        <div className="relative">
+          <select name="audience" defaultValue="All" className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55">
+            <option value="All">All members ({memberCount})</option>
+            <option value="Coordinators">Coordinators only</option>
+            <option value="Volunteers">Volunteers</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
       </label>
       {state.error && <p className="mt-2 text-xs text-destructive">{state.error}</p>}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

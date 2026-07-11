@@ -1,12 +1,17 @@
 import { getAuthCookieUser } from "@/lib/auth-session";
 
-export type SessionMembership = { clubId: string; clubSlug: string; clubName: string; role: string };
+export type SessionMembership = { clubId: string; clubSlug: string; clubName: string; role: string; personaName: string };
 
+// The demo account (id "u1") holds all four club roles at once so QA can switch
+// personas without logging in as different people. Each role still displays as
+// a distinct, real seed member so the sidebar doesn't show "Ananya Rao" for
+// every persona — the underlying session id/data-ownership stays the same
+// (see the comment on `id` below), only the displayed name differs per role.
 const memberships: SessionMembership[] = [
-  { clubId: "c1", clubSlug: "codechef", clubName: "CodeChef IITM BS", role: "Admin" },
-  { clubId: "c6", clubSlug: "e-cell", clubName: "E-Cell IITM BS", role: "Coordinator" },
-  { clubId: "c3", clubSlug: "sarga", clubName: "Sarga - Music Circle", role: "Volunteer" },
-  { clubId: "c2", clubSlug: "paradox", clubName: "Paradox - Debate Society", role: "Member" },
+  { clubId: "c1", clubSlug: "codechef", clubName: "CodeChef IITM BS", role: "Admin", personaName: "Ananya Rao" },
+  { clubId: "c6", clubSlug: "e-cell", clubName: "E-Cell IITM BS", role: "Coordinator", personaName: "Kabir Menon" },
+  { clubId: "c3", clubSlug: "sarga", clubName: "Sarga - Music Circle", role: "Volunteer", personaName: "Ishita Deshpande" },
+  { clubId: "c2", clubSlug: "paradox", clubName: "Paradox - Debate Society", role: "Member", personaName: "Ananya Rao" },
 ];
 
 export function getMockSession() {

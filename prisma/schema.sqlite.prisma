@@ -21,6 +21,7 @@ model User {
   rollNumber     String?  @unique
   image          String?
   interests      String   @default("[]")
+  notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}")
   isFaculty      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -82,7 +83,7 @@ model Event {
   cover       String
   tags        String // comma-joined (SQLite has no array type)
   description String
-  approval    String   @default("pending") // ApprovalStatus: approved|pending|notRequired
+  approval    String   @default("pending") // ApprovalStatus: approved|pending|notRequired|rejected
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -129,6 +130,7 @@ model Issue {
   clubId      String?
   createdAt   DateTime @default(now())
   priority    String   @default("Low") // Priority: Low|Med|High
+  attachments String   @default("[]") // JSON-encoded string[] — SQLite has no native array type
 
   raisedBy User  @relation("IssueRaisedBy", fields: [raisedById], references: [id], onDelete: Cascade)
   assignee User? @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
