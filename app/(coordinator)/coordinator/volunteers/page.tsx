@@ -82,8 +82,8 @@ export default async function VolunteersPage() {
                     <div key={t.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
                       <div className="text-sm font-medium leading-snug">{t.title}</div>
                       <div className="text-mono-label mt-1 truncate">{events.find(e => e.id === t.eventId)?.title ?? "—"}</div>
-                      <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="truncate text-xs text-muted-foreground">{t.assignee?.name ?? "—"}</span>
+                      <div className="mt-3 truncate text-xs text-muted-foreground">{t.assignee?.name ?? team.find(m => m.user.id === t.assigneeId)?.user.name ?? "—"}</div>
+                      <div className="mt-2">
                         <TaskStatusButtons taskId={t.id} status={t.status} />
                       </div>
                     </div>
