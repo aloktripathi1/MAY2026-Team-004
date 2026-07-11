@@ -19,7 +19,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { announcements, clubs, events, metrics, tasks, transparencyLog } from "@/lib/seed-data";
+import { announcements, clubs, events, faqs, metrics, tasks } from "@/lib/seed-data";
 
 function noEmDash(value: string): string {
   return value.replace(/\s*—\s*/g, " / ");
@@ -40,6 +40,7 @@ export default function Landing() {
       <Modules />
       <Roles />
       <Events />
+      <FAQ />
       <ClosingCTA />
       <Footer />
     </main>
@@ -224,18 +225,18 @@ function Hero() {
   const previewY = useTransform(scrollYProgress, [0, 0.28], [0, shouldReduceMotion ? 0 : -34]);
 
   return (
-    <section className="relative px-4 pb-24 pt-28 sm:pb-28 md:px-6 md:pt-36 lg:pb-32">
+    <section className="relative px-4 pb-24 pt-32 sm:pb-28 md:px-6 md:pt-44 lg:pb-32">
       <div className="hero-ambient" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col items-center gap-12 md:gap-16">
+        <div className="flex flex-col items-center gap-8 md:gap-10">
           <motion.div
             initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
             animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="w-full"
           >
-            <h1 className="max-w-5xl text-[clamp(4rem,10.7vw,9.6rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">
-              Run the club. Lose the chaos.
+            <h1 className="max-w-5xl text-[clamp(3.25rem,8.6vw,7.75rem)] font-black leading-[0.9] tracking-[-0.06em] text-white">
+              Run the club.<br />Lose the chaos.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl md:leading-9">
               Sangam brings membership, events, volunteers, approvals and announcements into one controlled system for societies that have outgrown scattered chats.
@@ -255,7 +256,7 @@ function Hero() {
             initial={shouldReduceMotion ? false : { opacity: 0, y: 28, rotateX: 4 }}
             animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0 }}
             transition={{ delay: 0.1, duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-            className="hero-glass relative mx-auto w-full max-w-5xl overflow-hidden rounded-[28px] p-3"
+            className="hero-glass relative mx-auto w-full overflow-hidden rounded-[28px] p-3"
           >
             <ProductPreview />
           </motion.div>
@@ -645,6 +646,64 @@ function Events() {
   );
 }
 
+function FAQ() {
+  const [open, setOpen] = useState(0);
+
+  return (
+    <section id="faq" className="px-4 py-24 md:px-6 md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <div>
+          <p className="mono-label text-secondary">04 / QUESTIONS</p>
+          <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
+            Things people actually ask.
+          </h2>
+          <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground">
+            The member help-center questions now live upfront, before someone has to sign in to understand the basics.
+          </p>
+        </div>
+
+        <div className="night-panel overflow-hidden rounded-2xl">
+          {faqs.map((faq, index) => {
+            const active = open === index;
+            return (
+              <button
+                key={faq.q}
+                type="button"
+                onClick={() => setOpen(active ? -1 : index)}
+                className="block w-full border-b border-white/10 text-left last:border-b-0"
+              >
+                <div className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-5 transition hover:bg-white/[0.035] md:px-6">
+                  <span className="text-base font-semibold leading-6 text-white">{faq.q}</span>
+                  <span className={`grid h-8 w-8 place-items-center rounded-lg border transition ${
+                    active ? "border-secondary/40 bg-secondary/[0.12] text-secondary" : "border-white/10 bg-white/[0.04] text-muted-foreground"
+                  }`}>
+                    <ChevronDown className={`h-4 w-4 transition ${active ? "rotate-180" : ""}`} />
+                  </span>
+                </div>
+                <AnimatePresence initial={false}>
+                  {active && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-sm leading-6 text-muted-foreground md:px-6">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ClosingCTA() {
   return (
     <section className="relative px-4 py-28 md:px-6 md:py-36">
@@ -678,15 +737,12 @@ function Footer() {
           <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
             A community operations platform for IITM BS societies, built by Team Dhurandhar.
           </p>
-          <div className="mt-5 text-xs text-muted-foreground">
-            {transparencyLog.length} transparency logs archived / {clubs.length} clubs in the system
-          </div>
         </div>
         <FooterCol title="Product" links={[["Modules", "#modules"], ["Roles", "#roles"], ["Live activity", "#live"], ["Clubs", "/clubs"]]} />
         <FooterCol title="Access" links={[["Join", "/signup"], ["Sign in", "/login"], ["Events", "/app/events"]]} />
       </div>
       <div className="mx-auto max-w-6xl border-t border-white/10 py-5 text-xs text-muted-foreground">
-        2026 Sangam / IITM BS / {metrics.totalMembers.toLocaleString("en-IN")} reachable members
+        All rights reserved.
       </div>
     </footer>
   );
