@@ -62,16 +62,16 @@ export default async function HandoverPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div>
+          <div className="text-mono-label mb-3">Transfer leadership</div>
           <GlassCard>
-            <div className="text-mono-label mb-2">Transfer leadership</div>
             {candidates.length === 0 ? (
               <div className="text-sm text-muted-foreground">No other members in this club yet.</div>
             ) : (
               <TransferAdminForm candidates={candidates.map((c) => ({ membershipId: c.id, name: c.user.name, role: c.role }))} />
             )}
           </GlassCard>
-          <GlassCard className="border-secondary/25 bg-secondary/[0.08]">
+          <GlassCard className="mt-4 border-secondary/25 bg-secondary/[0.08]">
             <StatusPill tone="lime">Verified</StatusPill>
             <div className="mt-3 text-sm">
               Transfer takes effect immediately: your role becomes Coordinator, the successor becomes Admin.

@@ -11,7 +11,7 @@ function SubmitButton() {
   return <Btn disabled={pending}><Send className="h-4 w-4" /> {pending ? "Publishing..." : "Publish"}</Btn>;
 }
 
-export function AnnouncementForm() {
+export function AnnouncementForm({ memberCount }: { memberCount: number }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useFormState<AnnouncementFormState, FormData>(createAnnouncementAction, {});
   const isFirstRender = useRef(true);
@@ -29,6 +29,14 @@ export function AnnouncementForm() {
       <div className="text-mono-label mb-3">Compose</div>
       <input name="title" required placeholder="Headline — what's the one thing?" className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-base text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       <textarea name="body" required rows={6} placeholder="Body — details, deadline, link…" className="mt-3 w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+      <label className="mt-3 block">
+        <div className="text-mono-label mb-1.5">Send to</div>
+        <select name="audience" defaultValue="All" className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition focus:border-secondary/55">
+          <option value="All">All members ({memberCount})</option>
+          <option value="Coordinators">Coordinators only</option>
+          <option value="Volunteers">Volunteers</option>
+        </select>
+      </label>
       {state.error && <p className="mt-2 text-xs text-destructive">{state.error}</p>}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 py-1.5 text-xs text-muted-foreground">

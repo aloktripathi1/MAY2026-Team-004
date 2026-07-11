@@ -8,7 +8,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
-  Shield, Menu, X, LogOut,
+  Shield, Menu, X, LogOut, Ticket,
 } from "lucide-react";
 
 type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
@@ -30,6 +30,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   admin: [
     { label: "Overview", to: "/admin", icon: LayoutDashboard },
     { label: "Members", to: "/admin/members", icon: Users2 },
+    { label: "Issues", to: "/admin/issues", icon: Ticket },
     { label: "Approvals", to: "/admin/approvals", icon: ClipboardCheck },
     { label: "Announcements", to: "/admin/announcements", icon: Megaphone },
     { label: "Metrics", to: "/admin/metrics", icon: LineChart },
@@ -97,7 +98,6 @@ export function AppShell({
 
             {/* Role card */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-              <div className="text-mono-label mb-2 text-sidebar-foreground/60">Signed in / {meta.name}</div>
               <div className="flex items-center gap-3">
                 <div
                   className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 text-sm font-semibold"
@@ -107,14 +107,23 @@ export function AppShell({
                 </div>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-sidebar-foreground" title={user}>{user}</div>
-                  <div className="truncate text-xs text-sidebar-foreground/65" title={club}>{club}</div>
+                  <div className="text-xs leading-snug text-sidebar-foreground/65" title={`${club} · ${meta.badge}`}>{club} · {meta.badge}</div>
                 </div>
               </div>
             </div>
 
             <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hidden">
               {items.map((item) => {
-                const active = currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to) && item.to.length > 1 && (currentPath.length === item.to.length || currentPath[item.to.length] === "/"));
+                const matches = (to: string) =>
+                  currentPath === to || (to !== "/" && currentPath.startsWith(`${to}/`));
+                const active =
+                  matches(item.to) &&
+                  !items.some(
+                    (other) =>
+                      other.to !== item.to &&
+                      other.to.length > item.to.length &&
+                      matches(other.to)
+                  );
                 return (
                   <Link
                     key={item.to}
@@ -125,7 +134,7 @@ export function AppShell({
                     {active && (
                       <motion.span
                         layoutId={`nav-${role}`}
-                        className="absolute inset-0 rounded-xl bg-white/[0.075] ring-1 ring-secondary/35"
+                        className="absolute inset-0 rounded-xl border border-secondary/50 bg-white/[0.075]"
                         transition={{ type: "spring", stiffness: 500, damping: 40 }}
                       />
                     )}

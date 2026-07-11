@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowRight, CheckCircle2, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
+import { ArrowRight, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
 import { useFormState, useFormStatus } from "react-dom";
 import { demoRoleAction, loginAction, type LoginState } from "@/app/(public)/login/actions";
 import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
@@ -31,29 +31,21 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
       </div>
 
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 px-5 py-6 md:grid-cols-[1fr_470px] md:gap-10 md:px-8 lg:px-10">
-        <section className="hidden flex-col justify-between py-6 md:flex">
+        <section className="hidden flex-col py-6 md:flex">
           <Link href="/" className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
             <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
           </Link>
 
-          <div className="max-w-3xl pb-12">
-            <div className="text-mono-label mb-5 text-white/[0.52]">Community operations / IITM BS</div>
-            <h1 className="max-w-3xl text-6xl font-black leading-[0.92] tracking-[-0.06em] text-white lg:text-7xl">
-              {isSignup ? "Enter the control room." : "Welcome back to the room."}
-            </h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-white/[0.64]">
-              Sangam keeps club membership, events, tasks, approvals, and announcements in one calm operating system.
-            </p>
-          </div>
-
-          <div className="grid max-w-2xl grid-cols-3 gap-3">
-            {["Verified accounts", "Guided onboarding", "Personalized discovery"].map((item) => (
-              <div key={item} className="night-panel rounded-2xl p-4">
-                <CheckCircle2 className="mb-3 h-4 w-4 text-secondary" />
-                <div className="text-xs font-medium leading-5 text-white/[0.76]">{item}</div>
-              </div>
-            ))}
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="max-w-3xl">
+              <h1 className="max-w-3xl text-6xl font-black leading-[0.92] tracking-[-0.06em] text-white lg:text-7xl">
+                {isSignup ? "Enter the control room." : "Welcome back to the room."}
+              </h1>
+              <p className="mt-6 max-w-xl text-base leading-7 text-white/[0.64]">
+                Sangam keeps club membership, events, tasks, approvals, and announcements in one calm operating system.
+              </p>
+            </div>
           </div>
         </section>
 
