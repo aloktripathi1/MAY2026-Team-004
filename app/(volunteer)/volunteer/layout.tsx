@@ -9,9 +9,10 @@ export default async function VolunteerLayout({ children }: { children: ReactNod
 
   const volunteerMembership = session.user.memberships.find((m) => m.role === "Volunteer") ?? session.user.memberships[0];
   const club = volunteerMembership ? volunteerMembership.clubName : "Sangam";
+  const user = volunteerMembership ? volunteerMembership.personaName : (session.user.name ?? "Volunteer");
 
   return (
-    <AppShell role="volunteer" user={session.user.name ?? "Volunteer"} club={club}>
+    <AppShell role="volunteer" user={user} club={club}>
       {children}
     </AppShell>
   );

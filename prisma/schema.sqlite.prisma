@@ -81,7 +81,7 @@ model Event {
   cover       String
   tags        String // comma-joined (SQLite has no array type)
   description String
-  approval    String   @default("pending") // ApprovalStatus: approved|pending|notRequired
+  approval    String   @default("pending") // ApprovalStatus: approved|pending|notRequired|rejected
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

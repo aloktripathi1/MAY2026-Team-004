@@ -26,7 +26,7 @@ export async function setMembershipStatusAction(membershipId: string, status: "A
   revalidatePath("/admin");
 }
 
-export async function setEventApprovalAction(eventId: string, approval: "approved" | "pending") {
+export async function setEventApprovalAction(eventId: string, approval: "approved" | "pending" | "rejected") {
   const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId } });
   await requireAdminForClub(event.clubId);
   await prisma.event.update({ where: { id: eventId }, data: { approval } });
@@ -37,7 +37,7 @@ export async function setEventApprovalAction(eventId: string, approval: "approve
 
 // Institution-wide — faculty aren't club-scoped, so this bypasses the per-club Admin check
 // and requires session.user.isFaculty instead.
-export async function facultySetEventApprovalAction(eventId: string, approval: "approved" | "pending") {
+export async function facultySetEventApprovalAction(eventId: string, approval: "approved" | "pending" | "rejected") {
   await requireFaculty();
   await prisma.event.update({ where: { id: eventId }, data: { approval } });
   revalidatePath("/faculty/approvals");

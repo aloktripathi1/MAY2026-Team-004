@@ -50,6 +50,7 @@ enum ApprovalStatus {
   approved
   pending
   notRequired
+  rejected
 }
 
 enum IssueCategory {

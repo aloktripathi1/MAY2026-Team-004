@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!membership) redirect("/app");
 
   return (
-    <AppShell role="admin" user={session.user.name ?? "Admin"} club={membership.clubName}>
+    <AppShell role="admin" user={membership.personaName} club={membership.clubName}>
       {children}
     </AppShell>
   );

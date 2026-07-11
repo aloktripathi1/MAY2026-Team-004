@@ -8,7 +8,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
-  Shield, Menu, X, LogOut, Ticket,
+  Shield, Menu, X, LogOut, Ticket, Activity,
 } from "lucide-react";
 
 type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
@@ -43,6 +43,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   faculty: [
     { label: "Oversight", to: "/faculty", icon: Shield },
     { label: "Approvals", to: "/faculty/approvals", icon: ClipboardCheck },
+    { label: "Club Activity", to: "/faculty/club-activity", icon: Activity },
   ],
 };
 
