@@ -21,13 +21,12 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <PageHeader eyebrow="Account" title={<>Your <span className="text-display text-primary italic">profile.</span></>} />
+      <PageHeader eyebrow="Account" title={<>Your <span className="text-secondary">profile.</span></>} />
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="glass-strong rounded-3xl p-6">
-          <div className="grid h-24 w-24 place-items-center rounded-full text-3xl font-semibold"
-               style={{ background: "oklch(0.72 0.18 122 / 25%)", color: "oklch(0.92 0.2 122)" }}>{initials}</div>
-          <div className="text-display mt-4 text-3xl leading-none">{user!.name}</div>
+        <div className="night-panel rounded-3xl p-6">
+          <div className="grid h-24 w-24 place-items-center rounded-2xl border border-secondary/25 bg-secondary/[0.12] text-3xl font-semibold text-secondary">{initials}</div>
+          <div className="mt-4 text-3xl font-black leading-none tracking-[-0.05em] text-white">{user!.name}</div>
           <div className="text-mono-label mt-2">
             {user!.rollNumber ?? "—"} {primaryMembership ? `· ${primaryMembership.club.name} ${primaryMembership.role}` : ""}
           </div>
@@ -44,7 +43,7 @@ export default async function ProfilePage() {
             <div className="flex flex-wrap gap-1.5">
               {["Technical", "Cultural", "Sports", "Design", "Debate", "Entrepreneurship", "Sustainability", "Writing"].map(t => (
                 <button key={t}
-                  className="rounded-full border border-hairline px-3 py-1 text-xs text-muted-foreground transition hover:bg-surface-2">
+                  className="rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 py-1.5 text-xs text-muted-foreground transition hover:border-secondary/40 hover:bg-white/[0.06] hover:text-secondary">
                   {t}
                 </button>
               ))}
@@ -73,7 +72,7 @@ export default async function ProfilePage() {
               {["Only clubs I'm in", "New events from suggested clubs", "Pinned admin announcements only"].map((t, i) => (
                 <label key={t} className="flex items-center justify-between text-sm">
                   <span>{t}</span>
-                  <span className={`inline-flex h-5 w-9 items-center rounded-full ${i !== 2 ? "bg-primary" : "bg-surface-3"}`}>
+                  <span className={`inline-flex h-5 w-9 items-center rounded-full ${i !== 2 ? "bg-secondary" : "bg-white/10"}`}>
                     <span className={`h-4 w-4 rounded-full bg-background transition ${i !== 2 ? "translate-x-4" : "translate-x-0.5"}`} />
                   </span>
                 </label>

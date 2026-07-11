@@ -71,7 +71,7 @@ export default async function HandoverPage() {
               <TransferAdminForm candidates={candidates.map((c) => ({ membershipId: c.id, name: c.user.name, role: c.role }))} />
             )}
           </GlassCard>
-          <GlassCard className="border-secondary/25 bg-secondary/8">
+          <GlassCard className="border-secondary/25 bg-secondary/[0.08]">
             <StatusPill tone="lime">Verified</StatusPill>
             <div className="mt-3 text-sm">
               Transfer takes effect immediately: your role becomes Coordinator, the successor becomes Admin.

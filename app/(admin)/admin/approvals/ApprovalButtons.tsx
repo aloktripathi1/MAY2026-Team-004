@@ -30,7 +30,7 @@ export function MembershipApprovalButtons({ membershipId }: { membershipId: stri
         disabled={Boolean(choice) || pending}
         title={choice ?? membershipId}
         onClick={() => decide("Inactive", "Rejected")}
-        className="grid h-8 w-8 place-items-center rounded-lg border border-white/12 bg-white/[0.035] transition hover:border-destructive/45 hover:bg-destructive/14 hover:text-destructive disabled:opacity-50"
+        className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.035] transition hover:border-destructive/45 hover:bg-destructive/[0.14] hover:text-destructive disabled:opacity-50"
       >
         <X className="h-4 w-4" />
       </button>
