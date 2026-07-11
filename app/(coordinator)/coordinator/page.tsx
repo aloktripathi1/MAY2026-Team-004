@@ -29,7 +29,6 @@ export default async function CoordinatorHome() {
     include: { event: true },
   });
 
-
   return (
     <>
       <PageHeader
@@ -48,22 +47,24 @@ export default async function CoordinatorHome() {
           <div className="space-y-2">
             {myEvents.length === 0 && <div className="text-sm text-muted-foreground">No upcoming events.</div>}
             {myEvents.map(e => (
-              <GlassCard key={e.id} className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg" style={{ background: e.cover }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+              <Link key={e.id} href={`/coordinator/events/${e.slug}`}>
+                <GlassCard className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg" style={{ background: e.cover }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{e.title}</div>
+                      <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>
+                    </div>
+                    <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{e.title}</div>
-                    <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%` }} />
                   </div>
-                  <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
-                </div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%` }} />
-                </div>
-              </GlassCard>
+                </GlassCard>
+              </Link>
             ))}
           </div>
         </div>
