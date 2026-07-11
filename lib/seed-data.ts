@@ -74,6 +74,7 @@ export const events: Event[] = [
   { id: "e6", slug: "climate-teach-in", title: "Climate Teach-In · Local Schools", clubSlug: "prakriti", club: "Prakriti — Sustainability", date: "Thu, Jul 16", isoDate: "2026-07-16", time: "10:00 AM", venue: "Off-campus · Adyar", status: "upcoming", going: 24, capacity: 40, cover: "linear-gradient(135deg,#22c55e 0%,#0891b2 100%)", photo: photoFor("classroom", 16), tags: ["Volunteer"], description: "Half-day teach-in at two neighborhood schools. Materials provided. Volunteers get transport reimbursement.", approval: "approved" },
   { id: "e7", slug: "chess-blitz-x", title: "Chess Blitz X · Arena", clubSlug: "arena", club: "Arena — Chess Club", date: "Sat, Jul 4", isoDate: "2026-07-04", time: "5:00 PM", venue: "Common Room", status: "past", going: 78, capacity: 80, cover: "linear-gradient(135deg,#334155 0%,#0f172a 100%)", photo: photoFor("chess", 17), tags: ["Sports"], description: "Nine rounds, 3+2 time control. Won by third-year Aarav Sen on tiebreaks.", approval: "not-required" },
   { id: "e8", slug: "sarga-open-jam", title: "Sarga Open Jam — June", clubSlug: "sarga", club: "Sarga — Music Circle", date: "Fri, Jun 27", isoDate: "2026-06-27", time: "7:30 PM", venue: "Amphitheatre", status: "past", going: 143, capacity: 150, cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 100%)", photo: photoFor("guitar", 18), tags: ["Music"], description: "Twelve acts, one open mic. Recording available on the club drive.", approval: "not-required" },
+  { id: "e9", slug: "annual-photo-exhibition", title: "Annual Photo Exhibition", clubSlug: "kalakriti", club: "Kalakriti Design Guild", date: "Mon, Jun 2", isoDate: "2026-06-02", time: "10:00 AM", venue: "Gallery Hall", status: "past", going: 64, capacity: 80, cover: "linear-gradient(135deg,#eab308 0%,#0ea5e9 100%)", photo: photoFor("photography,gallery", 19), tags: ["Design", "Exhibition"], description: "Semester showcase of member work. Volunteers handled setup, wall labels, and teardown.", approval: "not-required" },
 ];
 
 export interface Announcement {
@@ -117,14 +118,31 @@ export interface Task {
   event: string;
   role: string;
   due: string;
+  dueAt?: string; // ISO datetime when known; mock DB falls back to relative dates
   status: "todo" | "doing" | "done";
+  priority: "Low" | "Med" | "High";
   assignee: string;
 }
 export const tasks: Task[] = [
-  { id: "t1", title: "Set up amphitheatre PA system", event: "Fusion Night VI", role: "Tech ops", due: "Sat 5 PM", status: "todo", assignee: "You" },
-  { id: "t2", title: "Print speaker badges (60)", event: "BP Open Round", role: "Logistics", due: "Tue 4 PM", status: "doing", assignee: "You" },
-  { id: "t3", title: "Confirm mentor slots — Ignite", event: "Ignite 2026", role: "Coordination", due: "Fri", status: "doing", assignee: "You" },
-  { id: "t4", title: "Post cook-off writeup on Discord", event: "Cook-Off #41", role: "Content", due: "Done", status: "done", assignee: "You" },
+  { id: "t1", title: "Set up amphitheatre PA system", event: "Fusion Night VI", role: "Tech ops", due: "Sat 5 PM", dueAt: "2026-07-11T17:00:00", status: "doing", priority: "High", assignee: "You" },
+  { id: "t2", title: "Print speaker badges (60)", event: "BP Open Round", role: "Logistics", due: "Tue 4 PM", dueAt: "2026-07-14T16:00:00", status: "todo", priority: "High", assignee: "You" },
+  { id: "t3", title: "Confirm mentor slots — Ignite", event: "Ignite 2026", role: "Coordination", due: "Fri", dueAt: "2026-07-17T13:00:00", status: "todo", priority: "Med", assignee: "You" },
+  { id: "t4", title: "Post cook-off writeup on Discord", event: "Cook-Off #41", role: "Content", due: "Done", dueAt: "2026-07-10T18:00:00", status: "done", priority: "Med", assignee: "You" },
+];
+
+/** Verified volunteering hours — shared across volunteer dashboard + any future coordinator views. */
+export interface Contribution {
+  id: string;
+  event: string; // event title substring match, same pattern as tasks
+  role: string;
+  hoursLogged: number;
+  date: string; // ISO date of the shift
+  assignee: string;
+}
+export const contributions: Contribution[] = [
+  { id: "v1", event: "Sarga Open Jam", role: "Stage & green-room crew", hoursLogged: 10, date: "2026-06-27", assignee: "You" },
+  { id: "v2", event: "Chess Blitz X", role: "Registration desk", hoursLogged: 8, date: "2026-07-04", assignee: "You" },
+  { id: "v3", event: "Annual Photo Exhibition", role: "Setup & teardown", hoursLogged: 6, date: "2026-06-02", assignee: "You" },
 ];
 
 export interface Member {

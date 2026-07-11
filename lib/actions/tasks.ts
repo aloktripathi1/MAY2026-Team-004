@@ -15,6 +15,9 @@ export async function updateTaskStatusAction(taskId: string, status: string) {
   const parsedStatus = statusSchema.parse(status);
   await prisma.task.update({ where: { id: taskId }, data: { status: parsedStatus } });
 
+  // Keep every role surface that reads task status in sync.
   revalidatePath("/volunteer");
+  revalidatePath("/coordinator");
   revalidatePath("/coordinator/volunteers");
+  revalidatePath("/app");
 }

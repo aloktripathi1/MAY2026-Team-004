@@ -94,6 +94,7 @@ model User {
   issuesRaised           Issue[]        @relation("IssueRaisedBy")
   issuesAssigned         Issue[]        @relation("IssueAssignee")
   tasksAssigned          Task[]
+  contributions          Contribution[]
   announcementsAuthored  Announcement[]
   rsvps                  Rsvp[]
 }
@@ -151,8 +152,9 @@ model Event {
   updatedAt   DateTime       @updatedAt
 
   club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  tasks Task[]
-  rsvps Rsvp[]
+  tasks          Task[]
+  contributions  Contribution[]
+  rsvps          Rsvp[]
   transparencyEntries TransparencyLogEntry[]
 }
 
@@ -205,10 +207,23 @@ model Task {
   role       String
   dueAt      DateTime?
   status     TaskStatus @default(todo)
+  priority   Priority   @default(Med)
   assigneeId String
 
   event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignee User  @relation(fields: [assigneeId], references: [id], onDelete: Cascade)
+}
+
+model Contribution {
+  id          String   @id @default(cuid())
+  userId      String
+  eventId     String
+  role        String
+  hoursLogged Float
+  verifiedAt  DateTime
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model Venue {

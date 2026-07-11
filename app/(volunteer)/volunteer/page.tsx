@@ -3,7 +3,8 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
-import { TaskStatusButtons } from "@/components/tasks/TaskStatusButtons";
+import { TaskAssigneeRow } from "@/components/tasks/TaskAssigneeRow";
+import { formatContributionDate, pluralize } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "My tasks · Sangam",
@@ -12,42 +13,126 @@ export const metadata: Metadata = {
 
 export default async function VolunteerHome() {
   const session = getMockSession();
-  const tasks = await prisma.task.findMany({
-    where: { assigneeId: session!.user.id },
-    orderBy: { dueAt: "asc" },
-    include: { event: true },
+  const userId = session!.user.id;
+
+  const [tasksRaw, contributions, rsvps] = await Promise.all([
+    prisma.task.findMany({
+      where: { assigneeId: userId },
+      orderBy: { dueAt: "asc" },
+      include: { event: true },
+    }),
+    prisma.contribution.findMany({
+      where: { userId },
+      orderBy: { verifiedAt: "desc" },
+      include: { event: true },
+    }),
+    prisma.rsvp.findMany({
+      where: { userId },
+    }),
+  ]);
+
+  // Active work first, then completed — still due-date ordered within each group.
+  const tasks = [...tasksRaw].sort((a, b) => {
+    const aDone = a.status === "done" ? 1 : 0;
+    const bDone = b.status === "done" ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
+    const aDue = a.dueAt ? new Date(a.dueAt).getTime() : Number.POSITIVE_INFINITY;
+    const bDue = b.dueAt ? new Date(b.dueAt).getTime() : Number.POSITIVE_INFINITY;
+    return aDue - bDue;
   });
 
-  const open = tasks.filter((t) => t.status !== "done").length;
-  const doing = tasks.filter((t) => t.status === "doing").length;
+  const active = tasks.filter((t) => t.status !== "done").length;
+  const done = tasks.length - active;
+  const hoursLogged = contributions.reduce((sum, entry) => sum + Number(entry.hoursLogged), 0);
+
+  const supportedEventIds = new Set<string>([
+    ...tasks.map((t) => t.eventId),
+    ...contributions.map((c) => c.eventId),
+    ...rsvps.map((r) => r.eventId),
+  ]);
 
   return (
     <>
-      <PageHeader eyebrow="Assigned to you" title={<>Your <span className="text-secondary">to-do list.</span></>} description="Update status inline. Coordinators see the state change without another message." />
+      <PageHeader
+        eyebrow="Volunteer"
+        title={<>My <span className="text-secondary">tasks</span></>}
+        description={`${active} active · ${done} done. Keep status updated so coordinators can plan.`}
+      />
+
       <div className="grid gap-3 md:grid-cols-3">
-        <Stat label="Open" value={open} hue="122" />
-        <Stat label="Doing now" value={doing} hue="45" />
-        <Stat label="Completed" value={tasks.length - open} hue="155" />
+        <Stat label="Active tasks" value={active} hue="122" />
+        <Stat label="Events supported" value={supportedEventIds.size} hue="155" />
+        <Stat label="Hours contributed" value={`${hoursLogged}h`} hue="210" />
       </div>
-      <div className="mt-8 space-y-2">
-        {tasks.length === 0 && <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">No tasks assigned yet.</div>}
-        {tasks.map(t => (
-          <GlassCard key={t.id} className="p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className={`h-2 w-2 shrink-0 rounded-full ${t.status === "done" ? "bg-success" : t.status === "doing" ? "bg-warning" : "bg-muted-foreground"}`} />
-              <div className="min-w-0 flex-1">
-                <div className="text-mono-label mb-1">{t.event.title} / due {t.dueAt ? t.dueAt.toLocaleDateString() : "—"}</div>
-                <div className="text-sm font-medium text-white">{t.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">Role: {t.role}</div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusPill tone={t.status === "done" ? "green" : t.status === "doing" ? "amber" : "slate"}>{t.status}</StatusPill>
-                <TaskStatusButtons taskId={t.id} status={t.status} />
-              </div>
+
+      <section className="mt-10">
+        <div className="mb-4">
+          <h2 className="text-mono-label">Assigned to me</h2>
+        </div>
+        <div className="space-y-2">
+          {tasks.length === 0 && (
+            <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">
+              No tasks assigned yet.
             </div>
-          </GlassCard>
-        ))}
-      </div>
+          )}
+          {tasks.map((t) => (
+            <TaskAssigneeRow
+              key={t.id}
+              taskId={t.id}
+              title={t.title}
+              priority={t.priority ?? "Med"}
+              status={t.status}
+              dueAt={t.dueAt}
+              eventTitle={t.event.title}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="mb-4">
+          <h2 className="text-mono-label">Contribution record</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Your verified volunteering history.</p>
+        </div>
+        <div className="space-y-2">
+          {contributions.length === 0 && (
+            <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">
+              No verified hours yet.
+            </div>
+          )}
+          {contributions.map((entry) => (
+            <GlassCard key={entry.id} hover={false} className="overflow-hidden p-0">
+              <div className="flex items-stretch gap-0">
+                <div
+                  className="w-1 shrink-0"
+                  style={{ background: `oklch(0.72 0.14 ${entry.event.club?.hue ?? "122"})` }}
+                  aria-hidden
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-white">{entry.event.title}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {entry.role}
+                      <span className="mx-2 text-white/20">·</span>
+                      <span className="font-mono uppercase tracking-[0.08em]">
+                        {formatContributionDate(entry.verifiedAt)}
+                      </span>
+                    </div>
+                  </div>
+                  <StatusPill tone="green">
+                    {entry.hoursLogged}h logged
+                  </StatusPill>
+                </div>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+        {contributions.length > 0 && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            {pluralize(contributions.length, "verified shift")} · {hoursLogged}h total
+          </p>
+        )}
+      </section>
     </>
   );
 }
