@@ -66,5 +66,5 @@ export async function createEventAction(_prevState: NewEventState, formData: For
 
   revalidatePath("/coordinator");
   revalidatePath("/app/events");
-  redirect(`/app/events/${event.slug}`);
+  redirect("/coordinator?success=true");
 }

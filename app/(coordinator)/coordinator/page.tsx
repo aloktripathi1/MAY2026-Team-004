@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   description: "Event coordinator dashboard.",
 };
 
-export default async function CoordinatorHome() {
+export default async function CoordinatorPage({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
   const session = getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
@@ -31,6 +35,11 @@ export default async function CoordinatorHome() {
         title={<>Run the day, <span className="text-secondary">without the drama.</span></>}
         actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
       />
+      {searchParams?.success && (
+        <div className="mb-6 rounded-xl border border-success/20 bg-success/10 p-4 text-sm font-medium text-success">
+          🎉 Event published successfully!
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-3">
         <Stat label="Live events" value={myEvents.length} hue="122" />
         <Stat label="Volunteers assigned" value={volunteerCount} hue="5" />
