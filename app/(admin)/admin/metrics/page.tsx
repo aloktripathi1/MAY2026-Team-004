@@ -34,7 +34,7 @@ export default async function MetricsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Signal, not noise" title={<>The <span className="text-secondary">state</span> of the union.</>} description="Real membership and activity signals across every club." />
+      <PageHeader title={<>The <span className="text-secondary">state</span> of the union.</>} description="Real membership and activity signals across every club." />
 
       <div className="grid gap-3 md:grid-cols-3">
         <Stat label="Total clubs" value={clubs.length} />

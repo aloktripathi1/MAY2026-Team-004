@@ -24,7 +24,7 @@ export default async function ApprovalsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Queues" title={<>Approvals <span className="text-secondary">to clear.</span></>} description="Membership requests + events needing sign-off. Handle these first thing every morning." />
+      <PageHeader title={<>Approvals <span className="text-secondary">to clear.</span></>} description="Membership requests + events needing sign-off. Handle these first thing every morning." />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>

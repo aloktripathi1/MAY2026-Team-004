@@ -38,7 +38,7 @@ export default async function VolunteersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="People" title={<>Volunteers <span className="text-secondary">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
+      <PageHeader title={<>Volunteers <span className="text-secondary">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
       <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
         {/* Team column */}
         <div>

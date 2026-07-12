@@ -27,7 +27,6 @@ export default async function IssuesPage({ searchParams }: { searchParams: { sta
   return (
     <>
       <PageHeader
-        eyebrow="Support"
         title={<>Issues &amp; <span className="text-secondary">tickets.</span></>}
       />
       <div className="mb-6 flex items-center justify-between gap-3">

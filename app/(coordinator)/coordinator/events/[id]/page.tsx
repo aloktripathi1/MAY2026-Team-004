@@ -42,7 +42,6 @@ export default async function CoordinatorEventDashboard({ params, searchParams }
   return (
     <>
       <PageHeader
-        eyebrow={`Coordinating · ${event.title}`}
         title={<>Event <span className="text-secondary">dashboard.</span></>}
         actions={
           <>

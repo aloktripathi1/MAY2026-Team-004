@@ -91,7 +91,6 @@ export default async function AdminDashboard() {
   return (
     <>
       <PageHeader
-        eyebrow="Club overview"
         title={<>{club?.name ?? "Your club"}</>}
         actions={<Link href="/admin/announcements"><Btn size="sm">New announcement</Btn></Link>}
       />

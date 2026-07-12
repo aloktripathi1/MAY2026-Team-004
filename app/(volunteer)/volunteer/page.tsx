@@ -54,7 +54,6 @@ export default async function VolunteerHome() {
   return (
     <>
       <PageHeader
-        eyebrow="Volunteer"
         title={<>My <span className="text-secondary">tasks</span></>}
         description={`${active} active · ${done} done. Keep status updated so coordinators can plan.`}
       />

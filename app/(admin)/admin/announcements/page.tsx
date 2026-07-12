@@ -28,7 +28,7 @@ export default async function AnnouncementsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Broadcast" title={<>Say something <span className="text-secondary">worth reading.</span></>} description="Only members of your club will see this. Pin the ones that matter." />
+      <PageHeader title={<>Say something <span className="text-secondary">worth reading.</span></>} description="Only members of your club will see this. Pin the ones that matter." />
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <GlassCard className="p-6">

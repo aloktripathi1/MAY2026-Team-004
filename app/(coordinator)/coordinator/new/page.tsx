@@ -15,7 +15,7 @@ export default async function NewEventPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Compose" title={<>Publish a <span className="text-secondary">new event.</span></>} description="Sangam will auto-check for venue clashes and route to faculty if needed." />
+      <PageHeader title={<>Publish a <span className="text-secondary">new event.</span></>} description="Sangam will auto-check for venue clashes and route to faculty if needed." />
       <div className="max-w-3xl">
         <GlassCard className="p-6">
           <NewEventForm />

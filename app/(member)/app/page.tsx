@@ -33,7 +33,6 @@ export default async function MemberDashboard() {
   return (
     <>
       <PageHeader
-        eyebrow={now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
         title={<>{greeting}, <span className="text-secondary">{firstName}.</span></>}
         description="Here's what's on this week across the clubs you belong to."
         actions={<Link href="/app/events"><Btn variant="outline" size="sm">This week →</Btn></Link>}

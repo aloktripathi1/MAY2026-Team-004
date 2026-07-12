@@ -24,7 +24,6 @@ export default async function TransparencyPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Public ledger"
         title={<>Every event, <span className="text-secondary">accounted for.</span></>}
         description="Outcome, spend, attendance. Auto-logged. Members and faculty can read this."
         actions={<Btn size="sm" variant="outline"><Download className="h-4 w-4" /> Export CSV</Btn>}

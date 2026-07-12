@@ -24,7 +24,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <PageHeader eyebrow="Account" title={<>Your <span className="text-secondary">profile.</span></>} />
+      <PageHeader title={<>Your <span className="text-secondary">profile.</span></>} />
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="night-panel rounded-3xl p-6">

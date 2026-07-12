@@ -32,7 +32,6 @@ export default async function CoordinatorHome() {
   return (
     <>
       <PageHeader
-        eyebrow="Ops"
         title={<>Run the day, <span className="text-secondary">without the drama.</span></>}
         actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
       />

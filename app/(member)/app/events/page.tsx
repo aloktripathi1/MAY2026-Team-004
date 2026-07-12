@@ -24,7 +24,6 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
   return (
     <>
       <PageHeader
-        eyebrow="What's on"
         title={<>Every event, <span className="text-secondary">every club.</span></>}
         actions={
           <div className="night-panel rounded-xl p-1">
