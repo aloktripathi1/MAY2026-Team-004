@@ -19,13 +19,16 @@ export function JoinRequestButton({
 
     startTransition(async () => {
       setFading(true);
-      const minFade = new Promise((resolve) => setTimeout(resolve, 180));
-      await Promise.all([toggleJoinRequestAction(clubId), minFade]);
-      setRequested((value) => !value);
-      // Let the new label paint before fading back in
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setFading(false));
-      });
+      try {
+        const minFade = new Promise((resolve) => setTimeout(resolve, 180));
+        await Promise.all([toggleJoinRequestAction(clubId), minFade]);
+        setRequested((value) => !value);
+      } finally {
+        // Let the (possibly unchanged) label paint before fading back in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setFading(false));
+        });
+      }
     });
   }
 

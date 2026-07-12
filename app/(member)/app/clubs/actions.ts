@@ -14,6 +14,12 @@ export async function toggleJoinRequestAction(clubId: string) {
 
   if (existing?.status === "Pending") {
     await prisma.membership.delete({ where: { id: existing.id } });
+  } else if (existing?.status === "Inactive") {
+    // Rejected / inactive requests can be resubmitted
+    await prisma.membership.update({
+      where: { id: existing.id },
+      data: { status: "Pending", joinedAt: new Date() },
+    });
   } else if (!existing) {
     const [user, club] = await Promise.all([
       prisma.user.findUnique({ where: { id: session.user.id } }),
@@ -32,6 +38,9 @@ export async function toggleJoinRequestAction(clubId: string) {
         club,
       },
     });
+  } else {
+    // Active (or other non-Pending) membership — do not no-op while the UI flips
+    throw new Error("Already a member of this club");
   }
 
   revalidatePath("/app/clubs");
