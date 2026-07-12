@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { NotificationPreferences } from "./NotificationPreferences";
 import { EditDetailsModal } from "./EditDetailsModal";
+import { parseNotificationPrefs } from "@/lib/notification-prefs";
 
 export const metadata: Metadata = {
   title: "Profile · Sangam",
@@ -96,7 +97,7 @@ export default async function ProfilePage() {
 
           <GlassCard>
             <div className="text-mono-label mb-3">Notification preferences</div>
-            <NotificationPreferences />
+            <NotificationPreferences initial={parseNotificationPrefs(user!.notificationPrefs)} />
           </GlassCard>
         </div>
       </div>

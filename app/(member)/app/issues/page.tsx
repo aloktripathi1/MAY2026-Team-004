@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 export default async function IssuesPage() {
   const session = getMockSession();
+
   const myIssues = await prisma.issue.findMany({
     where: { raisedById: session!.user.id },
     orderBy: { createdAt: "desc" },
@@ -24,6 +25,7 @@ export default async function IssuesPage() {
     priority: i.priority,
     status: i.status,
     raisedByName: i.raisedBy.name,
+    attachments: i.attachments,
   }));
 
   return (

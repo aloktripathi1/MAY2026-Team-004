@@ -6,6 +6,7 @@ import { getAuthCookieUser, setAuthCookies } from "@/lib/auth-session";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { INTEREST_OPTIONS } from "@/lib/interests";
+import { parseNotificationPrefs, type NotificationPrefs } from "@/lib/notification-prefs";
 
 const MAX_IMAGE_CHARS = 1_500_000; // ~1MB binary as base64 data URL
 
@@ -68,4 +69,20 @@ export async function updateProfileAction(
   revalidatePath("/app/clubs");
   revalidatePath("/app");
   return { ok: true };
+}
+
+export async function toggleNotificationPrefAction(key: keyof NotificationPrefs) {
+  const session = getMockSession();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  const current = parseNotificationPrefs(user?.notificationPrefs);
+  const next = { ...current, [key]: !current[key] };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { notificationPrefs: JSON.stringify(next) },
+  });
+
+  revalidatePath("/app/profile");
 }

@@ -13,6 +13,7 @@ export type IssueRow = {
   priority: string;
   status: string;
   raisedByName: string;
+  attachments?: string[];
 };
 
 const ISSUE_STATUSES = ["Open", "InProgress", "Resolved"] as const;
@@ -136,6 +137,14 @@ export function IssuesClient({ issues }: { issues: IssueRow[] }) {
               </div>
               <div className="truncate text-sm font-medium">{i.title}</div>
               <div className="mt-1 text-xs text-muted-foreground">Raised by {i.raisedByName}</div>
+              {i.attachments && i.attachments.length > 0 && (
+                <div className="mt-2 flex gap-1.5">
+                  {i.attachments.map((src, idx) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={idx} src={src} alt="" className="h-10 w-10 rounded-md border border-white/[0.12] object-cover" />
+                  ))}
+                </div>
+              )}
             </div>
             <StatusPill tone={priorityTone(i.priority)}>{i.priority}</StatusPill>
             <StatusPill tone={statusTone(i.status)}>{formatIssueStatus(i.status)}</StatusPill>

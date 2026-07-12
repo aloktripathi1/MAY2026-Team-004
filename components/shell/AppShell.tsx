@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
-  Shield, Menu, X, LogOut, Ticket,
+  Shield, Menu, X, LogOut, Ticket, Activity,
 } from "lucide-react";
 
 type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
@@ -25,7 +25,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
     { label: "Events", to: "/coordinator", icon: CalendarDays },
     { label: "New event", to: "/coordinator/new", icon: PlusSquare },
     { label: "Volunteers", to: "/coordinator/volunteers", icon: Users2 },
-    { label: "Resources", to: "/coordinator/resources", icon: Package },
   ],
   admin: [
     { label: "Overview", to: "/admin", icon: LayoutDashboard },
@@ -39,10 +38,12 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   ],
   volunteer: [
     { label: "My tasks", to: "/volunteer", icon: ListChecks },
+    { label: "Events", to: "/volunteer/events", icon: CalendarDays },
   ],
   faculty: [
     { label: "Oversight", to: "/faculty", icon: Shield },
     { label: "Approvals", to: "/faculty/approvals", icon: ClipboardCheck },
+    { label: "Club Activity", to: "/faculty/club-activity", icon: Activity },
   ],
 };
 
@@ -112,41 +113,50 @@ export function AppShell({
               </div>
             </div>
 
-            <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hidden">
-              {items.map((item) => {
-                const matches = (to: string) =>
-                  currentPath === to || (to !== "/" && currentPath.startsWith(`${to}/`));
-                const active =
-                  matches(item.to) &&
-                  !items.some(
-                    (other) =>
-                      other.to !== item.to &&
-                      other.to.length > item.to.length &&
-                      matches(other.to)
-                  );
-                return (
-                  <Link
-                    key={item.to}
-                    href={item.to}
-                    onClick={() => setOpen(false)}
-                    className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/70 transition hover:bg-white/[0.06] hover:text-sidebar-foreground"
-                  >
-                    {active && (
-                      <motion.span
-                        layoutId={`nav-${role}`}
-                        className="absolute inset-0 rounded-xl border border-secondary/50 bg-white/[0.075]"
-                        transition={{ type: "spring", stiffness: 500, damping: 40 }}
+            <LayoutGroup id={`shell-nav-${role}`}>
+              <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hidden">
+                {items.map((item) => {
+                  const matches = (to: string) =>
+                    currentPath === to || (to !== "/" && currentPath.startsWith(`${to}/`));
+                  const active =
+                    matches(item.to) &&
+                    !items.some(
+                      (other) =>
+                        other.to !== item.to &&
+                        other.to.length > item.to.length &&
+                        matches(other.to)
+                    );
+                  return (
+                    <Link
+                      key={item.to}
+                      href={item.to}
+                      onClick={() => setOpen(false)}
+                      className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/70 transition-colors duration-200 hover:bg-white/[0.06] hover:text-sidebar-foreground"
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId={`nav-pill-${role}`}
+                          className="absolute inset-0 rounded-xl border border-secondary/50 bg-white/[0.075]"
+                          transition={
+                            reduceMotion
+                              ? { duration: 0 }
+                              : { type: "spring", stiffness: 320, damping: 36, mass: 0.9 }
+                          }
+                        />
+                      )}
+                      <item.icon
+                        className={`relative h-4 w-4 transition-colors duration-200 ${active ? "text-secondary" : ""}`}
                       />
-                    )}
-                    <item.icon className={`relative h-4 w-4 ${active ? "text-secondary" : ""}`} />
-                    <span className={`relative ${active ? "font-semibold text-sidebar-foreground" : ""}`}>{item.label}</span>
-                    {active && (
-                      <span className="relative ml-auto h-1.5 w-1.5 rounded-full bg-secondary" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+                      <span
+                        className={`relative transition-colors duration-200 ${active ? "font-semibold text-sidebar-foreground" : ""}`}
+                      >
+                        {item.label}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </LayoutGroup>
 
             <div className="mt-2 border-t border-white/10 pt-3">
               <Link
@@ -169,16 +179,24 @@ export function AppShell({
           />
         )}
 
-        {/* Main */}
+        {/* Main — exit + enter so sidebar tab switches feel continuous */}
         <main className="min-w-0 flex-1">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-            animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto max-w-7xl px-5 py-8 md:px-10 md:py-12"
-          >
-            {children}
-          </motion.div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentPath}
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+              }
+              className="mx-auto max-w-7xl px-5 py-8 md:px-10 md:py-12"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

@@ -14,6 +14,24 @@ export function formatIssueStatus(status: string): string {
   return status === "InProgress" ? "In progress" : status;
 }
 
+export function formatTaskStatus(status: string): string {
+  if (status === "doing") return "In progress";
+  if (status === "todo") return "To do";
+  if (status === "done") return "Done";
+  return status;
+}
+
+export function formatTaskDue(date: Date | null | undefined): string {
+  if (!date) return "No due date";
+  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `Due ${day}, ${time}`;
+}
+
+export function formatContributionDate(date: Date): string {
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return count === 1 ? singular : plural;
 }

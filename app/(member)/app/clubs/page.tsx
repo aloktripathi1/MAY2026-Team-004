@@ -18,9 +18,7 @@ export default async function AppClubs() {
   const [allClubs, profile, pendingMemberships] = await Promise.all([
     prisma.club.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findUnique({ where: { id: session!.user.id } }),
-    prisma.membership.findMany({
-      where: { userId: session!.user.id, status: "Pending" },
-    }),
+    prisma.membership.findMany({ where: { userId: session!.user.id, status: "Pending" } }),
   ]);
 
   const pendingClubIds = new Set(pendingMemberships.map((m) => m.clubId));

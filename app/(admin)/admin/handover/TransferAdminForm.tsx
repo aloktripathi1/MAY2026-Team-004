@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { KeyRound } from "lucide-react";
+import { ChevronDown, KeyRound } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { transferAdminAction, type TransferState } from "./actions";
 
@@ -23,12 +23,15 @@ export function TransferAdminForm({ candidates }: { candidates: { membershipId: 
 
   return (
     <form action={formAction} className="space-y-3">
-      <select name="successorMembershipId" required className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition focus:border-secondary/55">
-        <option value="">Choose successor…</option>
-        {candidates.map((c) => (
-          <option key={c.membershipId} value={c.membershipId}>{c.name} — {c.role}</option>
-        ))}
-      </select>
+      <div className="relative">
+        <select name="successorMembershipId" required className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55">
+          <option value="">Choose successor…</option>
+          {candidates.map((c) => (
+            <option key={c.membershipId} value={c.membershipId}>{c.name} — {c.role}</option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
       {state.error && <div className="text-xs text-destructive">{state.error}</div>}
       <SubmitButton />
     </form>

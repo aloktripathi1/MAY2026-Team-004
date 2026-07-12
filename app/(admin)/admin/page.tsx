@@ -145,8 +145,8 @@ export default async function AdminDashboard() {
                     <div className="truncate text-sm font-medium">{e.title}</div>
                     <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.rsvps}/{e.capacity}</div>
                   </div>
-                  <StatusPill tone={e.approval === "approved" ? "green" : e.approval === "pending" ? "amber" : "slate"}>
-                    {e.approval === "approved" ? "OK" : e.approval === "pending" ? "Pending" : "—"}
+                  <StatusPill tone={e.approval === "approved" ? "green" : e.approval === "pending" ? "amber" : e.approval === "rejected" ? "magenta" : "slate"}>
+                    {e.approval === "approved" ? "OK" : e.approval === "pending" ? "Pending" : e.approval === "rejected" ? "Rejected" : "—"}
                   </StatusPill>
                 </div>
               ))}

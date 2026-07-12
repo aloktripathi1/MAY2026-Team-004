@@ -9,72 +9,79 @@ A community and society management platform. Single source of truth for membersh
 - Next.js 14 (App Router)
 - TypeScript
 - Tailwind CSS
-- Prisma ORM
-- PostgreSQL (prod) / SQLite (local dev) — two schema files, see below
-- NextAuth.js (Credentials provider, JWT sessions)
+- **Data layer**: `lib/prisma.ts` — a hand-written in-memory store shaped like Prisma Client's query API (`findMany`, `create`, `update`, relation embedding, etc.), seeded from `lib/seed-data.ts`. No real database is connected in this build.
+- **Auth**: a lightweight custom httpOnly-cookie session (`lib/auth-session.ts` + `lib/mock-session.ts`), not NextAuth — `app/api/auth/[...nextauth]/route.ts` is a stub that returns `{ mode: "mock" }`; real auth is intentionally disabled for this milestone.
+- `prisma/schema.postgres.prisma` / `schema.sqlite.prisma` describe the target data model for a future real-database migration. They're kept accurate and in sync, but nothing in the running app is actually wired to a live Postgres or SQLite database yet.
 
 ## Getting Started
 
 ```bash
 git clone <repo-url>
 cd sangam
-bun install
-cp .env.example .env
-bun run db:migrate   # applies prisma/schema.sqlite.prisma, generates the client
-bun run db:seed      # seeds demo clubs/users/events — all seeded users share password "password123"
-bun run dev
+npm install
+npm run dev
 ```
 
-App runs at `http://localhost:3000`.
+App runs at `http://localhost:3000`. No database setup or seed step is needed — `lib/seed-data.ts` is the live dataset, loaded into an in-memory store on server start. Data resets to the seed state on every dev-server restart; nothing persists to disk.
 
-`npm` works too if you don't have `bun` (`npm install`, `npm run db:migrate`, `npm run db:seed`, `npm run dev`) — just note there's no committed lockfile for either yet, so the first person to run `bun install` should commit the resulting `bun.lock`.
+The `db:migrate` / `db:migrate:prod` / `db:studio` scripts in `package.json` exist for the eventual real-database migration described in the Prisma schema files — they operate on those schema files but have no corresponding live database in this build, so there's nothing to run day-to-day.
 
-## Database
+## Accessing each persona
 
-Two Prisma schemas, kept manually in sync:
+There's no real login flow yet. The fastest way in is to just visit a persona's route directly — `/admin`, `/coordinator`, `/volunteer`, `/faculty`, or `/app` (member) — each is served by a single built-in demo session (`lib/mock-session.ts`) that holds every persona's role at once, so no sign-in step is required. The login/signup pages exist and have real-looking form validation, but since there's no live database backing user records with usable password hashes, the "Try a role" buttons on the login page are the intended way to switch personas, not typing credentials.
 
-- `prisma/schema.sqlite.prisma` — local dev. Enums are downgraded to plain validated `String` fields (SQLite has no enum type), and `Event.tags` is a comma-joined string (SQLite has no array type).
-- `prisma/schema.postgres.prisma` — production. Real Postgres enums and native `String[]` arrays.
+Each persona displays as a distinct, real seeded person even though they all share one underlying demo account:
 
-Scripts always target the SQLite schema by default (`bun run dev`, `bun run db:migrate`, `bun run db:studio`); use `bun run db:migrate:prod` / `next build` (which runs `prisma generate --schema=prisma/schema.postgres.prisma`) for the Postgres path.
+| Persona | Displayed as |
+|---|---|
+| Admin (`/admin`) | Ananya Rao — CodeChef IITM BS |
+| Coordinator (`/coordinator`) | Kabir Menon — E-Cell IITM BS |
+| Volunteer (`/volunteer`) | Ishita Deshpande — Sarga |
+| Member (`/app`) | Ananya Rao |
+| Faculty (`/faculty`) | Prof. R. Krishnan |
 
-**Always run `bun run dev` / `bun run build`, never `next dev` / `next build` directly.** The generated Prisma Client is whichever schema was generated *last* — `build` generates it for Postgres, `dev` regenerates it for SQLite. If you invoke the raw `next` binary and skip that regeneration step (e.g. running `next dev` right after `next build`), every DB query throws `PrismaClientInitializationError` and the app shows the generic "Something broke mid-flow" error page. If you ever hit that, run `bun run db:migrate` (or `npx prisma generate --schema=prisma/schema.sqlite.prisma`) to fix the client, then restart the dev server.
+Route-level gating still exists as real code — `middleware.ts` and each persona's `layout.tsx` check the session for the right role and redirect to `/app` otherwise — but since the demo session always holds every role simultaneously, none of those redirects actually trigger in this build.
 
 ## Project Structure
 
 ```
 app/
-  (public)/        landing, clubs directory, login, signup
-  (member)/app/    dashboard, clubs, events (+ RSVP), issues (+ raise), faq, profile
-  (admin)/admin/   dashboard, members, approvals, announcements, metrics, transparency, handover
+  (public)/        landing, clubs directory, login, signup (+ interests onboarding)
+  (member)/app/    dashboard, clubs (+ join requests), events (+ RSVP), issues
+                    (raise via modal + screenshot attachments, status filter), profile
+                    (edit details + avatar upload, notification preference toggles)
+  (admin)/admin/   overview, members (+ add member, bulk CSV import), issues
+                    (filterable queue, per-row/bulk assignment), approvals, announcements
+                    (+ audience targeting), metrics, transparency, handover
   (coordinator)/coordinator/  dashboard, new event, resources (venues + equipment), volunteers
   (volunteer)/volunteer/      task list with inline status updates
-  (faculty)/faculty/          oversight dashboard, event approvals
-  api/auth/[...nextauth]/     NextAuth route handler
+  (faculty)/faculty/          oversight dashboard, event approvals, club activity (engagement signals)
+  api/auth/[...nextauth]/     stub route — real auth is intentionally disabled for this build
 
 components/
-  ui/          Btn, GlassCard, Stat, StatusPill — shared design-system primitives
+  ui/          Btn, GlassCard, Stat, StatusPill, Modal — shared design-system primitives
   shell/       AppShell (per-role sidebar/nav), PageHeader
-  auth/        AuthShell (shared login/signup visual shell)
+  auth/        AuthShell (shared login/signup visual shell), OnboardingForm
   tasks/       TaskStatusButtons — shared between the volunteer and coordinator task boards
   (route-local components — e.g. forms, list views specific to one page — live colocated
    next to their page.tsx inside app/, per Next.js convention, rather than under components/)
 
 lib/
-  auth.ts               NextAuth config (authOptions)
-  prisma.ts              Prisma client singleton
-  session-helpers.ts     helpers for reading a user's per-club role from the session
-  actions/               Server Actions shared across more than one route (approvals, task status)
-  seed-data.ts            seed dataset for prisma/seed.ts; also backs the two bits of content that
-                           are deliberately static rather than DB-backed (FAQ copy, landing preview)
-  format.ts               date/display formatting helpers
-  utils.ts                cn() class-name helper
-
-types/
-  next-auth.d.ts    session/JWT type augmentation (adds id, isFaculty, memberships to Session.user)
+  mock-session.ts        the demo session — one account holding every persona's role at once,
+                          displayed under a distinct persona name per role (see table above)
+  auth-session.ts         httpOnly cookie helpers backing that session (not NextAuth)
+  prisma.ts               in-memory data layer shaped like Prisma Client's query API
+  session-helpers.ts      helpers for reading a user's per-club role from the session
+  actions/                Server Actions shared across more than one route (approvals, task status)
+  seed-data.ts             the actual dataset — clubs, events, members, issues, announcements, etc.
+  notification-prefs.ts    parse/default helpers for the profile's notification toggles
+  interests.ts             parse/default helpers for signup interests + club recommendations
+  format.ts                date/display formatting helpers
+  utils.ts                 cn() class-name helper
 
 prisma/
   schema.postgres.prisma, schema.sqlite.prisma, migrations/, seed.ts
+  (target schema for a future real-database migration — not wired to a live DB yet)
 ```
 
 ## Data model
@@ -83,35 +90,21 @@ Role is per-club, not global: a `Membership` join table (`User` × `Club`) carri
 
 Venues and Equipment are separate models (not a merged "Resource" type).
 
+This shape is mirrored exactly by both the Prisma schema files (the target for a real database) and the in-memory mock in `lib/prisma.ts` (what actually runs today).
+
 ## Roles
 
-Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. Route access is gated two ways: `middleware.ts` checks for a signed-in session on every `/app`, `/admin`, `/coordinator`, `/volunteer`, `/faculty` request; each persona's `layout.tsx` then checks the session's actual `Membership` role (or `isFaculty`) and redirects to `/app` if it doesn't match.
+Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. See "Accessing each persona" above for how to reach each one in this build.
 
-## Seeded dev accounts
+## Seed data
 
-`bun run db:seed` creates these accounts (source: `lib/seed-data.ts` → `prisma/seed.ts`). Every account uses the same password: **`password123`**. Email is `<roll>@ds.study.iitm.ac.in`.
-
-| Name | Roll no. | Email | Role(s) · Club(s) | Membership status |
-|---|---|---|---|---|
-| Ananya Rao | 23s1000123 | 23s1000123@ds.study.iitm.ac.in | Admin · CodeChef | Active |
-| Kabir Menon | 23s1000456 | 23s1000456@ds.study.iitm.ac.in | Coordinator · CodeChef, E-Cell | Active |
-| Ishita Deshpande | 24s1000789 | 24s1000789@ds.study.iitm.ac.in | Volunteer · Sarga, Paradox | Active |
-| Rohan Iyer | 24s1000321 | 24s1000321@ds.study.iitm.ac.in | Member · CodeChef | **Pending** (good for testing the admin approvals queue) |
-| Meera Nair | 23s1000654 | 23s1000654@ds.study.iitm.ac.in | Coordinator · Kalakriti | Active |
-| Aarav Sen | 22s1000111 | 22s1000111@ds.study.iitm.ac.in | Member · Arena, CodeChef | Active |
-| Diya Krishnan | 24s1000908 | 24s1000908@ds.study.iitm.ac.in | Member · Prakriti | **Pending** |
-| Vikram Shah | 23s1000202 | 23s1000202@ds.study.iitm.ac.in | Member · E-Cell | Inactive |
-| — (Faculty, no roll number) | — | faculty.mentor@ds.study.iitm.ac.in | Faculty (`isFaculty: true`, institution-wide, not club-scoped) | — |
-
-Quick picks for testing each persona: **Ananya Rao** for `/admin` (CodeChef Admin), **Kabir Menon** for `/coordinator` (Coordinator of two clubs), **Ishita Deshpande** for `/volunteer`, any of the above for `/app` (member views), **the Faculty account** for `/faculty`.
-
-Seeded content alongside the users: 8 clubs, 8 events (mixed upcoming/past, one pending faculty approval — "Ignite 2026"), 4 announcements, 5 issues, 4 tasks, 4 venues + 2 equipment items, 4 transparency-log entries. Re-running `bun run db:seed` on top of an already-seeded DB will hit unique-constraint errors (slugs/emails collide) — wipe `prisma/dev.db` first (`rm prisma/dev.db && bun run db:migrate` recreates it, then reseed).
+`lib/seed-data.ts` is the single source of truth for everything the app displays: 8 clubs, 10 events (mixed upcoming/past, 3 currently pending faculty approval), 4 announcements, 5 issues, 4 tasks, 8 members, 6 resources (4 venues + 2 equipment), and 4 transparency-log entries. Edit it directly and restart the dev server to see changes — there's no seed script to run separately since it's loaded straight into the in-memory store.
 
 ## Known gaps vs. original plan
 
 - Volunteer currently only has the task list — no dedicated events or FAQ view yet.
-- Admin doesn't have a standalone "issues" view — club issues currently only surface in the member persona (raised-by-me list) and aren't yet aggregated for admins.
-- No automated tests yet (Vitest setup planned).
+- No real database, auth, or file storage — see the Tech Stack section. Image uploads (issue attachments, profile avatars) are stored as base64 data URLs in the in-memory store, not real file storage, which won't scale past the demo.
+- Automated tests are available for core business logic and workflow rules via `npm test`.
 
 ## Team — Dhurandhar (MAY2026-Team-004)
 
@@ -125,4 +118,3 @@ Seeded content alongside the users: 8 clubs, 8 events (mixed upcoming/past, one 
 
 ## License
 
-Academic project — IITM BS Software Engineering, May 2026 term.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Users } from "lucide-react";
+import { ChevronDown, Users } from "lucide-react";
 import { StatusPill, Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
 import { assignIssuesAction } from "./actions";
@@ -165,17 +165,20 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
               </div>
               <div className="text-xs">{issue.category}</div>
               <StatusPill tone={priorityTone(issue.priority)}>{issue.priority}</StatusPill>
-              <select
-                value={issue.assigneeId ?? ""}
-                onChange={(e) => quickAssign(issue.id, e.target.value)}
-                disabled={pending}
-                className="w-fit rounded-lg border border-white/[0.12] bg-white/[0.035] px-2 py-1.5 text-xs text-white outline-none transition focus:border-secondary/55"
-              >
-                <option value="">Unassigned</option>
-                {assignable.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+              <div className="relative w-fit">
+                <select
+                  value={issue.assigneeId ?? ""}
+                  onChange={(e) => quickAssign(issue.id, e.target.value)}
+                  disabled={pending}
+                  className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+                >
+                  <option value="">Unassigned</option>
+                  {assignable.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              </div>
               <StatusPill tone={statusTone(issue.status)}>{statusLabel(issue.status)}</StatusPill>
             </div>
           ))}

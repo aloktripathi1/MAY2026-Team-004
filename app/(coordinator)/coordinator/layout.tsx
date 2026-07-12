@@ -13,7 +13,7 @@ export default async function CoordinatorLayout({ children }: { children: ReactN
   const club = membership.clubName;
 
   return (
-    <AppShell role="coordinator" user={session.user.name ?? "Coordinator"} club={club}>
+    <AppShell role="coordinator" user={membership.personaName} club={club}>
       {children}
     </AppShell>
   );

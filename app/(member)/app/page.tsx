@@ -47,57 +47,36 @@ export default async function MemberDashboard() {
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        {/* Upcoming */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-mono-label">Your week</h2>
-            <Link href="/app/events" className="text-xs text-muted-foreground hover:text-foreground">See all →</Link>
-          </div>
-          <div className="flex flex-col gap-3">
-            {upcoming.map(e => (
-              <Link key={e.id} href={`/app/events/${e.slug}`} className="block">
-                <GlassCard className="group flex items-center gap-5 p-4">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl text-center" style={{ background: e.cover }}>
-                    <div className="text-mono-label !text-[9px] text-white/80">{formatWeekday(e.date)}</div>
-                    <div className="text-display -mt-1 text-2xl text-white">{formatDayNumber(e.date)}</div>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-mono-label mb-1">{e.club.name}</div>
-                    <div className="truncate text-base font-medium">{e.title}</div>
-                    <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1"><CalendarClock className="h-3 w-3" /> {e.time}</span>
-                      <span>·</span><span>{e.venue}</span>
-                    </div>
-                  </div>
-                  <div className="hidden text-right sm:block">
-                    <div className="text-mono-label">Going</div>
-                    <div className="text-display text-2xl">{e._count.rsvps}</div>
-                  </div>
-                  <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-secondary" />
-                </GlassCard>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* Right column */}
+        {/* Left column */}
         <section className="space-y-6">
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-mono-label">Announcements</h2>
-              <span className="text-mono-label">{announcements.length} new</span>
+              <h2 className="text-mono-label">Your week</h2>
+              <Link href="/app/events" className="text-xs text-muted-foreground hover:text-foreground">See all →</Link>
             </div>
-            <div className="night-panel divide-y divide-hairline rounded-2xl">
-              {announcements.map(a => (
-                <div key={a.id} className="p-4">
-                  <div className="mb-1.5 flex items-center gap-2">
-                    {a.pinned && <Pin className="h-3 w-3 text-secondary" />}
-                    <span className="text-mono-label">{a.club.name}</span>
-                    <span className="text-mono-label !normal-case !tracking-normal !text-[10px] text-muted-foreground/60">· {formatTimeAgo(a.createdAt)}</span>
-                  </div>
-                  <div className="text-sm font-medium leading-snug">{a.title}</div>
-                  <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.body}</div>
-                </div>
+            <div className="space-y-3">
+              {upcoming.map(e => (
+                <Link key={e.id} href={`/app/events/${e.slug}`}>
+                  <GlassCard className="group flex items-center gap-5 p-4">
+                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl text-center" style={{ background: e.cover }}>
+                      <div className="text-mono-label !text-[9px] text-white/80">{formatWeekday(e.date)}</div>
+                      <div className="text-display -mt-1 text-2xl text-white">{formatDayNumber(e.date)}</div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-mono-label mb-1">{e.club.name}</div>
+                      <div className="truncate text-base font-medium">{e.title}</div>
+                      <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1"><CalendarClock className="h-3 w-3" /> {e.time}</span>
+                        <span>·</span><span>{e.venue}</span>
+                      </div>
+                    </div>
+                    <div className="hidden text-right sm:block">
+                      <div className="text-mono-label">Going</div>
+                      <div className="text-display text-2xl">{e._count.rsvps}</div>
+                    </div>
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-secondary" />
+                  </GlassCard>
+                </Link>
               ))}
             </div>
           </div>
@@ -116,6 +95,27 @@ export default async function MemberDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Right column */}
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-mono-label">Announcements</h2>
+            <span className="text-mono-label">{announcements.length} new</span>
+          </div>
+          <div className="night-panel divide-y divide-hairline rounded-2xl">
+            {announcements.map(a => (
+              <div key={a.id} className="p-4">
+                <div className="mb-1.5 flex items-center gap-2">
+                  {a.pinned && <Pin className="h-3 w-3 text-secondary" />}
+                  <span className="text-mono-label">{a.club.name}</span>
+                  <span className="text-mono-label !normal-case !tracking-normal !text-[10px] text-muted-foreground/60">· {formatTimeAgo(a.createdAt)}</span>
+                </div>
+                <div className="text-sm font-medium leading-snug">{a.title}</div>
+                <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.body}</div>
+              </div>
+            ))}
           </div>
         </section>
       </div>

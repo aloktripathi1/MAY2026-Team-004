@@ -16,7 +16,7 @@ export default async function FacultyHome() {
 
   const [clubs, eventsThisMonth, pendingApprovals, totalEvents, recentEvents] = await Promise.all([
     prisma.club.findMany({
-      take: 4,
+      take: 6,
       orderBy: { name: "asc" },
       include: { _count: { select: { memberships: true } }, events: { orderBy: { date: "desc" }, take: 1 } },
     }),
@@ -32,7 +32,7 @@ export default async function FacultyHome() {
 
   return (
     <>
-      <PageHeader eyebrow="Read-only" title={<>Club activity, <span className="text-secondary">at a glance.</span></>} description="Signals. Not surveillance." />
+      <PageHeader eyebrow="Faculty oversight" title={<>Club activity, <span className="text-secondary">at a glance.</span></>} description="Signals. Not surveillance." />
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label="Clubs monitored" value={clubs.length} hue="155" />
         <Stat label="Events this month" value={eventsThisMonth} hue="122" />
@@ -59,7 +59,10 @@ export default async function FacultyHome() {
           </div>
         </div>
         <div>
-          <div className="text-mono-label mb-3">Recent event outcomes</div>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-mono-label">Recent event outcomes</div>
+            <Link href="/faculty/approvals" className="text-xs text-secondary hover:underline">Review approvals →</Link>
+          </div>
           <div className="night-panel divide-y divide-hairline rounded-2xl">
             {recentEvents.map(e => (
               <div key={e.id} className="p-4">
@@ -69,7 +72,6 @@ export default async function FacultyHome() {
               </div>
             ))}
           </div>
-          <Link href="/faculty/approvals" className="mt-4 inline-flex text-xs text-secondary hover:underline">Review approvals →</Link>
         </div>
       </div>
     </>
