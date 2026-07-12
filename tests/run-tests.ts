@@ -154,9 +154,27 @@ const tests: TestCase[] = [
     },
   },
   {
+    name: "parseTagInput treats null the same as an empty string",
+    run: () => {
+      assert.deepEqual(parseTagInput(null), []);
+    },
+  },
+  {
     name: "buildEventSlug creates a stable lowercase slug suffix",
     run: () => {
       assert.equal(buildEventSlug("Ignite 2026: Kickoff!", 1234567890), "ignite-2026-kickoff-kf12oi");
+    },
+  },
+  {
+    name: "buildEventSlug collapses runs of non-alphanumeric characters into a single hyphen",
+    run: () => {
+      assert.equal(buildEventSlug("Hello   World---Foo!!", 0), "hello-world-foo-0");
+    },
+  },
+  {
+    name: "buildEventSlug still appends a timestamp suffix when the title has no alphanumeric characters",
+    run: () => {
+      assert.equal(buildEventSlug("!!!", 100), "-2s");
     },
   },
   {
@@ -178,6 +196,12 @@ const tests: TestCase[] = [
     },
   },
   {
+    name: "decideJoinRequestAction creates a new request when the status is explicitly null",
+    run: () => {
+      assert.equal(decideJoinRequestAction(null), "create");
+    },
+  },
+  {
     name: "decideRsvpAction cancels existing registrations",
     run: () => {
       assert.equal(decideRsvpAction(true, null), "cancel");
@@ -187,6 +211,22 @@ const tests: TestCase[] = [
     name: "decideRsvpAction allows registration when spots remain",
     run: () => {
       assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 50, going: 20, rsvpCount: 18 }), "register");
+    },
+  },
+  {
+    name: "decideRsvpAction allows registration for the last remaining spot",
+    run: () => {
+      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 10, going: 9, rsvpCount: 5 }), "register");
+    },
+  },
+  {
+    name: "decideRsvpAction treats a missing going count as zero attendees",
+    run: () => {
+      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 5, going: null, rsvpCount: 3 }), "register");
+      assert.throws(
+        () => decideRsvpAction(false, { status: "upcoming", capacity: 3, going: undefined, rsvpCount: 3 }),
+        /Registration unavailable/,
+      );
     },
   },
   {
@@ -234,6 +274,7 @@ const tests: TestCase[] = [
     name: "normalizeTaskStatus rejects invalid task workflow states",
     run: () => {
       assert.throws(() => normalizeTaskStatus("blocked"), /Invalid task status/);
+      assert.throws(() => normalizeTaskStatus(""), /Invalid task status/);
     },
   },
   {
@@ -247,6 +288,7 @@ const tests: TestCase[] = [
     name: "normalizeMembershipStatus rejects invalid approval states",
     run: () => {
       assert.throws(() => normalizeMembershipStatus("Pending"), /Invalid membership status/);
+      assert.throws(() => normalizeMembershipStatus(""), /Invalid membership status/);
     },
   },
   {
@@ -261,6 +303,7 @@ const tests: TestCase[] = [
     name: "normalizeEventApproval rejects invalid event approvals",
     run: () => {
       assert.throws(() => normalizeEventApproval("draft"), /Invalid approval status/);
+      assert.throws(() => normalizeEventApproval(""), /Invalid approval status/);
     },
   },
   {
@@ -273,6 +316,21 @@ const tests: TestCase[] = [
     name: "requireClubAdminAccess rejects users without admin rights for that club",
     run: () => {
       assert.throws(() => requireClubAdminAccess(adminMemberships, "c2"), /Not authorized for this club/);
+    },
+  },
+  {
+    name: "requireClubAdminAccess rejects when the user has no memberships at all",
+    run: () => {
+      assert.throws(() => requireClubAdminAccess([], "c1"), /Not authorized for this club/);
+    },
+  },
+  {
+    name: "requireClubAdminAccess is case-sensitive when matching the Admin role",
+    run: () => {
+      assert.throws(
+        () => requireClubAdminAccess([{ clubId: "c1", role: "admin" }], "c1"),
+        /Not authorized for this club/,
+      );
     },
   },
   {
