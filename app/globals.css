@@ -105,6 +105,10 @@
     color: oklch(1 0 0 / 92%);
   }
   body {
+    /* Redeclared here (not just :root) because next/font's real --font-sans
+     * value is only set on this element; var(--font-sans) inside --font-display
+     * on :root would otherwise freeze to :root's system-font fallback. */
+    --font-display: var(--font-sans);
     background-color: oklch(var(--background));
     color: oklch(var(--foreground));
     font-family: var(--font-sans);
