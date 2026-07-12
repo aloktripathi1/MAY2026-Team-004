@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/lib/mock-session";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseTagInput } from "@/lib/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 
 async function requireCoordinatorForEvent(eventId: string) {
@@ -59,7 +60,7 @@ export async function updateEventAction(eventId: string, eventSlug: string, _pre
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
   const { title, description, date, time, venue, capacity } = parsed.data;
-  const tags = parsed.data.tags.split(",").map((t) => t.trim()).filter(Boolean);
+  const tags = parseTagInput(parsed.data.tags);
 
   await prisma.event.update({
     where: { id: eventId },

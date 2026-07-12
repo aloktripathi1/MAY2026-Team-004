@@ -5,6 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node --experimental-strip-types tests/run-tests.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "db:migrate": "prisma migrate dev --schema=prisma/schema.sqlite.prisma",
