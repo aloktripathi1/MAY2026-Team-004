@@ -26,6 +26,7 @@ export default async function ClubsPage() {
     description: c.description,
     members: c._count.memberships,
     banner: c.banner,
+    photo: c.photo,
   }));
 
   return <ClubsBrowser clubs={clubList} />;
