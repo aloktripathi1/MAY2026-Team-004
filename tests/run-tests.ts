@@ -15,12 +15,15 @@ import {
   buildEventSlug,
   decideJoinRequestAction,
   decideRsvpAction,
+  EVENT_APPROVALS,
+  MEMBERSHIP_STATUSES,
   normalizeEventApproval,
   normalizeMembershipStatus,
   normalizeTaskStatus,
   parseTagInput,
   requireClubAdminAccess,
   requireFacultyAccess,
+  TASK_STATUSES,
 } from "../lib/workflow-rules.ts";
 
 type TestCase = {
@@ -155,9 +158,35 @@ const tests: TestCase[] = [
     },
   },
   {
+    name: "parseTagInput returns an empty list for whitespace-only or all-comma input",
+    run: () => {
+      assert.deepEqual(parseTagInput("   "), []);
+      assert.deepEqual(parseTagInput(",,,"), []);
+      assert.deepEqual(parseTagInput(null), []);
+    },
+  },
+  {
+    name: "parseTagInput preserves duplicate tags without deduplicating",
+    run: () => {
+      assert.deepEqual(parseTagInput("tech, tech, music"), ["tech", "tech", "music"]);
+    },
+  },
+  {
     name: "buildEventSlug creates a stable lowercase slug suffix",
     run: () => {
       assert.equal(buildEventSlug("Ignite 2026: Kickoff!", 1234567890), "ignite-2026-kickoff-kf12oi");
+    },
+  },
+  {
+    name: "buildEventSlug collapses punctuation runs into single hyphens",
+    run: () => {
+      assert.equal(buildEventSlug("Tech & Talk -- 2026", 0), "tech-talk-2026-0");
+    },
+  },
+  {
+    name: "buildEventSlug falls back to a bare timestamp suffix when the title has no alphanumerics",
+    run: () => {
+      assert.equal(buildEventSlug("!!!", 1234567890), "-kf12oi");
     },
   },
   {
@@ -176,6 +205,20 @@ const tests: TestCase[] = [
     name: "decideJoinRequestAction leaves active memberships untouched",
     run: () => {
       assert.equal(decideJoinRequestAction("Active"), "none");
+    },
+  },
+  {
+    name: "decideJoinRequestAction leaves rejected or inactive memberships untouched",
+    run: () => {
+      assert.equal(decideJoinRequestAction("Rejected"), "none");
+      assert.equal(decideJoinRequestAction("Inactive"), "none");
+    },
+  },
+  {
+    name: "decideJoinRequestAction treats an empty status string as no existing request",
+    run: () => {
+      assert.equal(decideJoinRequestAction(""), "create");
+      assert.equal(decideJoinRequestAction(null), "create");
     },
   },
   {
@@ -224,6 +267,27 @@ const tests: TestCase[] = [
     },
   },
   {
+    name: "decideRsvpAction allows registration for the very last remaining spot",
+    run: () => {
+      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 20, going: 19, rsvpCount: 15 }), "register");
+    },
+  },
+  {
+    name: "decideRsvpAction treats a null going count as zero attendance",
+    run: () => {
+      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 5, going: null, rsvpCount: 3 }), "register");
+    },
+  },
+  {
+    name: "decideRsvpAction rejects events with zero capacity",
+    run: () => {
+      assert.throws(
+        () => decideRsvpAction(false, { status: "upcoming", capacity: 0, going: 0, rsvpCount: 0 }),
+        /Registration unavailable/,
+      );
+    },
+  },
+  {
     name: "normalizeTaskStatus accepts valid task workflow states",
     run: () => {
       assert.equal(normalizeTaskStatus("todo"), "todo");
@@ -235,6 +299,7 @@ const tests: TestCase[] = [
     name: "normalizeTaskStatus rejects invalid task workflow states",
     run: () => {
       assert.throws(() => normalizeTaskStatus("blocked"), /Invalid task status/);
+      assert.throws(() => normalizeTaskStatus(""), /Invalid task status/);
     },
   },
   {
@@ -266,6 +331,14 @@ const tests: TestCase[] = [
     },
   },
   {
+    name: "workflow status constants expose exactly the expected allowed values",
+    run: () => {
+      assert.deepEqual(TASK_STATUSES, ["todo", "doing", "done"]);
+      assert.deepEqual(MEMBERSHIP_STATUSES, ["Active", "Inactive"]);
+      assert.deepEqual(EVENT_APPROVALS, ["approved", "pending", "rejected"]);
+    },
+  },
+  {
     name: "requireClubAdminAccess allows the matching club admin",
     run: () => {
       assert.doesNotThrow(() => requireClubAdminAccess(adminMemberships, "c1"));
@@ -275,6 +348,12 @@ const tests: TestCase[] = [
     name: "requireClubAdminAccess rejects users without admin rights for that club",
     run: () => {
       assert.throws(() => requireClubAdminAccess(adminMemberships, "c2"), /Not authorized for this club/);
+    },
+  },
+  {
+    name: "requireClubAdminAccess rejects when the user has no memberships at all",
+    run: () => {
+      assert.throws(() => requireClubAdminAccess([], "c1"), /Not authorized for this club/);
     },
   },
   {
