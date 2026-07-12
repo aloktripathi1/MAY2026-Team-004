@@ -6,7 +6,6 @@ import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } fr
 import {
   ArrowUpRight,
   CalendarDays,
-  CheckCircle2,
   ChevronDown,
   Clock3,
   Compass,
@@ -19,7 +18,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { announcements, clubs, events, faqs, metrics, tasks } from "@/lib/seed-data";
+import { clubs, events, faqs, metrics } from "@/lib/seed-data";
 
 function noEmDash(value: string): string {
   return value.replace(/\s*—\s*/g, " / ");
@@ -257,141 +256,16 @@ function Hero() {
             transition={{ delay: 0.1, duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
             className="hero-glass relative mx-auto w-full overflow-hidden rounded-[28px] p-3"
           >
-            <ProductPreview />
+            <video
+              className="aspect-video w-full rounded-[22px] border border-white/10 bg-[#0d0d10]"
+              src="/product-demo.mp4"
+              controls
+              playsInline
+            />
           </motion.div>
         </div>
       </div>
     </section>
-  );
-}
-
-function ProductPreview() {
-  const [selectedEvent, setSelectedEvent] = useState(events[0].id);
-  const currentEvent = events.find((event) => event.id === selectedEvent) ?? events[0];
-
-  return (
-    <div className="overflow-hidden rounded-[22px] border border-white/10 bg-[#0d0d10]">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <div>
-          <div className="mono-label !text-[0.62rem]">LIVE CONTROL ROOM</div>
-          <div className="mt-1 text-sm font-semibold text-white">Friday ops summary</div>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-primary/35 bg-primary/[0.12] px-2.5 py-1.5 text-xs font-semibold text-white">
-          <span className="h-1.5 w-1.5 rounded-full bg-secondary shadow-[0_0_18px_rgba(222,174,86,0.9)]" />
-          synced
-        </div>
-      </div>
-      <div className="grid min-h-[560px] gap-px bg-white/10 md:grid-cols-[190px_1fr]">
-        <aside className="hidden bg-[#111115] p-4 md:block">
-          <div className="space-y-1">
-            {["Overview", "Membership", "Events", "Tasks", "Approvals"].map((item, index) => (
-              <div key={item} className={`rounded-lg px-3 py-2 text-sm ${index === 0 ? "bg-white/[0.07] text-white" : "text-muted-foreground"}`}>
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-8 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-            <div className="mono-label !text-[0.58rem]">MEMBERS</div>
-            <div className="mt-3 text-3xl font-black tracking-[-0.04em] text-white">{metrics.totalMembers.toLocaleString("en-IN")}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{metrics.activeMembers.toLocaleString("en-IN")} active this month</div>
-          </div>
-        </aside>
-        <div className="bg-[#0f0f12] p-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              ["Events", metrics.eventsThisMonth, "+12%"],
-              ["Open issues", metrics.openIssues, "triaged"],
-              ["Approvals", 6, "pending"],
-            ].map(([label, value, meta]) => (
-              <div key={label} className="rounded-xl border border-white/10 bg-white/[0.045] p-3">
-                <div className="mono-label !text-[0.58rem]">{label}</div>
-                <div className="mt-2 flex items-end justify-between gap-2">
-                  <span className="font-mono text-3xl font-semibold tracking-[-0.06em] text-white">{value}</span>
-                  <span className="text-xs text-secondary">{meta}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_190px]">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="mono-label !text-[0.58rem]">UPCOMING</div>
-                  <div className="mt-1 text-sm font-semibold text-white">Event command queue</div>
-                </div>
-                <CalendarDays className="h-4 w-4 text-secondary" />
-              </div>
-              <div className="mt-3 space-y-2">
-                {events.slice(0, 4).map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    onClick={() => setSelectedEvent(event.id)}
-                    className={`w-full rounded-xl border p-3 text-left transition ${
-                      selectedEvent === event.id
-                        ? "border-secondary/45 bg-secondary/10"
-                        : "border-white/10 bg-black/15 hover:border-white/20 hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-white">{noEmDash(event.title)}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">{event.date} / {event.venue}</div>
-                      </div>
-                      <span className="font-mono text-xs text-secondary">{event.going}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <div className="mono-label !text-[0.58rem]">SELECTED</div>
-              <div className="mt-3 text-lg font-bold leading-tight text-white">{noEmDash(currentEvent.title)}</div>
-              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-center justify-between gap-2"><span>Capacity</span><span className="text-white">{currentEvent.going}/{currentEvent.capacity}</span></div>
-                <div className="flex items-center justify-between gap-2"><span>Status</span><span className="text-secondary">{currentEvent.approval}</span></div>
-                <div className="flex items-center justify-between gap-2"><span>Venue</span><span className="text-right text-white">{currentEvent.venue}</span></div>
-              </div>
-              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min(100, Math.round((currentEvent.going / currentEvent.capacity) * 100))}%` }} />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <div className="mono-label !text-[0.58rem]">ANNOUNCEMENTS</div>
-              <div className="mt-3 space-y-2">
-                {announcements.slice(0, 3).map((item) => (
-                  <div key={item.id} className="rounded-lg bg-black/[0.18] px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-white">{item.club}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">{item.timeAgo}</span>
-                    </div>
-                    <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{noEmDash(item.title)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <div className="mono-label !text-[0.58rem]">TASKS</div>
-              <div className="mt-3 space-y-2">
-                {tasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 rounded-lg bg-black/[0.18] px-3 py-2">
-                    <CheckCircle2 className={`h-4 w-4 ${task.status === "done" ? "text-secondary" : "text-primary"}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-medium text-white">{task.title}</div>
-                      <div className="font-mono text-[10px] uppercase text-muted-foreground">{task.due}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
