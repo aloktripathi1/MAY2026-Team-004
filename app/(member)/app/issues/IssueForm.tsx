@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { ChevronDown, ImagePlus, Plus, Send, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -14,8 +14,9 @@ function SubmitButton() {
   return <Btn disabled={pending}><Send className="h-4 w-4" /> {pending ? "Submitting..." : "Submit"}</Btn>;
 }
 
-export function IssueForm() {
-  const [open, setOpen] = useState(false);
+export function IssueForm({ leading }: { leading?: ReactNode } = {}) {
+  const [showForm, setShowForm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,11 +29,22 @@ export function IssueForm() {
       return;
     }
     if (state.ok) {
-      setOpen(false);
+      setShowForm(false);
+      setShowSuccess(true);
       setAttachments([]);
       formRef.current?.reset();
     }
   }, [state]);
+
+  function openForm() {
+    setShowSuccess(false);
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setShowSuccess(false);
+  }
 
   function handleFiles(files: FileList | null) {
     if (!files) return;
@@ -50,16 +62,14 @@ export function IssueForm() {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function close() {
-    setOpen(false);
-  }
-
   return (
     <>
-      <Btn onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Raise issue</Btn>
-      {state.ok && !open && <div className="night-panel mb-4 mt-4 rounded-2xl p-4 text-sm text-success">Issue submitted.</div>}
-
-      <Modal open={open} onClose={close} title="New issue">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        {leading}
+        <Btn onClick={openForm}><Plus className="h-4 w-4" /> Raise issue</Btn>
+      </div>
+      {showSuccess && <div className="night-panel mb-4 rounded-2xl p-4 text-sm text-success">Issue submitted.</div>}
+      <Modal open={showForm} onClose={closeForm} title="New issue">
         <form ref={formRef} action={formAction}>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
             <input name="title" required placeholder="Brief title — what's broken?" className="rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
@@ -116,8 +126,8 @@ export function IssueForm() {
           </div>
 
           {state.error && <p className="mt-2 text-xs text-destructive">{state.error}</p>}
-          <div className="mt-4 flex justify-end gap-2">
-            <Btn type="button" variant="ghost" onClick={close}>Cancel</Btn>
+          <div className="mt-5 flex justify-end gap-2">
+            <Btn type="button" variant="ghost" onClick={closeForm}>Cancel</Btn>
             <SubmitButton />
           </div>
         </form>

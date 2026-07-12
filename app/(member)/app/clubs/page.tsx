@@ -62,7 +62,12 @@ export default async function AppClubs() {
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {recommended.map(({ club }) => (
-              <ClubDiscoveryCard key={club.id} club={club} recommended requested={pendingClubIds.has(club.id)} />
+              <ClubDiscoveryCard
+                key={club.id}
+                club={club}
+                recommended
+                initialRequested={pendingClubIds.has(club.id)}
+              />
             ))}
           </div>
         </div>
@@ -71,7 +76,11 @@ export default async function AppClubs() {
         <div className="text-mono-label mb-3">Discover more</div>
         <div className="grid gap-3 md:grid-cols-3">
           {remainingDiscover.map(c => (
-            <ClubDiscoveryCard key={c.id} club={c} requested={pendingClubIds.has(c.id)} />
+            <ClubDiscoveryCard
+              key={c.id}
+              club={c}
+              initialRequested={pendingClubIds.has(c.id)}
+            />
           ))}
         </div>
       </div>
@@ -103,7 +112,15 @@ function recommendationScore(club: DiscoverClub, interests: string[]) {
   }, 0);
 }
 
-function ClubDiscoveryCard({ club: c, recommended = false, requested = false }: { club: DiscoverClub; recommended?: boolean; requested?: boolean }) {
+function ClubDiscoveryCard({
+  club: c,
+  recommended = false,
+  initialRequested = false,
+}: {
+  club: DiscoverClub;
+  recommended?: boolean;
+  initialRequested?: boolean;
+}) {
   return (
     <GlassCard className="overflow-hidden">
       <div className="relative -m-5 mb-4 h-28">
@@ -117,7 +134,7 @@ function ClubDiscoveryCard({ club: c, recommended = false, requested = false }: 
       </div>
       <div className="text-sm font-medium text-white">{c.name}</div>
       <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>
-      <JoinRequestButton clubId={c.id} initialRequested={requested} />
+      <JoinRequestButton clubId={c.id} initialRequested={initialRequested} />
     </GlassCard>
   );
 }

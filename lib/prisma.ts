@@ -39,7 +39,11 @@ function buildMockDb() {
       name: member.name,
       rollNumber: member.roll,
       hashedPassword: "",
-      interests: "[]",
+      // Demo primary user (Ananya / m1) starts with interests so profile & club
+      // recommendations aren't empty until someone opens Edit details.
+      interests: member.id === "m1"
+        ? JSON.stringify(["Technical", "Design", "Entrepreneurship"])
+        : "[]",
       notificationPrefs: "{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}",
       isFaculty: false,
       image: undefined as string | undefined,
@@ -51,10 +55,10 @@ function buildMockDb() {
       name: "Prof. R. Krishnan",
       rollNumber: null,
       hashedPassword: "",
+      image: undefined as string | undefined,
       interests: "[]",
       notificationPrefs: "{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}",
       isFaculty: true,
-      image: undefined as string | undefined,
       createdAt: new Date("2024-01-01"),
     },
   ];

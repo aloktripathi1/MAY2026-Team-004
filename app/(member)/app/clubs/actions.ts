@@ -38,4 +38,6 @@ export async function toggleJoinRequestAction(clubId: string) {
   }
 
   revalidatePath("/app/clubs");
+  revalidatePath("/admin/approvals");
+  revalidatePath("/admin");
 }

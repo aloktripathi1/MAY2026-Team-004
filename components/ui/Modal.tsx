@@ -40,20 +40,20 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="night-panel relative w-full max-w-lg rounded-2xl p-6 shadow-[0_42px_140px_-60px_oklch(0_0_0/90%)]"
+            className="night-panel relative flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl p-5 shadow-[0_42px_140px_-60px_oklch(0_0_0/90%)] sm:p-6"
           >
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-5 flex shrink-0 items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-white">{title}</h2>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.04] text-muted-foreground transition hover:border-white/[0.24] hover:text-white"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.04] text-muted-foreground transition hover:border-white/[0.24] hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            {children}
+            <div className="min-h-0 overflow-y-auto overscroll-contain">{children}</div>
           </motion.div>
         </div>
       )}

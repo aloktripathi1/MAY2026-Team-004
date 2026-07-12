@@ -40,10 +40,10 @@ export default async function MemberDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Clubs joined" value={memberships.length} hue="122" />
-        <Stat label="Upcoming events" value={upcoming.length} hue="5" />
-        <Stat label="Open tasks" value={openTaskCount} hue="45" />
-        <Stat label="Membership" value="Active" hue="260" />
+        <Stat label="Clubs joined" value={memberships.length} hue="122" showDot={false} />
+        <Stat label="Upcoming events" value={upcoming.length} hue="5" showDot={false} />
+        <Stat label="Open tasks" value={openTaskCount} hue="45" showDot={false} />
+        <Stat label="Membership" value="Active" hue="260" showDot={false} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -54,9 +54,9 @@ export default async function MemberDashboard() {
               <h2 className="text-mono-label">Your week</h2>
               <Link href="/app/events" className="text-xs text-muted-foreground hover:text-foreground">See all →</Link>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {upcoming.map(e => (
-                <Link key={e.id} href={`/app/events/${e.slug}`}>
+                <Link key={e.id} href={`/app/events/${e.slug}`} className="block">
                   <GlassCard className="group flex items-center gap-5 p-4">
                     <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl text-center" style={{ background: e.cover }}>
                       <div className="text-mono-label !text-[9px] text-white/80">{formatWeekday(e.date)}</div>
