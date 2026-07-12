@@ -56,7 +56,7 @@ export default async function MemberDashboard() {
             </div>
             <div className="space-y-4">
               {upcoming.map(e => (
-                <Link key={e.id} href={`/app/events/${e.slug}`}>
+                <Link key={e.id} href={`/app/events/${e.slug}`} className="block">
                   <GlassCard className="group flex items-center gap-5 p-4">
                     <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl text-center" style={{ background: e.cover }}>
                       <div className="text-mono-label !text-[9px] text-white/80">{formatWeekday(e.date)}</div>
