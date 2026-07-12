@@ -69,7 +69,8 @@ export function AppShell({
       {/* Mobile top bar */}
       <div className="night-nav sticky top-0 z-40 flex items-center justify-between px-4 py-3 md:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="" className="h-8 w-8 rounded-lg" />
           <span className="text-[13px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
         </Link>
         <button
@@ -93,7 +94,8 @@ export function AppShell({
         >
           <div className="flex h-full flex-col p-6 text-sidebar-foreground">
             <Link href="/" className="mb-8 flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
               <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
             </Link>
 

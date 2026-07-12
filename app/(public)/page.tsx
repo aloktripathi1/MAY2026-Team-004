@@ -94,9 +94,8 @@ function MarketingNav() {
           }`}
         >
           <Link href="/" className="group flex items-center gap-3" aria-label="Sangam home">
-            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary transition group-hover:border-secondary/45">
-              SG
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" className="h-8 w-8 rounded-lg transition group-hover:opacity-80" />
             <span className="text-[15px] font-semibold tracking-[0.18em] text-white">SANGAM</span>
           </Link>
 

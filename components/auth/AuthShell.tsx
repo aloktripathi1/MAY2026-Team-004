@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowRight, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Eye, EyeOff, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
 import { useFormState, useFormStatus } from "react-dom";
 import { demoRoleAction, loginAction, type LoginState } from "@/app/(public)/login/actions";
 import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
@@ -33,7 +34,8 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 px-5 py-6 md:grid-cols-[1fr_470px] md:gap-10 md:px-8 lg:px-10">
         <section className="hidden flex-col py-6 md:flex">
           <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
             <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
           </Link>
 
@@ -57,7 +59,8 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
             className="night-panel w-full max-w-md rounded-2xl p-5 md:p-6"
           >
             <Link href="/" className="mb-8 flex items-center gap-3 md:hidden">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
               <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
             </Link>
 
@@ -174,17 +177,33 @@ function FormError({ message }: { message?: string }) {
 function Field({
   label, name, id, placeholder, type = "text",
 }: { label: string; name: string; id?: string; placeholder: string; type?: string }) {
+  const [visible, setVisible] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <label className="block">
       <div className="text-mono-label mb-1.5 text-white/[0.54]">{label}</div>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        required
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-white/[0.12] bg-white/[0.045] px-4 py-3 text-sm text-white outline-none transition duration-200 placeholder:text-white/[0.28] focus:border-secondary/45 focus:bg-white/[0.07] focus:ring-4 focus:ring-secondary/10"
-      />
+      <div className="relative">
+        <input
+          id={id}
+          name={name}
+          type={isPassword && visible ? "text" : type}
+          required
+          placeholder={placeholder}
+          className={`w-full rounded-xl border border-white/[0.12] bg-white/[0.045] px-4 py-3 text-sm text-white outline-none transition duration-200 placeholder:text-white/[0.28] focus:border-secondary/45 focus:bg-white/[0.07] focus:ring-4 focus:ring-secondary/10 ${isPassword ? "pr-11" : ""}`}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            tabIndex={-1}
+            aria-label={visible ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 right-0 grid w-11 place-items-center text-white/[0.4] transition hover:text-white/[0.8]"
+          >
+            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
     </label>
   );
 }
