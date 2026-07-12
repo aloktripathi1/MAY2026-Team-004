@@ -70,7 +70,7 @@ export function BulkImportModal({ open, onClose }: { open: boolean; onClose: () 
       </label>
 
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
-        Import accepts a CSV with columns <span className="text-secondary">name, roll, email, role</span> — we&apos;ll de-duplicate against existing members.
+        Import accepts a CSV with columns <span className="text-secondary">name, roll, email, role</span> - we&apos;ll de-duplicate against existing members.
       </p>
 
       {pending && <p className="mt-3 text-xs text-muted-foreground">Importing…</p>}
