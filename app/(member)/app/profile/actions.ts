@@ -7,12 +7,23 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { INTEREST_OPTIONS } from "@/lib/interests";
 
+const MAX_IMAGE_CHARS = 1_500_000; // ~1MB binary as base64 data URL
+
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80, "Name is too long"),
   interests: z
     .array(z.enum(INTEREST_OPTIONS))
     .min(1, "Choose at least one interest")
     .max(5, "Choose up to five interests"),
+  image: z
+    .string()
+    .nullable()
+    .refine(
+      (value) =>
+        value === null ||
+        (value.startsWith("data:image/") && value.length <= MAX_IMAGE_CHARS),
+      "Image must be a valid image under 1MB",
+    ),
 });
 
 export type ProfileFormState = { error?: string; ok?: boolean };
@@ -24,9 +35,14 @@ export async function updateProfileAction(
   const session = getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
+  const imageRaw = formData.get("image");
+  const image =
+    typeof imageRaw === "string" ? (imageRaw.trim() === "" ? null : imageRaw.trim()) : null;
+
   const parsed = profileSchema.safeParse({
     name: formData.get("name"),
     interests: formData.getAll("interests"),
+    image,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -37,6 +53,7 @@ export async function updateProfileAction(
     data: {
       name: parsed.data.name,
       interests: JSON.stringify(parsed.data.interests),
+      image: parsed.data.image,
     },
   });
 

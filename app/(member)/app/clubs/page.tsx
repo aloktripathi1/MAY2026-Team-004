@@ -15,11 +15,15 @@ export default async function AppClubs() {
   const session = getMockSession();
   const myClubIds = new Set(session!.user.memberships.map((m) => m.clubId));
 
-  const [allClubs, profile] = await Promise.all([
+  const [allClubs, profile, pendingMemberships] = await Promise.all([
     prisma.club.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findUnique({ where: { id: session!.user.id } }),
+    prisma.membership.findMany({
+      where: { userId: session!.user.id, status: "Pending" },
+    }),
   ]);
 
+  const pendingClubIds = new Set(pendingMemberships.map((m) => m.clubId));
   const interests = parseInterests(profile?.interests);
   const my = allClubs.filter((c) => myClubIds.has(c.id));
   const discover = allClubs.filter((c) => !myClubIds.has(c.id));
@@ -60,7 +64,12 @@ export default async function AppClubs() {
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {recommended.map(({ club }) => (
-              <ClubDiscoveryCard key={club.id} club={club} recommended />
+              <ClubDiscoveryCard
+                key={club.id}
+                club={club}
+                recommended
+                initialRequested={pendingClubIds.has(club.id)}
+              />
             ))}
           </div>
         </div>
@@ -69,7 +78,11 @@ export default async function AppClubs() {
         <div className="text-mono-label mb-3">Discover more</div>
         <div className="grid gap-3 md:grid-cols-3">
           {remainingDiscover.map(c => (
-            <ClubDiscoveryCard key={c.id} club={c} />
+            <ClubDiscoveryCard
+              key={c.id}
+              club={c}
+              initialRequested={pendingClubIds.has(c.id)}
+            />
           ))}
         </div>
       </div>
@@ -101,7 +114,15 @@ function recommendationScore(club: DiscoverClub, interests: string[]) {
   }, 0);
 }
 
-function ClubDiscoveryCard({ club: c, recommended = false }: { club: DiscoverClub; recommended?: boolean }) {
+function ClubDiscoveryCard({
+  club: c,
+  recommended = false,
+  initialRequested = false,
+}: {
+  club: DiscoverClub;
+  recommended?: boolean;
+  initialRequested?: boolean;
+}) {
   return (
     <GlassCard className="overflow-hidden">
       <div className="relative -m-5 mb-4 h-28">
@@ -115,9 +136,7 @@ function ClubDiscoveryCard({ club: c, recommended = false }: { club: DiscoverClu
       </div>
       <div className="text-sm font-medium text-white">{c.name}</div>
       <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>
-      <button className="mt-4 w-full rounded-lg border border-white/[0.12] bg-white/[0.035] py-2 text-xs font-semibold text-white/[0.78] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary">
-        Request to join
-      </button>
+      <JoinRequestButton clubId={c.id} initialRequested={initialRequested} />
     </GlassCard>
   );
 }

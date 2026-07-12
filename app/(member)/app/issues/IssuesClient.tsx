@@ -74,7 +74,7 @@ function IssueFilter({
         <div
           role="dialog"
           aria-label="Filter issues"
-          className="night-nav absolute right-0 z-40 mt-2 w-64 rounded-2xl p-2 shadow-[0_24px_80px_-40px_oklch(0_0_0/80%)]"
+          className="night-nav absolute left-0 z-40 mt-2 w-64 rounded-2xl p-2 shadow-[0_24px_80px_-40px_oklch(0_0_0/80%)]"
         >
           <div className="text-mono-label px-2 py-1.5">Status</div>
           <div className="flex flex-wrap gap-1.5 px-1 pb-1" role="listbox" aria-label="Status">

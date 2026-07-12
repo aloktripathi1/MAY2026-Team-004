@@ -31,7 +31,7 @@ export function IssueForm({ leading }: { leading?: ReactNode } = {}) {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-center justify-end gap-2">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         {leading}
         <Btn onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Raise issue</Btn>
       </div>

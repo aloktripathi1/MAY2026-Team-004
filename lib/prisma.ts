@@ -38,6 +38,7 @@ function buildMockDb() {
       name: member.name,
       rollNumber: member.roll,
       hashedPassword: "",
+      image: null as string | null,
       // Demo primary user (Ananya / m1) starts with interests so profile & club
       // recommendations aren't empty until someone opens Edit details.
       interests: member.id === "m1"
@@ -52,6 +53,7 @@ function buildMockDb() {
       name: "Prof. R. Krishnan",
       rollNumber: null,
       hashedPassword: "",
+      image: null as string | null,
       interests: "[]",
       isFaculty: true,
       createdAt: new Date("2024-01-01"),
