@@ -1,7 +1,7 @@
 export const TASK_STATUSES = ["todo", "doing", "done"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
-export const MEMBERSHIP_STATUSES = ["Active", "Inactive"] as const;
+export const MEMBERSHIP_STATUSES = ["Pending", "Active", "Inactive"] as const;
 export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 
 export const EVENT_APPROVALS = ["approved", "pending", "rejected"] as const;
@@ -27,7 +27,7 @@ export function buildEventSlug(title: string, nowMs = Date.now()): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-  return `${base}-${nowMs.toString(36)}`;
+  return `${base || "event"}-${nowMs.toString(36)}`;
 }
 
 export function decideJoinRequestAction(existingStatus: string | null | undefined): "create" | "withdraw" | "none" {

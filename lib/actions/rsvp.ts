@@ -13,7 +13,10 @@ export async function toggleRsvpAction(eventId: string, eventSlug: string) {
     where: { userId_eventId: { userId: session.user.id, eventId } },
   });
 
-  const event = existing ? null : await prisma.event.findUnique({ where: { id: eventId } });
+  const event = existing ? null : await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { _count: { select: { rsvps: true } } },
+  });
   const action = decideRsvpAction(Boolean(existing),
     event
       ? {

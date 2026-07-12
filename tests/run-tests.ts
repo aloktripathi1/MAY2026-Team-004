@@ -129,7 +129,8 @@ const tests: TestCase[] = [
       assert.equal(serializeEventTags(["tech", "music"]), "tech,music");
       process.env.DATABASE_URL = "postgresql://localhost:5432/sangam";
       assert.deepEqual(serializeEventTags(["tech", "music"]), ["tech", "music"]);
-      process.env.DATABASE_URL = originalDatabaseUrl;
+      if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = originalDatabaseUrl;
     },
   },
   {
@@ -241,12 +242,13 @@ const tests: TestCase[] = [
     run: () => {
       assert.equal(normalizeMembershipStatus("Active"), "Active");
       assert.equal(normalizeMembershipStatus("Inactive"), "Inactive");
+      assert.equal(normalizeMembershipStatus("Pending"), "Pending");
     },
   },
   {
     name: "normalizeMembershipStatus rejects invalid approval states",
     run: () => {
-      assert.throws(() => normalizeMembershipStatus("Pending"), /Invalid membership status/);
+      assert.throws(() => normalizeMembershipStatus("Unknown"), /Invalid membership status/);
     },
   },
   {
@@ -290,6 +292,7 @@ const tests: TestCase[] = [
 ];
 
 let passed = 0;
+const failures: string[] = [];
 
 for (const testCase of tests) {
   try {
@@ -298,8 +301,10 @@ for (const testCase of tests) {
     console.log(`PASS ${testCase.name}`);
   } catch (error) {
     console.error(`FAIL ${testCase.name}`);
-    throw error;
+    console.error(error);
+    failures.push(testCase.name);
   }
 }
 
 console.log(`\n${passed}/${tests.length} tests passed.`);
+if (failures.length > 0) process.exitCode = 1;
