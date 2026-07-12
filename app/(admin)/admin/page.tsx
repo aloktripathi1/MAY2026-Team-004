@@ -97,12 +97,12 @@ export default async function AdminDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} hue="122" />
+        <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />
         <Link href="/admin/approvals" className="block">
-          <Stat label="Pending approvals" value={pendingMembers.length + pendingEvents.length} delta="Needs review →" hue="45" />
+          <Stat label="Pending approvals" value={pendingMembers.length + pendingEvents.length} delta="Needs review →" />
         </Link>
-        <Stat label="Upcoming events" value={upcomingEventsCount} delta={pendingEvents.length > 0 ? `${pendingEvents.length} awaiting faculty` : undefined} hue="5" />
-        <Stat label="Open issues" value={openIssuesCount} delta={unassignedIssuesCount > 0 ? `${unassignedIssuesCount} unassigned` : undefined} hue="260" />
+        <Stat label="Upcoming events" value={upcomingEventsCount} delta={pendingEvents.length > 0 ? `${pendingEvents.length} awaiting faculty` : undefined} />
+        <Stat label="Open issues" value={openIssuesCount} delta={unassignedIssuesCount > 0 ? `${unassignedIssuesCount} unassigned` : undefined} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -146,7 +146,7 @@ export default async function AdminDashboard() {
                     <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.rsvps}/{e.capacity}</div>
                   </div>
                   <StatusPill tone={e.approval === "approved" ? "green" : e.approval === "pending" ? "amber" : e.approval === "rejected" ? "magenta" : "slate"}>
-                    {e.approval === "approved" ? "OK" : e.approval === "pending" ? "Pending" : e.approval === "rejected" ? "Rejected" : "—"}
+                    {e.approval === "approved" ? "OK" : e.approval === "pending" ? "Pending" : e.approval === "rejected" ? "Rejected" : "-"}
                   </StatusPill>
                 </div>
               ))}

@@ -59,9 +59,9 @@ export default async function CoordinatorEventDashboard({ params, searchParams }
       )}
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Registered" value={rsvps.length} delta={`of ${event.capacity} capacity`} showDot={false} />
-        <Stat label="Checked in" value={checkedInCount} delta={`of ${rsvps.length} confirmed`} showDot={false} />
-        <Stat label="Volunteers" value={volunteerIds.size} delta={`${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} assigned`} showDot={false} />
+        <Stat label="Registered" value={rsvps.length} delta={`of ${event.capacity} capacity`} />
+        <Stat label="Checked in" value={checkedInCount} delta={`of ${rsvps.length} confirmed`} />
+        <Stat label="Volunteers" value={volunteerIds.size} delta={`${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} assigned`} />
         <div className="night-panel relative overflow-hidden rounded-2xl p-5">
           <div className="text-mono-label">Approval</div>
           <div className="mt-3">
@@ -78,7 +78,7 @@ export default async function CoordinatorEventDashboard({ params, searchParams }
             rows={rsvps.map((r) => ({
               rsvpId: r.id,
               name: r.user.name,
-              roll: r.user.rollNumber ?? "—",
+              roll: r.user.rollNumber ?? "-",
               checkedIn: r.checkedIn,
             }))}
           />

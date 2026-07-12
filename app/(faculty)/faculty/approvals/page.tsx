@@ -25,11 +25,8 @@ export default async function FacultyApprovals() {
         {pending.map(e => (
           <GlassCard key={e.id} className="p-6">
             <div className="grid gap-4 md:grid-cols-[120px_1fr_auto]">
-              <div className="relative h-24 overflow-hidden rounded-xl" style={{ background: e.cover }}>
-                {e.club.banner && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={e.club.banner} alt="" loading="lazy" className="h-full w-full object-cover" />
-                )}
+              <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl text-3xl" style={{ background: e.club.banner || e.cover, color: `oklch(0.9 0.2 ${e.club.hue})` }}>
+                {e.club.emoji}
               </div>
               <div className="min-w-0">
                 <div className="text-mono-label mb-1">{e.club.name} · {formatEventDate(e.date)}</div>

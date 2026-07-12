@@ -50,7 +50,7 @@ export default async function TransparencyPage() {
               <div className="text-mono-label">Status</div>
               <StatusPill tone={i === 0 ? "lime" : "slate"}>{i === 0 ? "Flagship" : "Logged"}</StatusPill>
             </div>
-            <span className="text-xs text-muted-foreground">—</span>
+            <span className="text-xs text-muted-foreground">-</span>
           </div>
         ))}
       </div>

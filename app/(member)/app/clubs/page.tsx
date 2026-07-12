@@ -41,8 +41,9 @@ export default async function AppClubs() {
           {my.length === 0 && <div className="text-sm text-muted-foreground">You haven't joined any clubs yet.</div>}
           {my.map(c => (
             <GlassCard key={c.id} className="flex items-center gap-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={c.banner} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover" loading="lazy" />
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: c.banner, color: `oklch(0.9 0.2 ${c.hue})` }}>
+                {c.emoji}
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="text-base font-medium">{c.name}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">{c.tagline}</div>
@@ -106,9 +107,7 @@ function recommendationScore(club: DiscoverClub, interests: string[]) {
 function ClubDiscoveryCard({ club: c, recommended = false, requested = false }: { club: DiscoverClub; recommended?: boolean; requested?: boolean }) {
   return (
     <GlassCard className="overflow-hidden">
-      <div className="relative -m-5 mb-4 h-28">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.banner} alt="" className="h-full w-full object-cover" loading="lazy" />
+      <div className="relative -m-5 mb-4 h-28" style={{ background: c.banner }}>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         <div className="absolute inset-x-4 bottom-3 flex items-end justify-between">
           <div className="text-2xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>

@@ -40,10 +40,10 @@ export default async function MemberDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Clubs joined" value={memberships.length} hue="122" />
-        <Stat label="Upcoming events" value={upcoming.length} hue="5" />
-        <Stat label="Open tasks" value={openTaskCount} hue="45" />
-        <Stat label="Membership" value="Active" hue="260" />
+        <Stat label="Clubs joined" value={memberships.length} />
+        <Stat label="Upcoming events" value={upcoming.length} />
+        <Stat label="Open tasks" value={openTaskCount} />
+        <Stat label="Membership" value="Active" />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">

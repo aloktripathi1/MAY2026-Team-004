@@ -60,9 +60,9 @@ export default async function VolunteerHome() {
       />
 
       <div className="grid gap-3 md:grid-cols-3">
-        <Stat label="Active tasks" value={active} showDot={false} />
-        <Stat label="Events supported" value={supportedEventIds.size} showDot={false} />
-        <Stat label="Hours contributed" value={`${hoursLogged}h`} showDot={false} />
+        <Stat label="Active tasks" value={active} />
+        <Stat label="Events supported" value={supportedEventIds.size} />
+        <Stat label="Hours contributed" value={`${hoursLogged}h`} />
       </div>
 
       <div className="mt-10">

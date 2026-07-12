@@ -34,10 +34,10 @@ export default async function FacultyHome() {
     <>
       <PageHeader eyebrow="Faculty oversight" title={<>Club activity, <span className="text-secondary">at a glance.</span></>} description="Signals. Not surveillance." />
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Clubs monitored" value={clubs.length} hue="155" />
-        <Stat label="Events this month" value={eventsThisMonth} hue="122" />
-        <Stat label="Pending approvals" value={pendingApprovals} delta={pendingApprovals > 0 ? "Needs you" : undefined} hue="5" />
-        <Stat label="Compliance" value={`${compliance}%`} hue="45" />
+        <Stat label="Clubs monitored" value={clubs.length} />
+        <Stat label="Events this month" value={eventsThisMonth} />
+        <Stat label="Pending approvals" value={pendingApprovals} delta={pendingApprovals > 0 ? "Needs you" : undefined} />
+        <Stat label="Compliance" value={`${compliance}%`} />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
