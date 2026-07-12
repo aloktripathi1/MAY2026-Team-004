@@ -184,9 +184,9 @@ const tests: TestCase[] = [
     },
   },
   {
-    name: "buildEventSlug falls back to a bare timestamp suffix when the title has no alphanumerics",
+    name: "buildEventSlug uses a safe fallback when the title has no alphanumerics",
     run: () => {
-      assert.equal(buildEventSlug("!!!", 1234567890), "-kf12oi");
+      assert.equal(buildEventSlug("!!!", 1234567890), "event-kf12oi");
     },
   },
   {
@@ -334,7 +334,7 @@ const tests: TestCase[] = [
     name: "workflow status constants expose exactly the expected allowed values",
     run: () => {
       assert.deepEqual(TASK_STATUSES, ["todo", "doing", "done"]);
-      assert.deepEqual(MEMBERSHIP_STATUSES, ["Active", "Inactive"]);
+      assert.deepEqual(MEMBERSHIP_STATUSES, ["Pending", "Active", "Inactive"]);
       assert.deepEqual(EVENT_APPROVALS, ["approved", "pending", "rejected"]);
     },
   },
