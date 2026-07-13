@@ -6,6 +6,3 @@ dist/
 prisma/dev.db
 prisma/dev.db-journal
 *.tsbuildinfo
-
-# files
-harsh-prompt.md

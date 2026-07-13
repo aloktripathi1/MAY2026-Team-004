@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { parseTagInput, buildEventSlug } from "@/lib/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 
 const eventSchema = z.object({
@@ -41,11 +42,8 @@ export async function createEventAction(_prevState: NewEventState, formData: For
   }
 
   const { title, description, date, time, venue, capacity } = parsed.data;
-  const tags = parsed.data.tags
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString(36);
+  const tags = parseTagInput(parsed.data.tags);
+  const slug = buildEventSlug(title);
 
   const event = await prisma.event.create({
     data: {

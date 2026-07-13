@@ -32,7 +32,8 @@ export function OnboardingForm({ name }: { name: string }) {
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl flex-col justify-center">
         <Link href="/" className="mb-10 flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-[13px] font-black text-secondary">SG</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
           <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
         </Link>
 

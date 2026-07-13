@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
+import { decideJoinRequestAction } from "@/lib/workflow-rules";
 
 export async function toggleJoinRequestAction(clubId: string) {
   const session = getMockSession();
@@ -12,9 +13,11 @@ export async function toggleJoinRequestAction(clubId: string) {
     where: { userId_clubId: { userId: session.user.id, clubId } },
   });
 
-  if (existing?.status === "Pending") {
-    await prisma.membership.delete({ where: { id: existing.id } });
-  } else if (!existing) {
+  const action = decideJoinRequestAction(existing?.status);
+
+  if (action === "withdraw") {
+    await prisma.membership.delete({ where: { id: existing!.id } });
+  } else if (action === "create") {
     const [user, club] = await Promise.all([
       prisma.user.findUnique({ where: { id: session.user.id } }),
       prisma.club.findUnique({ where: { id: clubId } }),
@@ -35,4 +38,6 @@ export async function toggleJoinRequestAction(clubId: string) {
   }
 
   revalidatePath("/app/clubs");
+  revalidatePath("/admin/approvals");
+  revalidatePath("/admin");
 }

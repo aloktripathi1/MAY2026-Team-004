@@ -104,7 +104,7 @@ Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. See "Accessing
 
 - Volunteer currently only has the task list — no dedicated events or FAQ view yet.
 - No real database, auth, or file storage — see the Tech Stack section. Image uploads (issue attachments, profile avatars) are stored as base64 data URLs in the in-memory store, not real file storage, which won't scale past the demo.
-- No automated tests yet (Vitest setup planned).
+- Automated tests are available for core business logic and workflow rules via `npm test`.
 
 ## Team — Dhurandhar (MAY2026-Team-004)
 
@@ -117,3 +117,4 @@ Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. See "Accessing
 | Yalla Ashish Chandra Reddy | Testing |
 
 ## License
+

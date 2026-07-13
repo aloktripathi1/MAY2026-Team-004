@@ -12,35 +12,45 @@ export function JoinRequestButton({
 }) {
   const [requested, setRequested] = useState(initialRequested);
   const [pending, startTransition] = useTransition();
+  const [fading, setFading] = useState(false);
 
   function toggle() {
-    startTransition(async () => {
-      await toggleJoinRequestAction(clubId);
-      setRequested((value) => !value);
-    });
-  }
+    if (pending || fading) return;
 
-  if (requested) {
-    return (
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={pending}
-        className="mt-4 w-full rounded-lg border border-secondary/45 bg-secondary/[0.1] py-2 text-xs font-semibold text-secondary transition hover:bg-secondary/[0.16] disabled:opacity-60"
-      >
-        {pending ? "Withdrawing..." : "Requested"}
-      </button>
-    );
+    startTransition(async () => {
+      setFading(true);
+      try {
+        const minFade = new Promise((resolve) => setTimeout(resolve, 180));
+        await Promise.all([toggleJoinRequestAction(clubId), minFade]);
+        setRequested((value) => !value);
+      } finally {
+        // Let the (possibly unchanged) label paint before fading back in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setFading(false));
+        });
+      }
+    });
   }
 
   return (
     <button
       type="button"
       onClick={toggle}
-      disabled={pending}
-      className="mt-4 w-full rounded-lg border border-white/[0.12] bg-white/[0.035] py-2 text-xs font-semibold text-white/[0.78] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary disabled:opacity-60"
+      disabled={pending || fading}
+      aria-pressed={requested}
+      className={`mt-4 w-full rounded-lg border py-2 text-xs font-semibold transition-[border-color,background-color,color,opacity,transform] duration-300 ease-out disabled:pointer-events-none ${
+        requested
+          ? "border-secondary/35 bg-white/[0.06] text-secondary"
+          : "border-white/[0.12] bg-white/[0.035] text-white/[0.78] hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary"
+      } ${fading || pending ? "scale-[0.99] opacity-55" : "scale-100 opacity-100"}`}
     >
-      {pending ? "Requesting..." : "Request to join →"}
+      <span
+        className={`inline-block transition-[opacity,transform] duration-300 ease-out ${
+          fading ? "translate-y-0.5 opacity-0" : "translate-y-0 opacity-100"
+        }`}
+      >
+        {requested ? "Requested" : "Request to join"}
+      </span>
     </button>
   );
 }
