@@ -53,8 +53,10 @@ export default async function EventDetail({ params }: { params: { id: string } }
       <Link href="/app/events" className="text-mono-label mb-6 inline-flex items-center gap-1.5 hover:text-foreground"><ArrowLeft className="h-3 w-3" /> All events</Link>
 
       <div className="relative overflow-hidden rounded-3xl" style={{ background: event.cover }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={event.photo} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        {event.photo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={event.photo} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="relative flex min-h-[280px] flex-col justify-end p-8 md:min-h-[380px] md:p-12">
           <div className="mb-3 flex gap-1.5">
@@ -84,7 +86,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
           <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-4">Who's going</div>
             {attendees.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No one's RSVP'd yet — be the first.</p>
+              <p className="text-sm text-muted-foreground">No one's RSVP'd yet - be the first.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {attendees.map((r, idx) => (
@@ -124,7 +126,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
             <div className="space-y-3">
               {organizers.length === 0 && <div className="text-sm text-muted-foreground">No organizers assigned yet.</div>}
               {organizers.map((m) => (
-                <div key={m.id} className="text-sm text-muted-foreground">{m.user.name} — {m.role}</div>
+                <div key={m.id} className="text-sm text-muted-foreground">{m.user.name} - {m.role}</div>
               ))}
             </div>
           </div>

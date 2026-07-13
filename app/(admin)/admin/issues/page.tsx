@@ -50,7 +50,6 @@ export default async function AdminIssuesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Issue dashboard"
         title={<>Every ticket, <span className="text-secondary">one queue.</span></>}
         description={`Every ticket raised across ${club?.name ?? "your club"}, in one queue.`}
       />

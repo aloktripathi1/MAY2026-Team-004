@@ -34,12 +34,12 @@ export default async function MetricsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Signal, not noise" title={<>The <span className="text-secondary">state</span> of the union.</>} description="Real membership and activity signals across every club." />
+      <PageHeader title={<>The <span className="text-secondary">state</span> of the union.</>} description="Real membership and activity signals across every club." />
 
       <div className="grid gap-3 md:grid-cols-3">
-        <Stat label="Total clubs" value={clubs.length} hue="122" />
-        <Stat label="New signups (30d)" value={newSignups} hue="45" />
-        <Stat label="Total members" value={clubs.reduce((sum, c) => sum + c._count.memberships, 0)} hue="260" />
+        <Stat label="Total clubs" value={clubs.length} />
+        <Stat label="New signups (30d)" value={newSignups} />
+        <Stat label="Total members" value={clubs.reduce((sum, c) => sum + c._count.memberships, 0)} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -47,7 +47,7 @@ export default async function MetricsPage() {
           <div className="mb-4 flex items-end justify-between">
             <div>
               <div className="text-mono-label">Members by club</div>
-              <div className="text-display text-3xl mt-2">{topClub?.name ?? "—"} leads</div>
+              <div className="text-display text-3xl mt-2">{topClub?.name ?? "-"} leads</div>
             </div>
           </div>
           <div className="space-y-3">

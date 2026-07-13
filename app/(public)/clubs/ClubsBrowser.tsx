@@ -20,6 +20,7 @@ export type ClubListItem = {
   description: string;
   members: number;
   banner: string;
+  photo?: string;
 };
 
 const categories = ["All", "Technical", "Cultural", "Sports", "Entrepreneurship", "Literary", "Social", "Design"];
@@ -72,9 +73,11 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
             transition={{ delay: i * 0.03, duration: 0.4 }}
           >
             <GlassCard className="h-full overflow-hidden">
-              <div className="relative -m-5 mb-5 h-32">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.banner} alt="" className="h-full w-full object-cover" loading="lazy" />
+              <div className="relative -m-5 mb-5 h-32" style={{ background: c.banner }}>
+                {c.photo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.photo} alt="" className="h-full w-full object-cover" loading="lazy" />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 <div className="absolute inset-x-4 bottom-3 flex items-end justify-between">
                   <div className="text-3xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>

@@ -44,7 +44,6 @@ export default async function VolunteerEventsPage({
   return (
     <>
       <PageHeader
-        eyebrow="Volunteer · Sangam"
         title={<>Events</>}
         description="Everything happening across your clubs."
         actions={<EventsTabToggle tab={tab} />}

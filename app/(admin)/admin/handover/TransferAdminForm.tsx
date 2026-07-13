@@ -18,7 +18,7 @@ export function TransferAdminForm({ candidates }: { candidates: { membershipId: 
   const [state, formAction] = useFormState<TransferState, FormData>(transferAdminAction, {});
 
   if (state.ok) {
-    return <div className="text-sm text-success">Transfer complete — the role change took effect immediately.</div>;
+    return <div className="text-sm text-success">Transfer complete - the role change took effect immediately.</div>;
   }
 
   return (
@@ -27,7 +27,7 @@ export function TransferAdminForm({ candidates }: { candidates: { membershipId: 
         <select name="successorMembershipId" required className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55">
           <option value="">Choose successor…</option>
           {candidates.map((c) => (
-            <option key={c.membershipId} value={c.membershipId}>{c.name} — {c.role}</option>
+            <option key={c.membershipId} value={c.membershipId}>{c.name} - {c.role}</option>
           ))}
         </select>
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

@@ -32,14 +32,13 @@ export default async function CoordinatorHome() {
   return (
     <>
       <PageHeader
-        eyebrow="Ops"
         title={<>Run the day, <span className="text-secondary">without the drama.</span></>}
         actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
       />
       <div className="grid gap-3 md:grid-cols-3">
-        <Stat label="Live events" value={myEvents.length} showDot={false} />
-        <Stat label="Volunteers assigned" value={volunteerCount} showDot={false} />
-        <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} showDot={false} />
+        <Stat label="Live events" value={myEvents.length} />
+        <Stat label="Volunteers assigned" value={volunteerCount} />
+        <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
@@ -51,8 +50,10 @@ export default async function CoordinatorHome() {
                 <GlassCard className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg" style={{ background: e.cover }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      {e.photo && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{e.title}</div>
@@ -77,7 +78,7 @@ export default async function CoordinatorHome() {
                 <div className={`h-2 w-2 shrink-0 rounded-full ${t.status === "done" ? "bg-success" : t.status === "doing" ? "bg-warning" : "bg-muted-foreground"}`} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">{t.title}</div>
-                  <div className="text-xs text-muted-foreground">{myEvents.find(e => e.id === t.eventId)?.title ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">{myEvents.find(e => e.id === t.eventId)?.title ?? "-"}</div>
                 </div>
                 <StatusPill tone={t.status === "done" ? "green" : t.status === "doing" ? "amber" : "slate"}>{t.status}</StatusPill>
               </GlassCard>
