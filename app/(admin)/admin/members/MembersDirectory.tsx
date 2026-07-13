@@ -26,7 +26,6 @@ export function MembersDirectory({ members }: { members: MemberRow[] }) {
   return (
     <>
       <PageHeader
-        eyebrow="Directory"
         title={<>Every member, <span className="text-secondary">searchable.</span></>}
         description={`${members.length} members · ${activeCount} active`}
         actions={<>

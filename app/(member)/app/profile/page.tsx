@@ -27,7 +27,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <PageHeader eyebrow="Account" title={<>Your <span className="text-secondary">profile.</span></>} />
+      <PageHeader title={<>Your <span className="text-secondary">profile.</span></>} />
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="night-panel rounded-3xl p-6">
@@ -45,7 +45,7 @@ export default async function ProfilePage() {
           )}
           <div className="mt-4 text-3xl font-black leading-none tracking-[-0.05em] text-white">{user!.name}</div>
           <div className="text-mono-label mt-2">
-            {user!.rollNumber ?? "—"} {primaryMembership ? `· ${primaryMembership.club.name} ${primaryMembership.role}` : ""}
+            {user!.rollNumber ?? "-"} {primaryMembership ? `· ${primaryMembership.club.name} ${primaryMembership.role}` : ""}
           </div>
           <div className="mt-6 space-y-2 text-sm">
             <Row k="Email" v={user!.email} />

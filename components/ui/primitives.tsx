@@ -34,7 +34,7 @@ export function GlassCard({
   );
 }
 
-export function Stat({ label, value, delta, hue = "122", showDot = true }: { label: string; value: string | number; delta?: string; hue?: string; showDot?: boolean }) {
+export function Stat({ label, value, delta }: { label: string; value: string | number; delta?: string }) {
   return (
     <div className="night-panel relative overflow-hidden rounded-2xl p-5">
       <div className="text-mono-label">{label}</div>
@@ -42,12 +42,6 @@ export function Stat({ label, value, delta, hue = "122", showDot = true }: { lab
         <span className="font-mono text-4xl font-semibold leading-none tracking-[-0.08em] text-white">{value}</span>
         {delta && <span className="text-xs text-secondary">{delta}</span>}
       </div>
-      {showDot && (
-        <div
-          className="pointer-events-none absolute right-4 top-4 h-1.5 w-1.5 rounded-full opacity-80"
-          style={{ background: `oklch(0.72 0.14 ${hue})` }}
-        />
-      )}
     </div>
   );
 }

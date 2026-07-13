@@ -38,7 +38,7 @@ export default async function VolunteersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="People" title={<>Volunteers <span className="text-secondary">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
+      <PageHeader title={<>Volunteers <span className="text-secondary">on deck.</span></>} description="Assign tasks inline, update status as work moves through the board." />
       <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
         {/* Team column */}
         <div>
@@ -81,8 +81,8 @@ export default async function VolunteersPage() {
                   {tasks.filter(t => t.status === col).map(t => (
                     <div key={t.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
                       <div className="text-sm font-medium leading-snug">{t.title}</div>
-                      <div className="text-mono-label mt-1 truncate">{events.find(e => e.id === t.eventId)?.title ?? "—"}</div>
-                      <div className="mt-3 truncate text-xs text-muted-foreground">{t.assignee?.name ?? team.find(m => m.user.id === t.assigneeId)?.user.name ?? "—"}</div>
+                      <div className="text-mono-label mt-1 line-clamp-2">{events.find(e => e.id === t.eventId)?.title ?? "-"}</div>
+                      <div className="mt-3 truncate text-xs text-muted-foreground">{t.assignee?.name ?? team.find(m => m.user.id === t.assigneeId)?.user.name ?? "-"}</div>
                       <div className="mt-2">
                         <TaskStatusButtons taskId={t.id} status={t.status} />
                       </div>

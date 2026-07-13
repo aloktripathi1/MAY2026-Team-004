@@ -37,9 +37,8 @@ export default async function ClubActivityPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Engagement tracker"
         title={<>Club <span className="text-secondary">activity.</span></>}
-        description="Engagement signals across societies — spot who's thriving and who needs a nudge."
+        description="Engagement signals across societies - spot who's thriving and who needs a nudge."
       />
       <div className="space-y-2">
         {rows.map(({ club: c, newMembers30d, engagement }) => (

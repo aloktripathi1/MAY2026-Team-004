@@ -33,17 +33,16 @@ export default async function MemberDashboard() {
   return (
     <>
       <PageHeader
-        eyebrow={now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
         title={<>{greeting}, <span className="text-secondary">{firstName}.</span></>}
         description="Here's what's on this week across the clubs you belong to."
         actions={<Link href="/app/events"><Btn variant="outline" size="sm">This week →</Btn></Link>}
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Clubs joined" value={memberships.length} hue="122" showDot={false} />
-        <Stat label="Upcoming events" value={upcoming.length} hue="5" showDot={false} />
-        <Stat label="Open tasks" value={openTaskCount} hue="45" showDot={false} />
-        <Stat label="Membership" value="Active" hue="260" showDot={false} />
+        <Stat label="Clubs joined" value={memberships.length} />
+        <Stat label="Upcoming events" value={upcoming.length} />
+        <Stat label="Open tasks" value={openTaskCount} />
+        <Stat label="Membership" value="Active" />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">

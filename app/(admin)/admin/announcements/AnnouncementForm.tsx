@@ -27,8 +27,8 @@ export function AnnouncementForm({ memberCount }: { memberCount: number }) {
   return (
     <form ref={formRef} action={formAction}>
       <div className="text-mono-label mb-3">Compose</div>
-      <input name="title" required placeholder="Headline — what's the one thing?" className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-base text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
-      <textarea name="body" required rows={6} placeholder="Body — details, deadline, link…" className="mt-3 w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+      <input name="title" required placeholder="Headline - what's the one thing?" className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-base text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+      <textarea name="body" required rows={6} placeholder="Body - details, deadline, link…" className="mt-3 w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       <label className="mt-3 block">
         <div className="text-mono-label mb-1.5">Send to</div>
         <div className="relative">

@@ -72,7 +72,7 @@ export function IssueForm({ leading }: { leading?: ReactNode } = {}) {
       <Modal open={showForm} onClose={closeForm} title="New issue">
         <form ref={formRef} action={formAction}>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-            <input name="title" required placeholder="Brief title — what's broken?" className="rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+            <input name="title" required placeholder="Brief title - what's broken?" className="rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
             <div className="relative">
               <select name="category" className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55">
                 <option>Registration</option><option>Payment</option><option>Booking</option><option>Access</option><option>Other</option>

@@ -38,7 +38,6 @@ export default async function HandoverPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Year-end"
         title={<>Handover, <span className="text-secondary">without the folklore.</span></>}
         description="One export, five steps. Your successor inherits history, not just vibes."
         actions={<Btn><Download className="h-4 w-4" /> Full data export</Btn>}

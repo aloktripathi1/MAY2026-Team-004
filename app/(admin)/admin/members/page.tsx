@@ -23,7 +23,7 @@ export default async function MembersPage() {
   const rows = memberships.map((m) => ({
     id: m.id,
     name: m.user.name,
-    roll: m.user.rollNumber ?? "—",
+    roll: m.user.rollNumber ?? "-",
     role: m.role,
     status: m.status,
     joined: m.joinedAt.toLocaleDateString(undefined, { month: "short", year: "numeric" }),

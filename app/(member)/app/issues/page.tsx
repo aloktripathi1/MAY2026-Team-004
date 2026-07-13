@@ -31,7 +31,6 @@ export default async function IssuesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Support"
         title={<>Issues &amp; <span className="text-secondary">tickets.</span></>}
       />
       <IssuesClient issues={issues} />

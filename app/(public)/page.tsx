@@ -21,10 +21,6 @@ import {
 } from "lucide-react";
 import { announcements, clubs, events, faqs, metrics, tasks } from "@/lib/seed-data";
 
-function noEmDash(value: string): string {
-  return value.replace(/\s*—\s*/g, " / ");
-}
-
 const navLinks = [
   { label: "Modules", href: "#modules", desc: "Membership, events, work and visibility", icon: LayoutDashboard },
   { label: "Roles", href: "#roles", desc: "A focused view for every operator", icon: ShieldCheck },
@@ -336,7 +332,7 @@ function ProductPreview() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-white">{noEmDash(event.title)}</div>
+                        <div className="truncate text-sm font-medium text-white">{event.title}</div>
                         <div className="mt-1 text-xs text-muted-foreground">{event.date} / {event.venue}</div>
                       </div>
                       <span className="font-mono text-xs text-secondary">{event.going}</span>
@@ -347,7 +343,7 @@ function ProductPreview() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
               <div className="mono-label !text-[0.58rem]">SELECTED</div>
-              <div className="mt-3 text-lg font-bold leading-tight text-white">{noEmDash(currentEvent.title)}</div>
+              <div className="mt-3 text-lg font-bold leading-tight text-white">{currentEvent.title}</div>
               <div className="mt-3 space-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center justify-between gap-2"><span>Capacity</span><span className="text-white">{currentEvent.going}/{currentEvent.capacity}</span></div>
                 <div className="flex items-center justify-between gap-2"><span>Status</span><span className="text-secondary">{currentEvent.approval}</span></div>
@@ -369,7 +365,7 @@ function ProductPreview() {
                       <span className="text-xs font-medium text-white">{item.club}</span>
                       <span className="font-mono text-[10px] text-muted-foreground">{item.timeAgo}</span>
                     </div>
-                    <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{noEmDash(item.title)}</div>
+                    <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{item.title}</div>
                   </div>
                 ))}
               </div>
@@ -617,9 +613,11 @@ function Events() {
         <div className="mt-8 grid gap-3 md:grid-cols-3">
           {upcoming.map((event) => (
             <Link key={event.id} href={`/app/events/${event.slug}`} className="group night-panel overflow-hidden rounded-2xl transition hover:border-secondary/35">
-              <div className="relative aspect-[16/10] overflow-hidden bg-white/[0.04]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={event.photo} alt="" loading="lazy" className="h-full w-full object-cover opacity-[0.78] grayscale transition duration-500 group-hover:scale-105 group-hover:opacity-95 group-hover:grayscale-0" />
+              <div className="relative aspect-[16/10] overflow-hidden" style={{ background: event.cover }}>
+                {event.photo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={event.photo} alt="" loading="lazy" className="h-full w-full object-cover opacity-[0.78] grayscale transition duration-500 group-hover:scale-105 group-hover:opacity-95 group-hover:grayscale-0" />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#101014] via-[#101014]/10 to-transparent" />
                 <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
                   {event.tags.map((tag) => (
@@ -630,8 +628,8 @@ function Events() {
                 </div>
               </div>
               <div className="p-5">
-                <div className="mono-label">{noEmDash(event.club)}</div>
-                <h3 className="mt-3 text-2xl font-black leading-tight tracking-[-0.04em] text-white">{noEmDash(event.title)}</h3>
+                <div className="mono-label">{event.club}</div>
+                <h3 className="mt-3 text-2xl font-black leading-tight tracking-[-0.04em] text-white">{event.title}</h3>
                 <div className="mt-5 flex items-center justify-between gap-3 text-sm text-muted-foreground">
                   <span>{event.date} / {event.time}</span>
                   <span className="font-mono text-secondary">{event.going}</span>
