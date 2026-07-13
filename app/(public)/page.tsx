@@ -222,7 +222,7 @@ function Hero() {
     <section className="relative px-4 pb-20 pt-32 md:px-6 md:pb-28 md:pt-44">
       <div className="hero-ambient" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col items-center gap-8 md:gap-10">
+        <div className="flex flex-col items-center gap-14 md:gap-20">
           <motion.div
             initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
             animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -250,7 +250,7 @@ function Hero() {
             initial={shouldReduceMotion ? false : { opacity: 0, y: 28, rotateX: 4 }}
             animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0 }}
             transition={{ delay: 0.1, duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mx-auto w-full overflow-hidden rounded-[22px] shadow-[0_42px_140px_-60px_oklch(0.47_0.16_24_/_70%),0_26px_90px_-62px_oklch(0.78_0.13_78_/_55%)]"
+            className="relative mx-auto w-full overflow-hidden rounded-[22px] border border-white/10 shadow-[0_42px_140px_-60px_oklch(0.47_0.16_24_/_70%),0_26px_90px_-62px_oklch(0.78_0.13_78_/_55%)]"
           >
             <video
               className="aspect-video w-full"
