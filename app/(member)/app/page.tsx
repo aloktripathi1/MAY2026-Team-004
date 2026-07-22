@@ -5,6 +5,7 @@ import { CalendarClock, ArrowUpRight, Pin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { formatWeekday, formatDayNumber, formatIssueStatus, formatTimeAgo } from "@/lib/format";
 
 export const metadata: Metadata = {
