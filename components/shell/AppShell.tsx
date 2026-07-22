@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
-  Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
+  Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, Package, ListChecks,
   Shield, Menu, X, LogOut, Ticket, Activity,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";

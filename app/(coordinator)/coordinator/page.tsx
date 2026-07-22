@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getMockSession } from "@/lib/mock-session";
-import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { formatEventDate } from "@/lib/format";
 import { NewEventModal } from "@/components/coordinator/NewEventModal";

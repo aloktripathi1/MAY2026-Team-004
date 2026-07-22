@@ -5,9 +5,7 @@ import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
-import { TaskStatusButtons } from "@/components/tasks/TaskStatusButtons";
 import { AssignTaskModal } from "@/components/coordinator/AssignTaskModal";
-
 import { VolunteerTaskBoard } from "@/components/coordinator/VolunteerTaskBoard";
 
 export const metadata: Metadata = {

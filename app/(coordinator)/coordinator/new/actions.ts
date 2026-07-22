@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";

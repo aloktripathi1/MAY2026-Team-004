@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 
 export function Modal({
-  open, onClose, title, children, maxWidth = "max-w-2xl",
+  open, onClose, title, children, maxWidth = "max-w-lg",
 }: { open: boolean; onClose: () => void; title: string; children: ReactNode; maxWidth?: string }) {
   useEffect(() => {
     if (!open) return;
