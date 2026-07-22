@@ -38,7 +38,7 @@ export default async function FacultyApprovals({ searchParams }: { searchParams:
           </div>
         }
       />
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         {events.map(e => (
           <Link key={e.id} href={`/faculty/approvals/${e.slug}`}>
             <GlassCard className="p-6 hover:bg-white/[0.055] transition">
