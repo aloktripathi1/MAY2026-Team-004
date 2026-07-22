@@ -40,7 +40,8 @@ export default async function FacultyApprovals({ searchParams }: { searchParams:
       />
       <div className="space-y-4">
         {events.map(e => (
-          <GlassCard key={e.id} className="p-6">
+          <Link key={e.id} href={`/faculty/approvals/${e.slug}`}>
+            <GlassCard className="p-6 hover:bg-white/[0.055] transition">
             <div className="grid gap-4 md:grid-cols-[120px_1fr_auto]">
               <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl text-3xl" style={{ background: e.club.banner || e.cover, color: `oklch(0.9 0.2 ${e.club.hue})` }}>
                 {e.club.photo ? (
@@ -69,7 +70,8 @@ export default async function FacultyApprovals({ searchParams }: { searchParams:
                 </div>
               )}
             </div>
-          </GlassCard>
+            </GlassCard>
+          </Link>
         ))}
         {events.length === 0 && <div className="night-panel rounded-2xl p-10 text-center text-sm text-muted-foreground">{tab === "pending" ? "Nothing to review. Enjoy your afternoon, Professor." : "No approval history yet."}</div>}
       </div>
