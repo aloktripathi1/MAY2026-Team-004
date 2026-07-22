@@ -4,9 +4,9 @@ import { getMockSession } from "@/lib/mock-session";
 import { TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { formatEventDate, formatTimeAgo } from "@/lib/format";
+import { AdminPageHeader } from "./AdminPageHeader";
 
 export const metadata: Metadata = {
   title: "Admin overview · Sangam",
@@ -25,7 +25,7 @@ export default async function AdminDashboard() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const [
-    club, totalMembers, newMembersThisMonth, pendingMembers, pendingEvents,
+    club, totalMembers, newMembersThisMonth, pendingMembers,
     upcomingEventsCount, upcomingEvents, openIssuesList, recentIssues,
     recentJoins, announcements,
   ] = await Promise.all([
@@ -33,7 +33,6 @@ export default async function AdminDashboard() {
     prisma.membership.count({ where: { clubId } }),
     prisma.membership.count({ where: { clubId, joinedAt: { gte: monthStart } } }),
     prisma.membership.findMany({ where: { clubId, status: "Pending" }, include: { user: true } }),
-    prisma.event.findMany({ where: { clubId, approval: "pending" } }),
     prisma.event.count({ where: { clubId, status: "upcoming" } }),
     prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 4, include: { _count: { select: { rsvps: true } } } }),
     prisma.issue.findMany({ where: { clubId, status: { not: "Resolved" } } }),
@@ -63,13 +62,9 @@ export default async function AdminDashboard() {
   const weeklyAttendanceTotal = weeklyAttendance.reduce((sum, v) => sum + v, 0);
   const maxAttendance = Math.max(...weeklyAttendance, 1);
 
-  // Recent activity: a real, unified feed built from actual signal — pending
-  // event submissions, freshly-raised issues, new joins this week, and RSVP
-  // activity — rather than a fabricated audit log we don't actually track.
+  // Recent activity: a real, unified feed built from actual signal — freshly-raised issues,
+  // new joins this week, and RSVP activity — rather than a fabricated audit log we don't actually track.
   const activity: ActivityItem[] = [];
-  for (const e of pendingEvents) {
-    activity.push({ label: "New event submitted for approval", context: e.title, at: e.createdAt });
-  }
   for (const i of recentIssues) {
     const label = i.status === "Resolved" ? "Issue resolved" : i.status === "InProgress" ? "Issue moved to review" : "New issue raised";
     activity.push({ label, context: i.title, at: i.createdAt });
@@ -90,17 +85,14 @@ export default async function AdminDashboard() {
 
   return (
     <>
-      <PageHeader
-        title={<>{club?.name ?? "Your club"}</>}
-        actions={<Link href="/admin/announcements"><Btn size="sm">New announcement</Btn></Link>}
-      />
+      <AdminPageHeader clubName={club?.name ?? "Your club"} memberCount={totalMembers} />
 
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />
         <Link href="/admin/approvals" className="block">
-          <Stat label="Pending approvals" value={pendingMembers.length + pendingEvents.length} delta="Needs review →" />
+          <Stat label="Pending approvals" value={pendingMembers.length} delta="Needs review →" />
         </Link>
-        <Stat label="Upcoming events" value={upcomingEventsCount} delta={pendingEvents.length > 0 ? `${pendingEvents.length} awaiting faculty` : undefined} />
+        <Stat label="Upcoming events" value={upcomingEventsCount} />
         <Stat label="Open issues" value={openIssuesCount} delta={unassignedIssuesCount > 0 ? `${unassignedIssuesCount} unassigned` : undefined} />
       </div>
 
@@ -133,7 +125,6 @@ export default async function AdminDashboard() {
           <div>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-mono-label">Upcoming events</h2>
-              <Link href="/admin/approvals" className="text-xs text-muted-foreground hover:text-foreground">Approvals →</Link>
             </div>
             <div className="night-panel divide-y divide-hairline rounded-2xl">
               {upcomingEvents.length === 0 && <div className="p-4 text-sm text-muted-foreground">No upcoming events.</div>}

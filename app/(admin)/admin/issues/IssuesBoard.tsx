@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, Users } from "lucide-react";
 import { StatusPill, Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
-import { assignIssuesAction } from "./actions";
+import { assignIssuesAction, updateIssuePriorityAction } from "./actions";
 
 export type IssueRow = {
   id: string;
@@ -80,6 +80,12 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
   function quickAssign(issueId: string, assigneeId: string) {
     startTransition(async () => {
       await assignIssuesAction([issueId], assigneeId || null);
+    });
+  }
+
+  function updatePriority(issueId: string, priority: string) {
+    startTransition(async () => {
+      await updateIssuePriorityAction(issueId, priority);
     });
   }
 
@@ -164,7 +170,19 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
                 </div>
               </div>
               <div className="text-xs">{issue.category}</div>
-              <StatusPill tone={priorityTone(issue.priority)}>{issue.priority}</StatusPill>
+              <div className="relative w-fit">
+                <select
+                  value={issue.priority}
+                  onChange={(e) => updatePriority(issue.id, e.target.value)}
+                  disabled={pending}
+                  className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Med">Medium</option>
+                  <option value="High">High</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              </div>
               <div className="relative w-fit">
                 <select
                   value={issue.assigneeId ?? ""}
