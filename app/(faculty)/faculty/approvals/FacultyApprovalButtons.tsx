@@ -5,7 +5,12 @@ import { Check, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { facultySetEventApprovalAction } from "@/lib/actions/approvals";
 
-export function FacultyApprovalButtons({ eventId }: { eventId: string }) {
+interface FacultyApprovalButtonsProps {
+  eventId: string;
+  layout?: "horizontal" | "vertical";
+}
+
+export function FacultyApprovalButtons({ eventId, layout = "vertical" }: FacultyApprovalButtonsProps) {
   const [choice, setChoice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -16,8 +21,10 @@ export function FacultyApprovalButtons({ eventId }: { eventId: string }) {
     });
   }
 
+  const containerClass = layout === "horizontal" ? "flex gap-2" : "flex flex-col items-end gap-2";
+
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className={containerClass}>
       <Btn size="sm" disabled={Boolean(choice) || pending} onClick={() => decide("approved", "Approved")}>
         <Check className="h-4 w-4" /> {choice ?? "Approve"}
       </Btn>
