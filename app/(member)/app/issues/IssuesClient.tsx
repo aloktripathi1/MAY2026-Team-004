@@ -18,12 +18,6 @@ export type IssueRow = {
 
 const ISSUE_STATUSES = ["Open", "InProgress", "Resolved"] as const;
 
-function priorityTone(priority: string): "magenta" | "amber" | "slate" {
-  if (priority === "High") return "magenta";
-  if (priority === "Med") return "amber";
-  return "slate";
-}
-
 function statusTone(status: string): "green" | "amber" | "magenta" {
   if (status === "Resolved") return "green";
   if (status === "InProgress") return "amber";
@@ -146,7 +140,6 @@ export function IssuesClient({ issues }: { issues: IssueRow[] }) {
                 </div>
               )}
             </div>
-            <StatusPill tone={priorityTone(i.priority)}>{i.priority}</StatusPill>
             <StatusPill tone={statusTone(i.status)}>{formatIssueStatus(i.status)}</StatusPill>
           </GlassCard>
         ))}
