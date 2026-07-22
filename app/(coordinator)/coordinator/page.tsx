@@ -50,7 +50,7 @@ export default async function CoordinatorHome() {
               <Link key={e.id} href={`/coordinator/events/${e.slug}`}>
                 <GlassCard className="p-4">
                   <div className="flex items-center gap-3">
-                    <EventThumbnail title={e.title} cover={e.cover} size="sm" />
+                    <EventThumbnail title={e.title} cover={e.cover} photo={e.photo} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{e.title}</div>
                       <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>

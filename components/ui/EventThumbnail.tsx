@@ -1,11 +1,11 @@
 "use client";
 
 import { CalendarDays } from "lucide-react";
-import Image from "next/image";
 
 interface EventThumbnailProps {
   title: string;
   cover?: string | null;
+  photo?: string | null;
   size?: "sm" | "md" | "lg" | "hero";
   className?: string;
   showBorder?: boolean;
@@ -25,21 +25,16 @@ const iconSizes = {
   hero: 48,
 };
 
-export function EventThumbnail({ title, cover, size = "md", className = "", showBorder = false }: EventThumbnailProps) {
+export function EventThumbnail({ title, cover, photo, size = "md", className = "", showBorder = false }: EventThumbnailProps) {
   const sizeClass = sizeClasses[size];
   const iconSize = iconSizes[size];
   const borderClass = showBorder ? "border border-primary/25" : "";
 
-  if (cover) {
+  if (photo) {
     return (
-      <div className={`${sizeClass} shrink-0 rounded-lg overflow-hidden ${borderClass} ${className}`}>
-        <Image
-          src={cover}
-          alt={title}
-          width={size === "sm" ? 40 : size === "md" ? 56 : size === "lg" ? 96 : 500}
-          height={size === "sm" ? 40 : size === "md" ? 56 : size === "lg" ? 96 : 300}
-          className="h-full w-full object-cover"
-        />
+      <div className={`${sizeClass} shrink-0 overflow-hidden rounded-lg ${borderClass} ${className}`} style={{ background: cover ?? undefined }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photo} alt={title} loading="lazy" className="h-full w-full object-cover" />
       </div>
     );
   }
