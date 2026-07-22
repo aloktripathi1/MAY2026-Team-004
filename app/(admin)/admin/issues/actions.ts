@@ -26,3 +26,22 @@ export async function assignIssuesAction(issueIds: string[], assigneeId: string 
   revalidatePath("/admin/issues");
   return { ok: true };
 }
+
+export async function updateIssuePriorityAction(issueId: string, priority: string): Promise<AssignResult> {
+  const session = getMockSession();
+  const membership = getPrimaryClubMembership(session!, "Admin");
+  if (!membership) return { error: "You must be a club admin to update issue priority." };
+
+  const validPriorities = ["Low", "Med", "High"];
+  if (!validPriorities.includes(priority)) {
+    return { error: "Invalid priority value." };
+  }
+
+  await prisma.issue.update({
+    where: { id: issueId },
+    data: { priority },
+  });
+
+  revalidatePath("/admin/issues");
+  return { ok: true };
+}
