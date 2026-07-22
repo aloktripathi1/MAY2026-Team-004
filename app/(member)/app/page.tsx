@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
 import { EventThumbnail } from "@/components/ui/EventThumbnail";
-import { formatIssueStatus, formatTimeAgo } from "@/lib/format";
+import { formatWeekday, formatDayNumber, formatIssueStatus, formatTimeAgo } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Dashboard · Sangam",
@@ -58,7 +58,10 @@ export default async function MemberDashboard() {
               {upcoming.map(e => (
                 <Link key={e.id} href={`/app/events/${e.slug}`} className="block">
                   <GlassCard className="group flex items-center gap-5 p-4">
-                    <EventThumbnail title={e.title} cover={e.cover} size="md" />
+                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl text-center" style={{ background: e.cover }}>
+                      <div className="text-mono-label !text-[9px] text-white/80">{formatWeekday(e.date)}</div>
+                      <div className="text-display -mt-1 text-2xl text-white">{formatDayNumber(e.date)}</div>
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-mono-label mb-1">{e.club.name}</div>
                       <div className="truncate text-base font-medium">{e.title}</div>
