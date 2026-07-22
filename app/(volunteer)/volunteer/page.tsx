@@ -73,7 +73,7 @@ export default async function VolunteerHome() {
           <h2 className="text-mono-label">Contribution record</h2>
           <p className="mt-2 text-sm text-muted-foreground">Your verified volunteering history and completed tasks.</p>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {contributions.length === 0 && completedTasks.length === 0 && (
             <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">
               No verified hours or completed tasks yet.

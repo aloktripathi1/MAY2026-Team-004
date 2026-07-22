@@ -44,7 +44,7 @@ export default async function VolunteersPage() {
         {/* Team column */}
         <div>
           <div className="text-mono-label mb-3">Team</div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {team.length === 0 && <div className="text-sm text-muted-foreground">No volunteers yet.</div>}
             {team.map(m => (
               <GlassCard key={m.id} hover={false} className="flex items-center gap-3 p-3">
@@ -73,7 +73,7 @@ export default async function VolunteersPage() {
                   <span>{columnLabels[col]}</span>
                   <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-xs">{tasks.filter(t => t.status === col).length}</span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {tasks.filter(t => t.status === col).length === 0 && (
                     <div className="rounded-xl border border-dashed border-hairline p-4 text-center text-xs text-muted-foreground">Nothing here.</div>
                   )}

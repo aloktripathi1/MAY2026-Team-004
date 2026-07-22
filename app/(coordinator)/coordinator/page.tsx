@@ -44,7 +44,7 @@ export default async function CoordinatorHome() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
           <h2 className="text-mono-label mb-3">Your events</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {myEvents.length === 0 && <div className="text-sm text-muted-foreground">No upcoming events.</div>}
             {myEvents.map(e => (
               <Link key={e.id} href={`/coordinator/events/${e.slug}`}>
@@ -67,7 +67,7 @@ export default async function CoordinatorHome() {
         </div>
         <div>
           <h2 className="text-mono-label mb-3">Task board</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {tasks.length === 0 && <div className="text-sm text-muted-foreground">No tasks yet.</div>}
             {tasks.map(t => (
               <GlassCard key={t.id} className="flex items-center gap-3 p-4">

@@ -40,7 +40,7 @@ export default async function ClubActivityPage() {
         title={<>Club <span className="text-secondary">activity.</span></>}
         description="Engagement signals across societies - spot who's thriving and who needs a nudge."
       />
-      <div className="space-y-2">
+      <div className="space-y-4">
         {rows.map(({ club: c, newMembers30d, engagement }) => (
           <GlassCard key={c.id} className="flex flex-wrap items-center gap-4 p-4">
             <div

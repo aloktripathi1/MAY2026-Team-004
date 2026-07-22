@@ -83,7 +83,7 @@ export default async function ProfilePage() {
 
           <GlassCard>
             <div className="text-mono-label mb-3">Memberships</div>
-            <div className="space-y-2">
+            <div className="space-y-4">
               {user!.memberships.length === 0 && <div className="text-sm text-muted-foreground">No memberships yet.</div>}
               {user!.memberships.map(m => (
                 <div key={m.id} className="flex items-center justify-between border-b border-hairline pb-2 last:border-b-0 last:pb-0">
