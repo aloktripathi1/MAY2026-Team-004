@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Download, Check } from "lucide-react";
 import { Btn, StatusPill } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { toggleCheckInAction } from "./actions";
 
 type ParticipantRow = {
@@ -10,6 +11,7 @@ type ParticipantRow = {
   name: string;
   roll: string;
   checkedIn: boolean;
+  image?: string | null;
 };
 
 function exportCsv(eventSlug: string, rows: ParticipantRow[]) {
@@ -52,9 +54,7 @@ export function ParticipantList({ eventSlug, rows }: { eventSlug: string; rows: 
         {rows.map((r) => (
           <div key={r.rsvpId} className="grid grid-cols-[1fr_120px_100px_110px] items-center gap-4 px-6 py-4 md:grid-cols-[2fr_140px_120px_130px]">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
-                {r.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}
-              </div>
+              <Avatar name={r.name} image={r.image} size="sm" />
               <div className="truncate text-sm font-medium">{r.name}</div>
             </div>
             <div className="text-mono-label !normal-case !tracking-normal text-xs">{r.roll}</div>

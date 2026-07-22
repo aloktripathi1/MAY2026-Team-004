@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Camera, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { INTEREST_OPTIONS } from "@/lib/interests";
 import { updateProfileAction, type ProfileFormState } from "./actions";
@@ -38,12 +39,10 @@ export function EditDetailsModal({
   name,
   interests,
   image,
-  initials,
 }: {
   name: string;
   interests: string[];
   image: string | null;
-  initials: string;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(interests);
@@ -110,9 +109,7 @@ export function EditDetailsModal({
                     className="h-20 w-20 rounded-2xl border border-secondary/25 object-cover"
                   />
                 ) : (
-                  <div className="grid h-20 w-20 place-items-center rounded-2xl border border-secondary/25 bg-secondary/[0.12] text-2xl font-semibold text-secondary">
-                    {initials}
-                  </div>
+                  <Avatar name={name} size="lg" className="border-secondary/25 border-[3px]" />
                 )}
                 {imageDraft && (
                   <button

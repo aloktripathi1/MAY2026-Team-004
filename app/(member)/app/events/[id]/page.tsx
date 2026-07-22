@@ -5,6 +5,7 @@ import { getMockSession } from "@/lib/mock-session";
 import { ArrowLeft, CalendarClock, MapPin, Users2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { StatusPill } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 import { RsvpButton } from "./RsvpButton";
@@ -89,14 +90,9 @@ export default async function EventDetail({ params }: { params: { id: string } }
               <p className="text-sm text-muted-foreground">No one's RSVP'd yet - be the first.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {attendees.map((r, idx) => (
-                  <div
-                    key={r.id}
-                    title={r.user.name}
-                    className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-xs font-semibold ring-2 ring-background"
-                    style={{ background: `oklch(0.72 0.18 ${(idx * 47) % 360} / 25%)`, color: `oklch(0.9 0.2 ${(idx * 47) % 360})` }}
-                  >
-                    {r.user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase()}
+                {attendees.map((r) => (
+                  <div key={r.id} title={r.user.name} className="ring-2 ring-background">
+                    <Avatar name={r.user.name} image={r.user.image} size="sm" />
                   </div>
                 ))}
                 {extraCount > 0 && (

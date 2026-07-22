@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { TaskStatusButtons } from "@/components/tasks/TaskStatusButtons";
 import { AssignTaskModal } from "@/components/coordinator/AssignTaskModal";
 
@@ -47,9 +48,7 @@ export default async function VolunteersPage() {
             {team.length === 0 && <div className="text-sm text-muted-foreground">No volunteers yet.</div>}
             {team.map(m => (
               <GlassCard key={m.id} hover={false} className="flex items-center gap-3 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
-                  {m.user.name.split(" ").map(s => s[0]).join("")}
-                </div>
+                <Avatar name={m.user.name} image={m.user.image} size="sm" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{m.user.name}</div>
                   <div className="text-xs text-muted-foreground">{m.role}</div>

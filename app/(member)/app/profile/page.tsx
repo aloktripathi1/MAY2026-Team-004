@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { INTEREST_OPTIONS, parseInterests } from "@/lib/interests";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { NotificationPreferences } from "./NotificationPreferences";
 import { EditDetailsModal } from "./EditDetailsModal";
 import { parseNotificationPrefs } from "@/lib/notification-prefs";
@@ -20,7 +21,6 @@ export default async function ProfilePage() {
     include: { memberships: { include: { club: true } } },
   });
 
-  const initials = (user!.name.split(" ").map((s) => s[0]).slice(0, 2).join("") || "?").toUpperCase();
   const primaryMembership = user!.memberships[0];
   const interests = parseInterests(user!.interests);
   const image = user!.image ?? null;
@@ -31,18 +31,20 @@ export default async function ProfilePage() {
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="night-panel rounded-3xl p-6">
-          {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={image}
-              alt={`${user!.name}'s profile`}
-              className="h-24 w-24 rounded-2xl border border-secondary/25 object-cover"
-            />
-          ) : (
-            <div className="grid h-24 w-24 place-items-center rounded-2xl border border-secondary/25 bg-secondary/[0.12] text-3xl font-semibold text-secondary">
-              {initials}
+          <div className="flex justify-center">
+            <div className="h-24 w-24">
+              {image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={image}
+                  alt={`${user!.name}'s profile`}
+                  className="h-24 w-24 rounded-2xl border border-secondary/25 object-cover"
+                />
+              ) : (
+                <Avatar name={user!.name} size="lg" className="border-secondary/25 border-[3px]" />
+              )}
             </div>
-          )}
+          </div>
           <div className="mt-4 text-3xl font-black leading-none tracking-[-0.05em] text-white">{user!.name}</div>
           <div className="text-mono-label mt-2">
             {user!.rollNumber ?? "-"} {primaryMembership ? `· ${primaryMembership.club.name} ${primaryMembership.role}` : ""}
@@ -51,7 +53,7 @@ export default async function ProfilePage() {
             <Row k="Email" v={user!.email} />
             <Row k="Joined" v={user!.createdAt.toLocaleDateString(undefined, { month: "short", year: "numeric" })} />
           </div>
-          <EditDetailsModal name={user!.name} interests={interests} image={image} initials={initials} />
+          <EditDetailsModal name={user!.name} interests={interests} image={image} />
         </div>
 
         <div className="space-y-6">
