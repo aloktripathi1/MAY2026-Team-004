@@ -32,7 +32,7 @@ model User {
   tasksAssigned          Task[]
   contributions          Contribution[]
   announcementsAuthored  Announcement[]
-  rsvps                  Rsvp[]
+  countMeIns             CountMeIn[]
 }
 
 model Club {
@@ -90,11 +90,11 @@ model Event {
   club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
   tasks          Task[]
   contributions  Contribution[]
-  rsvps          Rsvp[]
+  countMeIns     CountMeIn[]
   transparencyEntries TransparencyLogEntry[]
 }
 
-model Rsvp {
+model CountMeIn {
   id        String   @id @default(cuid())
   userId    String
   eventId   String

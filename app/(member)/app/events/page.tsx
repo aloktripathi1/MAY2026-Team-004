@@ -18,7 +18,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
   const list = await prisma.event.findMany({
     where: { status: tab },
     orderBy: { date: tab === "upcoming" ? "asc" : "desc" },
-    include: { club: true, _count: { select: { rsvps: true } } },
+    include: { club: true, _count: { select: { countMeIns: true } } },
   });
 
   return (
@@ -61,7 +61,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
                   <div className="mt-1 text-xs text-muted-foreground">{e.venue}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {e.status === "upcoming" && <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>}
+                  {e.status === "upcoming" && <StatusPill tone="lime">{e._count.countMeIns}/{e.capacity}</StatusPill>}
                   {e.status === "past" && <StatusPill tone="slate">Logged</StatusPill>}
                 </div>
               </div>

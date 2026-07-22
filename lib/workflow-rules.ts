@@ -11,7 +11,7 @@ export type EventCapacitySnapshot = {
   status: string;
   capacity: number;
   going?: number | null;
-  rsvpCount: number;
+  countMeInCount: number;
 };
 
 export function parseTagInput(tags: string | null | undefined): string[] {
@@ -36,11 +36,11 @@ export function decideJoinRequestAction(existingStatus: string | null | undefine
   return "create";
 }
 
-export function decideRsvpAction(hasExistingRsvp: boolean, event: EventCapacitySnapshot | null | undefined): "register" | "cancel" {
-  if (hasExistingRsvp) return "cancel";
+export function decideCountMeInAction(hasExistingCountMeIn: boolean, event: EventCapacitySnapshot | null | undefined): "register" | "cancel" {
+  if (hasExistingCountMeIn) return "cancel";
   if (!event) throw new Error("Event not found");
 
-  const spotsTaken = Math.max(Number(event.going ?? 0), event.rsvpCount);
+  const spotsTaken = Math.max(Number(event.going ?? 0), event.countMeInCount);
   if (event.status === "past" || spotsTaken >= event.capacity) {
     throw new Error("Registration unavailable");
   }

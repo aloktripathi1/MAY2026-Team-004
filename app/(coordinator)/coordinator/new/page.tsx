@@ -24,7 +24,7 @@ export default async function AllEventsPage() {
   const events = await prisma.event.findMany({
     where: { clubId },
     orderBy: { date: "desc" },
-    include: { _count: { select: { rsvps: true } } },
+    include: { _count: { select: { countMeIns: true } } },
   });
 
   return (
@@ -83,7 +83,7 @@ export default async function AllEventsPage() {
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Users className="h-3.5 w-3.5" />
-                          {e._count.rsvps} / {e.capacity} RSVPs
+                          {e._count.countMeIns} / {e.capacity} counted in
                         </span>
                       </div>
 

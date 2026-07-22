@@ -20,7 +20,7 @@ export default async function CoordinatorHome() {
   const clubId = membership!.clubId;
 
   const [myEvents, volunteerCount] = await Promise.all([
-    prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { rsvps: true } } } }),
+    prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { countMeIns: true } } } }),
     prisma.membership.count({ where: { clubId, role: { in: ["Volunteer", "Member"] } } }),
   ]);
 
@@ -55,10 +55,10 @@ export default async function CoordinatorHome() {
                       <div className="truncate text-sm font-medium">{e.title}</div>
                       <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>
                     </div>
-                    <StatusPill tone="lime">{e._count.rsvps}/{e.capacity}</StatusPill>
+                    <StatusPill tone="lime">{e._count.countMeIns}/{e.capacity}</StatusPill>
                   </div>
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.rsvps / e.capacity) * 100, 100)}%` }} />
+                    <div className="h-full rounded-full bg-secondary" style={{ width: `${Math.min((e._count.countMeIns / e.capacity) * 100, 100)}%` }} />
                   </div>
                 </GlassCard>
               </Link>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Btn } from "@/components/ui/primitives";
-import { toggleRsvpAction } from "@/lib/actions/rsvp";
+import { toggleCountMeInAction } from "@/lib/actions/countMeIn";
 
 type RegisterState = "register" | "registered" | "full" | "closed";
 
@@ -35,7 +35,7 @@ export function RegisterButton({
   function toggle() {
     if (state === "full" || state === "closed") return;
     startTransition(async () => {
-      await toggleRsvpAction(eventId, eventSlug);
+      await toggleCountMeInAction(eventId, eventSlug);
       setRegistered((value) => !value);
     });
   }

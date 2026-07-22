@@ -27,12 +27,12 @@ export default async function CoordinatorEventDashboard({ params }: { params: { 
   const event = await getEventForCoordinator(params.id, clubId);
   if (!event) notFound();
 
-  const [rsvps, tasks] = await Promise.all([
-    prisma.rsvp.findMany({ where: { eventId: event.id }, include: { user: true }, orderBy: { createdAt: "asc" } }),
+  const [countMeIns, tasks] = await Promise.all([
+    prisma.countMeIn.findMany({ where: { eventId: event.id }, include: { user: true }, orderBy: { createdAt: "asc" } }),
     prisma.task.findMany({ where: { eventId: event.id }, include: { assignee: true } }),
   ]);
 
-  const checkedInCount = rsvps.filter((r) => r.checkedIn).length;
+  const checkedInCount = countMeIns.filter((r) => r.checkedIn).length;
   const volunteerIds = new Set(tasks.map((t) => t.assigneeId));
 
   const approvalLabel = event.approval === "approved" ? "Approved ✓" : event.approval === "pending" ? "Pending" : "Not required";
@@ -51,8 +51,8 @@ export default async function CoordinatorEventDashboard({ params }: { params: { 
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Registered" value={rsvps.length} delta={`of ${event.capacity} capacity`} />
-        <Stat label="Checked in" value={checkedInCount} delta={`of ${rsvps.length} confirmed`} />
+        <Stat label="Registered" value={countMeIns.length} delta={`of ${event.capacity} capacity`} />
+        <Stat label="Checked in" value={checkedInCount} delta={`of ${countMeIns.length} confirmed`} />
         <Stat label="Volunteers" value={volunteerIds.size} delta={`${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} assigned`} />
         <div className="night-panel relative overflow-hidden rounded-2xl p-5">
           <div className="text-mono-label">Approval</div>
@@ -67,8 +67,8 @@ export default async function CoordinatorEventDashboard({ params }: { params: { 
         <GlassCard className="p-0" hover={false}>
           <ParticipantList
             eventSlug={event.slug}
-            rows={rsvps.map((r) => ({
-              rsvpId: r.id,
+            rows={countMeIns.map((r) => ({
+              countMeInId: r.id,
               name: r.user.name,
               roll: r.user.rollNumber ?? "-",
               checkedIn: r.checkedIn,

@@ -334,7 +334,7 @@ function CountUp({ value }: { value: number }) {
 function Modules() {
   const modules = [
     { icon: Users2, label: "Membership", number: "01", desc: "Verified joins, roll-number matching, approval queues and searchable directories without sheet drift.", large: true },
-    { icon: CalendarDays, label: "Events", number: "02", desc: "Create, approve, RSVP, track capacity and preserve the outcome after the crowd leaves.", large: true },
+    { icon: CalendarDays, label: "Events", number: "02", desc: "Create, approve, count yourself in, track capacity and preserve the outcome after the crowd leaves.", large: true },
     { icon: Zap, label: "Volunteer Ops", number: "03", desc: "Tasks move from coordinator memory into visible ownership and due dates." },
     { icon: Megaphone, label: "Announcements", number: "04", desc: "Relevant updates reach the right members without another noisy broadcast group." },
     { icon: Compass, label: "Discovery", number: "05", desc: "Members can see what is alive, what fits them and where to join next." },
@@ -382,7 +382,7 @@ function Roles() {
   const roles = [
     { name: "Club Admin", label: "Roster / calendar / finances", desc: "Own membership, publish events, approve announcements and prepare handovers from one high-context view." },
     { name: "Coordinator", label: "Tasks / venues / volunteers", desc: "See capacity, approvals, resources and day-of responsibilities without digging through chat history." },
-    { name: "Member", label: "RSVP / clubs / support", desc: "Follow clubs, RSVP, raise issues and see only the updates that matter to their memberships." },
+    { name: "Member", label: "Count Me In / clubs / support", desc: "Follow clubs, count yourself in to events, raise issues and see only the updates that matter to their memberships." },
     { name: "Volunteer", label: "Tasks / deadlines / updates", desc: "See assigned tasks with deadlines and update status directly, without pinging the coordinator for every change." },
     { name: "Faculty Mentor", label: "Approvals / oversight", desc: "Review event requests and transparency logs with enough context to say yes quickly." },
   ];
@@ -458,7 +458,7 @@ function roleRows(active: number): [string, string, string][] {
   const rows: [string, string, string][][] = [
     [["Import review", "18 pending members from CSV", "18"], ["Fusion Night closeout", "Attendance and spend ready", "94%"], ["Handover", "2 unresolved permissions", "2"]],
     [["Venue request", "Seminar Hall 3 awaits mentor signoff", "1"], ["Volunteer tasks", "3 stuck beyond due time", "3"], ["Capacity check", "Ignite seats remaining", "24"]],
-    [["Cook-Off #42", "RSVP open until Sunday 8 PM", "218"], ["Issue update", "Projector ticket moved to in progress", "new"], ["Clubs matched", "Based on interests", "5"]],
+    [["Cook-Off #42", "Count Me In open until Sunday 8 PM", "218"], ["Issue update", "Projector ticket moved to in progress", "new"], ["Clubs matched", "Based on interests", "5"]],
     [["Task due today", "Set up amphitheatre PA system", "1"], ["Task update", "Print speaker badges, marked doing", "doing"], ["Weekly load", "3 tasks across 2 events", "3"]],
     [["Event approval", "Startup Weekend budget attached", "open"], ["Transparency log", "Winter Debate Open archived", "done"], ["Risk notes", "Two venue conflicts detected", "2"]],
   ];

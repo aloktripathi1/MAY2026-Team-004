@@ -18,7 +18,7 @@ export default async function MemberDashboard() {
   const memberships = session!.user.memberships;
 
   const [upcoming, myIssues, announcements] = await Promise.all([
-    prisma.event.findMany({ where: { status: "upcoming" }, orderBy: { date: "asc" }, take: 4, include: { club: true, _count: { select: { rsvps: true } } } }),
+    prisma.event.findMany({ where: { status: "upcoming" }, orderBy: { date: "asc" }, take: 4, include: { club: true, _count: { select: { countMeIns: true } } } }),
     prisma.issue.findMany({ where: { raisedById: userId }, orderBy: { createdAt: "desc" } }),
     prisma.announcement.findMany({ orderBy: { createdAt: "desc" }, take: 4, include: { club: true } }),
   ]);
@@ -71,7 +71,7 @@ export default async function MemberDashboard() {
                     </div>
                     <div className="hidden text-right sm:block">
                       <div className="text-mono-label">Going</div>
-                      <div className="text-display text-2xl">{e._count.rsvps}</div>
+                      <div className="text-display text-2xl">{e._count.countMeIns}</div>
                     </div>
                     <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-secondary" />
                   </GlassCard>

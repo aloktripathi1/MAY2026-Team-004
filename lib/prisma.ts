@@ -156,12 +156,12 @@ function buildMockDb() {
   // Pad attendance counts with filler members only. Skip the demo personas
   // (Ananya u1, Kabir u2, Ishita u3) so role dashboards open with Register,
   // not Requested, unless the signed-in user clicks Register themselves.
-  const rsvpPool = users.filter((user) => !user.isFaculty && !["u1", "u2", "u3"].includes(user.id));
-  const rsvps = events.flatMap((event) =>
+  const countMeInPool = users.filter((user) => !user.isFaculty && !["u1", "u2", "u3"].includes(user.id));
+  const countMeIns = events.flatMap((event) =>
     Array.from({ length: Math.min(event.going, 8) }, (_, index) => {
-      const user = rsvpPool[index % rsvpPool.length];
+      const user = countMeInPool[index % countMeInPool.length];
       return {
-        id: `${event.id}-rsvp-${index}`,
+        id: `${event.id}-countmein-${index}`,
         eventId: event.id,
         userId: user.id,
         checkedIn: false,
@@ -186,10 +186,10 @@ function buildMockDb() {
     clubId: clubs.find((club) => entry.club.includes(club.name.split(" ")[0]))?.id ?? clubs[0].id,
   }));
 
-  return { clubs, users, memberships, events, announcements, issues, tasks, contributions, rsvps, venues, equipment, logs };
+  return { clubs, users, memberships, events, announcements, issues, tasks, contributions, countMeIns, venues, equipment, logs };
 }
 
-const MOCK_DB_VERSION = 3;
+const MOCK_DB_VERSION = 4;
 const globalForMockDb = globalThis as unknown as {
   __sangamMockDb?: ReturnType<typeof buildMockDb>;
   __sangamMockDbVersion?: number;
@@ -199,7 +199,7 @@ if (globalForMockDb.__sangamMockDbVersion !== MOCK_DB_VERSION) {
   globalForMockDb.__sangamMockDbVersion = MOCK_DB_VERSION;
 }
 const db = globalForMockDb.__sangamMockDb!;
-const { clubs, users, memberships, events, announcements, issues, tasks, contributions, rsvps, venues, equipment, logs } = db;
+const { clubs, users, memberships, events, announcements, issues, tasks, contributions, countMeIns, venues, equipment, logs } = db;
 
 let mockIdCounter = 0;
 function nextMockId(prefix: string): string {
@@ -279,12 +279,12 @@ function table<T extends AnyRecord>(items: T[], idPrefix = "row") {
   };
 }
 
-function withEventCount<T extends AnyRecord>(event: T): T & { _count: { rsvps: number } } {
-  return { ...event, _count: { rsvps: rsvps.filter((r) => r.eventId === event.id).length } };
+function withEventCount<T extends AnyRecord>(event: T): T & { _count: { countMeIns: number } } {
+  return { ...event, _count: { countMeIns: countMeIns.filter((r) => r.eventId === event.id).length } };
 }
 
 const eventTable = table(events, "event");
-const rsvpTable = table(rsvps, "rsvp");
+const countMeInTable = table(countMeIns, "countMeIn");
 const announcementTable = table(announcements, "announcement");
 const issueTable = table(issues, "issue");
 
@@ -346,18 +346,18 @@ export const prisma = {
   },
   task: table(tasks, "task"),
   contribution: table(contributions, "contribution"),
-  rsvp: {
-    ...rsvpTable,
+  countMeIn: {
+    ...countMeInTable,
     findUnique: async (args?: AnyRecord) =>
-      rsvps.find((rsvp) => {
+      countMeIns.find((countMeIn) => {
         const compound = args?.where?.userId_eventId;
-        return compound ? rsvp.userId === compound.userId && rsvp.eventId === compound.eventId : matchesWhere(rsvp, args?.where);
+        return compound ? countMeIn.userId === compound.userId && countMeIn.eventId === compound.eventId : matchesWhere(countMeIn, args?.where);
       }) ?? null,
     create: async ({ data }: AnyRecord) => {
       const user = users.find((u) => u.id === data.userId);
       const event = events.find((e) => e.id === data.eventId);
-      const record = { id: nextMockId("rsvp"), createdAt: new Date(), checkedIn: false, ...data, user, event };
-      rsvps.push(record);
+      const record = { id: nextMockId("countMeIn"), createdAt: new Date(), checkedIn: false, ...data, user, event };
+      countMeIns.push(record);
       return record;
     },
   },

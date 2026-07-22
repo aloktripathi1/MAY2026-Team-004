@@ -14,7 +14,7 @@ import { getPrimaryClubMembership } from "../lib/session-helpers.ts";
 import {
   buildEventSlug,
   decideJoinRequestAction,
-  decideRsvpAction,
+  decideCountMeInAction,
   EVENT_APPROVALS,
   MEMBERSHIP_STATUSES,
   normalizeEventApproval,
@@ -222,67 +222,67 @@ const tests: TestCase[] = [
     },
   },
   {
-    name: "decideRsvpAction cancels existing registrations",
+    name: "decideCountMeInAction cancels existing registrations",
     run: () => {
-      assert.equal(decideRsvpAction(true, null), "cancel");
+      assert.equal(decideCountMeInAction(true, null), "cancel");
     },
   },
   {
-    name: "decideRsvpAction allows registration when spots remain",
+    name: "decideCountMeInAction allows registration when spots remain",
     run: () => {
-      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 50, going: 20, rsvpCount: 18 }), "register");
+      assert.equal(decideCountMeInAction(false, { status: "upcoming", capacity: 50, going: 20, countMeInCount: 18 }), "register");
     },
   },
   {
-    name: "decideRsvpAction rejects full events based on displayed attendance",
+    name: "decideCountMeInAction rejects full events based on displayed attendance",
     run: () => {
       assert.throws(
-        () => decideRsvpAction(false, { status: "upcoming", capacity: 20, going: 20, rsvpCount: 18 }),
+        () => decideCountMeInAction(false, { status: "upcoming", capacity: 20, going: 20, countMeInCount: 18 }),
         /Registration unavailable/,
       );
     },
   },
   {
-    name: "decideRsvpAction rejects full events based on RSVP count",
+    name: "decideCountMeInAction rejects full events based on Count Me In count",
     run: () => {
       assert.throws(
-        () => decideRsvpAction(false, { status: "upcoming", capacity: 20, going: 12, rsvpCount: 20 }),
+        () => decideCountMeInAction(false, { status: "upcoming", capacity: 20, going: 12, countMeInCount: 20 }),
         /Registration unavailable/,
       );
     },
   },
   {
-    name: "decideRsvpAction rejects past events",
+    name: "decideCountMeInAction rejects past events",
     run: () => {
       assert.throws(
-        () => decideRsvpAction(false, { status: "past", capacity: 50, going: 10, rsvpCount: 10 }),
+        () => decideCountMeInAction(false, { status: "past", capacity: 50, going: 10, countMeInCount: 10 }),
         /Registration unavailable/,
       );
     },
   },
   {
-    name: "decideRsvpAction rejects missing events when creating a new RSVP",
+    name: "decideCountMeInAction rejects missing events when creating a new Count Me In",
     run: () => {
-      assert.throws(() => decideRsvpAction(false, null), /Event not found/);
+      assert.throws(() => decideCountMeInAction(false, null), /Event not found/);
     },
   },
   {
-    name: "decideRsvpAction allows registration for the very last remaining spot",
+    name: "decideCountMeInAction allows registration for the very last remaining spot",
     run: () => {
-      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 20, going: 19, rsvpCount: 15 }), "register");
+      assert.equal(decideCountMeInAction(false, { status: "upcoming", capacity: 20, going: 19, countMeInCount: 15 }), "register");
     },
   },
   {
-    name: "decideRsvpAction treats a null going count as zero attendance",
+    name: "decideCountMeInAction treats a null going count as zero attendance",
     run: () => {
-      assert.equal(decideRsvpAction(false, { status: "upcoming", capacity: 5, going: null, rsvpCount: 3 }), "register");
+      assert.equal(decideCountMeInAction(false, { status: "upcoming", capacity: 5, going: null, countMeInCount: 3 }), "register");
     },
   },
   {
-    name: "decideRsvpAction rejects events with zero capacity",
+    name: "decideCountMeInAction rejects events with zero capacity",
     run: () => {
       assert.throws(
-        () => decideRsvpAction(false, { status: "upcoming", capacity: 0, going: 0, rsvpCount: 0 }),
+        () => decideCountMeInAction(false, { status: "upcoming", capacity: 0, going: 0, countMeInCount: 0 }),
         /Registration unavailable/,
       );
     },

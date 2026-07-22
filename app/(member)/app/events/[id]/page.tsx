@@ -8,12 +8,12 @@ import { StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
-import { RsvpButton } from "./RsvpButton";
+import { CountMeInButton } from "./CountMeInButton";
 
 async function getEvent(slug: string) {
   return prisma.event.findUnique({
     where: { slug },
-    include: { club: true, _count: { select: { rsvps: true } } },
+    include: { club: true, _count: { select: { countMeIns: true } } },
   });
 }
 
@@ -30,11 +30,11 @@ export default async function EventDetail({ params }: { params: { id: string } }
   if (!event) notFound();
 
   const session = getMockSession();
-  const [myRsvp, attendees, organizers] = await Promise.all([
-    prisma.rsvp.findUnique({
+  const [myCountMeIn, attendees, organizers] = await Promise.all([
+    prisma.countMeIn.findUnique({
       where: { userId_eventId: { userId: session!.user.id, eventId: event.id } },
     }),
-    prisma.rsvp.findMany({
+    prisma.countMeIn.findMany({
       where: { eventId: event.id },
       include: { user: true },
       orderBy: { createdAt: "asc" },
@@ -47,7 +47,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
     }),
   ]);
 
-  const extraCount = Math.max(event._count.rsvps - attendees.length, 0);
+  const extraCount = Math.max(event._count.countMeIns - attendees.length, 0);
 
   return (
     <>
@@ -81,13 +81,13 @@ export default async function EventDetail({ params }: { params: { id: string } }
           <div className="grid gap-3 md:grid-cols-3">
             <InfoTile icon={CalendarClock} label="When" value={`${formatEventDate(event.date)} · ${event.time}`} />
             <InfoTile icon={MapPin} label="Where" value={event.venue} />
-            <InfoTile icon={Users2} label="Capacity" value={`${event._count.rsvps} / ${event.capacity}`} />
+            <InfoTile icon={Users2} label="Capacity" value={`${event._count.countMeIns} / ${event.capacity}`} />
           </div>
 
           <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-4">Who's going</div>
             {attendees.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No one's RSVP'd yet - be the first.</p>
+              <p className="text-sm text-muted-foreground">No one's counted themselves in yet - be the first.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {attendees.map((r) => (
@@ -107,13 +107,13 @@ export default async function EventDetail({ params }: { params: { id: string } }
 
         <aside className="space-y-4">
           <div className="night-panel rounded-2xl p-6">
-            <div className="text-mono-label mb-2">Your RSVP</div>
-            <RsvpButton
+            <div className="text-mono-label mb-2">Your spot</div>
+            <CountMeInButton
               eventId={event.id}
               eventSlug={event.slug}
-              initialRsvped={Boolean(myRsvp)}
+              initialCountedIn={Boolean(myCountMeIn)}
               capacity={event.capacity}
-              going={event._count.rsvps}
+              going={event._count.countMeIns}
             />
           </div>
 

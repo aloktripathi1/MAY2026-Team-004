@@ -36,7 +36,7 @@ export default async function AdminDashboard() {
     prisma.membership.count({ where: { clubId, joinedAt: { gte: monthStart } } }),
     prisma.membership.findMany({ where: { clubId, status: "Pending" }, include: { user: true } }),
     prisma.event.count({ where: { clubId, status: "upcoming" } }),
-    prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 4, include: { _count: { select: { rsvps: true } } } }),
+    prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 4, include: { _count: { select: { countMeIns: true } } } }),
     prisma.issue.findMany({ where: { clubId, status: { not: "Resolved" } } }),
     prisma.issue.findMany({ where: { clubId }, orderBy: { createdAt: "desc" }, take: 3 }),
     prisma.membership.findMany({ where: { clubId, status: "Active", joinedAt: { gte: sevenDaysAgo } }, include: { user: true } }),
@@ -46,17 +46,17 @@ export default async function AdminDashboard() {
   const openIssuesCount = openIssuesList.length;
   const unassignedIssuesCount = openIssuesList.filter((i) => !i.assigneeId).length;
 
-  // Real signal, simplified: RSVPs created in the last 7 days for this club's events, bucketed by weekday.
-  const recentRsvps = await prisma.rsvp.findMany({
+  // Real signal, simplified: Count Me Ins created in the last 7 days for this club's events, bucketed by weekday.
+  const recentCountMeIns = await prisma.countMeIn.findMany({
     where: { createdAt: { gte: sevenDaysAgo }, event: { clubId } },
     include: { event: true },
   });
   const weeklyAttendance = [0, 0, 0, 0, 0, 0, 0];
-  for (const r of recentRsvps) {
+  for (const r of recentCountMeIns) {
     const day = (r.createdAt.getDay() + 6) % 7; // Mon=0..Sun=6
     weeklyAttendance[day]++;
   }
-  // The mock dataset only produces a handful of real RSVPs, so this chart can look
+  // The mock dataset only produces a handful of real Count Me Ins, so this chart can look
   // thin or empty depending on when it's viewed. Layer in a fixed demo baseline so
   // it always reads as a real week of activity.
   const demoWeeklyBaseline = [4, 7, 5, 6, 9, 5, 3];
@@ -65,7 +65,7 @@ export default async function AdminDashboard() {
   const maxAttendance = Math.max(...weeklyAttendance, 1);
 
   // Recent activity: a real, unified feed built from actual signal — freshly-raised issues,
-  // new joins this week, and RSVP activity — rather than a fabricated audit log we don't actually track.
+  // new joins this week, and Count Me In activity — rather than a fabricated audit log we don't actually track.
   const activity: ActivityItem[] = [];
   for (const i of recentIssues) {
     const label = i.status === "Resolved" ? "Issue resolved" : i.status === "InProgress" ? "Issue moved to review" : "New issue raised";
@@ -78,9 +78,9 @@ export default async function AdminDashboard() {
     const latest = recentJoins.reduce((max, m) => (m.joinedAt > max ? m.joinedAt : max), recentJoins[0].joinedAt);
     activity.push({ label: `${recentJoins.length} new member${recentJoins.length === 1 ? "" : "s"} joined this week`, context: "via Discover Clubs", at: latest });
   }
-  if (recentRsvps.length > 0) {
-    const latestRsvp = [...recentRsvps].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-    activity.push({ label: `New RSVP for ${latestRsvp.event.title}`, context: `${latestRsvp.event.going}/${latestRsvp.event.capacity} going`, at: latestRsvp.createdAt });
+  if (recentCountMeIns.length > 0) {
+    const latestCountMeIn = [...recentCountMeIns].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+    activity.push({ label: `New Count Me In for ${latestCountMeIn.event.title}`, context: `${latestCountMeIn.event.going}/${latestCountMeIn.event.capacity} going`, at: latestCountMeIn.createdAt });
   }
   activity.sort((a, b) => b.at.getTime() - a.at.getTime());
   const recentActivity = activity.slice(0, 4);
@@ -104,7 +104,7 @@ export default async function AdminDashboard() {
           <GlassCard className="p-6">
             <div className="mb-6 flex items-end justify-between">
               <div>
-                <div className="text-mono-label">RSVPs, last 7 days</div>
+                <div className="text-mono-label">Count Me Ins, last 7 days</div>
                 <div className="text-display mt-2 text-4xl">
                   {weeklyAttendanceTotal}
                   <span className="text-sm text-success"> <TrendingUp className="inline h-3 w-3" /></span>
@@ -135,7 +135,7 @@ export default async function AdminDashboard() {
                   <EventThumbnail title={e.title} cover={e.cover} photo={e.photo} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{e.title}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.rsvps}/{e.capacity}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.countMeIns}/{e.capacity}</div>
                   </div>
                   <StatusPill tone={e.approval === "approved" ? "green" : e.approval === "pending" ? "amber" : e.approval === "rejected" ? "magenta" : "slate"}>
                     {e.approval === "approved" ? "OK" : e.approval === "pending" ? "Pending" : e.approval === "rejected" ? "Rejected" : "-"}
