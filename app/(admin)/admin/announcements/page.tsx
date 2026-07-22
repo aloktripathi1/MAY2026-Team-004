@@ -32,7 +32,7 @@ export default async function AnnouncementHistoryPage() {
     <>
       <PageHeader title={<>Announcement <span className="text-secondary">History</span></>} description="View all past announcements sent to your club members." />
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {announcements.length === 0 && <div className="text-sm text-muted-foreground">No announcements yet.</div>}
         {announcements.map(a => (
           <GlassCard key={a.id} className="p-4">

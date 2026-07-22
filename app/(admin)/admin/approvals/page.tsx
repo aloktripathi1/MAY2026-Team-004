@@ -30,7 +30,7 @@ export default async function ApprovalsPage() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-mono-label">Pending requests · {pendingMembers.length}</h2>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-2">
           {pendingMembers.length === 0 && <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">Inbox zero. Nice.</div>}
           {pendingMembers.map(m => (
             <GlassCard key={m.id} className="flex items-center gap-4 p-4">

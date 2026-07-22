@@ -204,7 +204,7 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
       </div>
 
       <Modal open={bulkOpen} onClose={() => setBulkOpen(false)} title={`Bulk assign ${selected.size} issue${selected.size === 1 ? "" : "s"}`}>
-        <div className="space-y-4">
+        <div className="space-y-2">
           <button
             type="button"
             disabled={pending}

@@ -42,7 +42,7 @@ export default async function FacultyHome() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
           <div className="text-mono-label mb-3">Clubs under mentorship</div>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {clubs.map(c => (
               <GlassCard key={c.id} className="flex items-center gap-3 p-4">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg"
