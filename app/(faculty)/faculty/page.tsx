@@ -23,7 +23,7 @@ export default async function FacultyHome() {
     prisma.event.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.event.count({ where: { approval: "pending" } }),
     prisma.event.count(),
-    prisma.event.findMany({ orderBy: { date: "desc" }, take: 5, include: { club: true, _count: { select: { rsvps: true } } } }),
+    prisma.event.findMany({ orderBy: { date: "desc" }, take: 5, include: { club: true, _count: { select: { countMeIns: true } } } }),
   ]);
 
   // Share of events that have cleared the approval queue (approved or didn't need one),
@@ -68,7 +68,7 @@ export default async function FacultyHome() {
               <div key={e.id} className="p-4">
                 <div className="text-mono-label mb-1">{e.club.name}</div>
                 <div className="text-sm">{e.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.rsvps} attendees</div>
+                <div className="mt-1 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.countMeIns} attendees</div>
               </div>
             ))}
           </div>

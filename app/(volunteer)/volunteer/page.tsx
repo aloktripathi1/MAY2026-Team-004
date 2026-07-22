@@ -15,7 +15,7 @@ export default async function VolunteerHome() {
   const session = getMockSession();
   const userId = session!.user.id;
 
-  const [tasks, contributions, rsvps] = await Promise.all([
+  const [tasks, contributions, countMeIns] = await Promise.all([
     prisma.task.findMany({
       where: { assigneeId: userId },
       orderBy: { dueAt: "asc" },
@@ -26,7 +26,7 @@ export default async function VolunteerHome() {
       orderBy: { verifiedAt: "desc" },
       include: { event: true },
     }),
-    prisma.rsvp.findMany({
+    prisma.countMeIn.findMany({
       where: { userId },
     }),
   ]);
@@ -39,7 +39,7 @@ export default async function VolunteerHome() {
   const supportedEventIds = new Set<string>([
     ...tasks.map((t) => t.eventId),
     ...contributions.map((c) => c.eventId),
-    ...rsvps.map((r) => r.eventId),
+    ...countMeIns.map((c) => c.eventId),
   ]);
 
   const assignedTasks = tasks.map((t) => ({

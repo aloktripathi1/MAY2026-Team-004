@@ -1,7 +1,7 @@
 "use server";
 
-import { toggleRsvpAction as sharedToggleRsvpAction } from "@/lib/actions/rsvp";
+import { toggleCountMeInAction as sharedToggleCountMeInAction } from "@/lib/actions/countMeIn";
 
-export async function toggleRsvpAction(eventId: string, eventSlug: string) {
-  return sharedToggleRsvpAction(eventId, eventSlug);
+export async function toggleCountMeInAction(eventId: string, eventSlug: string) {
+  return sharedToggleCountMeInAction(eventId, eventSlug);
 }

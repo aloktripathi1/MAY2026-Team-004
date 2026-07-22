@@ -19,12 +19,12 @@ async function requireCoordinatorForEvent(eventId: string) {
   return { event, membership };
 }
 
-export async function toggleCheckInAction(rsvpId: string, eventSlug: string) {
+export async function toggleCheckInAction(countMeInId: string, eventSlug: string) {
   const session = getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
 
-  const rsvp = await prisma.rsvp.findUniqueOrThrow({ where: { id: rsvpId } });
-  await prisma.rsvp.update({ where: { id: rsvpId }, data: { checkedIn: !rsvp.checkedIn } });
+  const countMeIn = await prisma.countMeIn.findUniqueOrThrow({ where: { id: countMeInId } });
+  await prisma.countMeIn.update({ where: { id: countMeInId }, data: { checkedIn: !countMeIn.checkedIn } });
 
   revalidatePath(`/coordinator/events/${eventSlug}`);
 }

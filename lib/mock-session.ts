@@ -34,9 +34,9 @@ export function getMockSession() {
     user: {
       // Must match the demo user's real id in lib/prisma.ts's derived `users`
       // array (seed member "m1" Ananya Rao -> "u1"), since every "You"-owned
-      // seed record (issues, tasks, rsvps) resolves to that id. A mismatched
-      // id here means every "my issues" / "my tasks" / "have I RSVP'd" lookup
-      // silently matches nothing.
+      // seed record (issues, tasks, countMeIns) resolves to that id. A mismatched
+      // id here means every "my issues" / "my tasks" / "have I counted myself in"
+      // lookup silently matches nothing.
       id: "u1",
       name: "Ananya Rao",
       email: "23s1000123@ds.study.iitm.ac.in",

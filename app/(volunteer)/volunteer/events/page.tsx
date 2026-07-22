@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   description: "Everything happening across your clubs.",
 };
 
-function spotsTakenFor(event: { going?: number | null; _count: { rsvps: number } }) {
-  return Math.max(Number(event.going ?? 0), event._count.rsvps);
+function spotsTakenFor(event: { going?: number | null; _count: { countMeIns: number } }) {
+  return Math.max(Number(event.going ?? 0), event._count.countMeIns);
 }
 
 export default async function VolunteerEventsPage({
@@ -28,18 +28,18 @@ export default async function VolunteerEventsPage({
   const list = await prisma.event.findMany({
     where: { status: tab },
     orderBy: { date: tab === "upcoming" ? "asc" : "desc" },
-    include: { club: true, _count: { select: { rsvps: true } } },
+    include: { club: true, _count: { select: { countMeIns: true } } },
   });
 
-  const myRsvps = session?.user
-    ? await prisma.rsvp.findMany({
+  const myCountMeIns = session?.user
+    ? await prisma.countMeIn.findMany({
         where: {
           userId: session.user.id,
           eventId: { in: list.map((event) => event.id) },
         },
       })
     : [];
-  const registeredIds = new Set(myRsvps.map((rsvp) => rsvp.eventId));
+  const registeredIds = new Set(myCountMeIns.map((countMeIn) => countMeIn.eventId));
 
   return (
     <>

@@ -104,7 +104,7 @@ export interface Issue {
   attachments?: string[];
 }
 export const issues: Issue[] = [
-  { id: "i1", title: "Can't RSVP for Fusion Night - button loops", category: "Registration", status: "In progress", raisedBy: "You", timeAgo: "3h", priority: "Med" },
+  { id: "i1", title: "Can't count myself in for Fusion Night - button loops", category: "Registration", status: "In progress", raisedBy: "You", timeAgo: "3h", priority: "Med" },
   { id: "i2", title: "Projector in Seminar Hall 3 flickers", category: "Booking", status: "Open", raisedBy: "Aarav Sen", timeAgo: "1d", priority: "High" },
   { id: "i3", title: "Merch payment shows pending after 48 hrs", category: "Payment", status: "Open", raisedBy: "You", timeAgo: "2d", priority: "Med" },
   { id: "i4", title: "Add my membership to CodeChef roster", category: "Access", status: "Resolved", raisedBy: "You", timeAgo: "1w", priority: "Low" },
@@ -174,7 +174,7 @@ export const members: Member[] = [
 
 export const faqs = [
   { q: "How do I join a club?", a: "Head to Browse Clubs, pick one, hit Join. Some clubs auto-approve; others need admin approval and you'll get a status update." },
-  { q: "What if two events I want clash?", a: "Sangam flags conflicts on your dashboard. You can RSVP to both - attendance is checked in separately - but organizers see who's double-booked." },
+  { q: "What if two events I want clash?", a: "Sangam flags conflicts on your dashboard. You can count yourself in for both - attendance is checked in separately - but organizers see who's double-booked." },
   { q: "How does event approval work?", a: "Small events go live instantly. Anything requiring venue booking, funds, or off-campus travel routes to the faculty coordinator queue." },
   { q: "Can I be a member of multiple clubs?", a: "Yes. Most students are in 2–3. Your dashboard filters announcements to only clubs you belong to." },
   { q: "Where do bulk imports live?", a: "Admin → Members → Import CSV. Template is downloadable. Duplicate roll numbers are skipped, not overwritten." },
