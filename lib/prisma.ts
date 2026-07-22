@@ -96,6 +96,7 @@ function buildMockDb() {
     const club = clubs.find((c) => c.slug === announcement.clubSlug) ?? clubs[0];
     return {
       ...announcement,
+      priority: "Medium",
       clubId: club.id,
       authorId: users[0].id,
       createdAt: new Date(Date.now() - (index + 1) * 3 * 60 * 60 * 1000),

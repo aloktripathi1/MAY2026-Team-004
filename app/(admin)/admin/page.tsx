@@ -4,10 +4,9 @@ import { getMockSession } from "@/lib/mock-session";
 import { TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { formatEventDate, formatTimeAgo } from "@/lib/format";
-import { AnnouncementDialog } from "./announcements/AnnouncementDialog";
+import { AdminPageHeader } from "./AdminPageHeader";
 
 export const metadata: Metadata = {
   title: "Admin overview · Sangam",
@@ -86,10 +85,7 @@ export default async function AdminDashboard() {
 
   return (
     <>
-      <PageHeader
-        title={<>{club?.name ?? "Your club"}</>}
-        actions={<AnnouncementDialog memberCount={totalMembers} />}
-      />
+      <AdminPageHeader clubName={club?.name ?? "Your club"} memberCount={totalMembers} />
 
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />

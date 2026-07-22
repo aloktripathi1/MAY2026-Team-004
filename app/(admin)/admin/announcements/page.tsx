@@ -30,7 +30,7 @@ export default async function AnnouncementHistoryPage() {
 
   return (
     <>
-      <PageHeader eyebrow="History" title={<>Announcement <span className="text-secondary">History</span></>} description="View all past announcements sent to your club members." />
+      <PageHeader title={<>Announcement <span className="text-secondary">History</span></>} description="View all past announcements sent to your club members." />
 
       <div className="space-y-2">
         {announcements.length === 0 && <div className="text-sm text-muted-foreground">No announcements yet.</div>}

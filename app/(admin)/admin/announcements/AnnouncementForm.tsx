@@ -21,7 +21,7 @@ export function AnnouncementForm({ memberCount, onSuccess }: { memberCount: numb
       isFirstRender.current = false;
       return;
     }
-    if (!state.error) {
+    if (state.ok) {
       formRef.current?.reset();
       onSuccess?.();
     }

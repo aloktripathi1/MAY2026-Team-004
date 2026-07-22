@@ -14,7 +14,7 @@ const schema = z.object({
   priority: z.enum(["Low", "Medium", "High"]).default("Medium"),
 });
 
-export type AnnouncementFormState = { error?: string };
+export type AnnouncementFormState = { error?: string; ok?: boolean };
 
 export async function createAnnouncementAction(_prevState: AnnouncementFormState, formData: FormData): Promise<AnnouncementFormState> {
   const session = getMockSession();
@@ -47,5 +47,5 @@ export async function createAnnouncementAction(_prevState: AnnouncementFormState
   revalidatePath("/admin/announcements");
   revalidatePath("/admin");
   revalidatePath("/app");
-  return {};
+  return { ok: true };
 }
