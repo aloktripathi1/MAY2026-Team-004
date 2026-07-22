@@ -47,14 +47,15 @@ Route-level gating still exists as real code — `middleware.ts` and each person
 ```
 app/
   (public)/        landing, clubs directory, login, signup (+ interests onboarding)
-  (member)/app/    dashboard, clubs (+ join requests), events (+ RSVP), issues
+  (member)/app/    dashboard, clubs (+ join requests), events (+ Count Me In), issues
                     (raise via modal + screenshot attachments, status filter), profile
                     (edit details + avatar upload, notification preference toggles)
   (admin)/admin/   overview, members (+ add member, bulk CSV import), issues
                     (filterable queue, per-row/bulk assignment), approvals, announcements
                     (+ audience targeting), metrics, transparency, handover
-  (coordinator)/coordinator/  dashboard, new event, resources (venues + equipment), volunteers
-  (volunteer)/volunteer/      task list with inline status updates
+  (coordinator)/coordinator/  dashboard (+ New Event popup), all-events history, event
+                    dashboard (registration, check-in, edit details), volunteers
+  (volunteer)/volunteer/      task list with inline status updates, events (Count Me In)
   (faculty)/faculty/          oversight dashboard, event approvals, club activity (engagement signals)
   api/auth/[...nextauth]/     stub route — real auth is intentionally disabled for this build
 
@@ -80,7 +81,7 @@ lib/
   utils.ts                 cn() class-name helper
 
 prisma/
-  schema.postgres.prisma, schema.sqlite.prisma, migrations/, seed.ts
+  schema.postgres.prisma, schema.sqlite.prisma, migrations/
   (target schema for a future real-database migration — not wired to a live DB yet)
 ```
 
@@ -98,11 +99,12 @@ Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. See "Accessing
 
 ## Seed data
 
-`lib/seed-data.ts` is the single source of truth for everything the app displays: 8 clubs, 10 events (mixed upcoming/past, 3 currently pending faculty approval), 4 announcements, 5 issues, 4 tasks, 8 members, 6 resources (4 venues + 2 equipment), and 4 transparency-log entries. Edit it directly and restart the dev server to see changes — there's no seed script to run separately since it's loaded straight into the in-memory store.
+`lib/seed-data.ts` is the single source of truth for everything the app displays: 8 clubs, 10 events (mixed upcoming/past, 3 currently pending faculty approval), 4 announcements, 5 issues, 4 tasks, 8 members, 6 venue/equipment rows (see "Known gaps" below), and 4 transparency-log entries. Edit it directly and restart the dev server to see changes — there's no seed script to run separately since it's loaded straight into the in-memory store.
 
 ## Known gaps vs. original plan
 
-- Volunteer currently only has the task list — no dedicated events or FAQ view yet.
+- Volunteer has a task list and an events view — no dedicated FAQ view yet (member and volunteer roles have no FAQ page; FAQ content only exists on the public landing page).
+- Venue and Equipment booking is not implemented as a feature — the `Venue`/`Equipment` models and seed data exist, but no page or Server Action anywhere reads or writes them. `Event.venue` is a plain free-text field, unrelated to the `Venue` model.
 - No real database, auth, or file storage — see the Tech Stack section. Image uploads (issue attachments, profile avatars) are stored as base64 data URLs in the in-memory store, not real file storage, which won't scale past the demo.
 - Automated tests are available for core business logic and workflow rules via `npm test`.
 
