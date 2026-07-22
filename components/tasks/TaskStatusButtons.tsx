@@ -30,14 +30,14 @@ export function TaskStatusButtons({
   }
 
   return (
-    <div className="flex gap-1.5">
+    <div className="grid grid-cols-3 gap-1 w-full">
       {statuses.map((s) => (
         <button
           key={s}
           title={taskId}
           disabled={pending}
           onClick={() => set(s)}
-          className={`rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] transition disabled:opacity-50 ${
+          className={`w-full text-center rounded-md px-1 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider transition disabled:opacity-50 ${
             currentStatus === s
               ? "bg-secondary text-secondary-foreground"
               : "border border-white/10 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"

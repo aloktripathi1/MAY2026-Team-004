@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
-  Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
+  Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, Package, ListChecks,
   Shield, Menu, X, LogOut, Ticket, Activity,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -23,8 +23,8 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
     { label: "Profile", to: "/app/profile", icon: UserRound },
   ],
   coordinator: [
-    { label: "Events", to: "/coordinator", icon: CalendarDays },
-    { label: "New event", to: "/coordinator/new", icon: PlusSquare },
+    { label: "Dashboard", to: "/coordinator", icon: LayoutDashboard },
+    { label: "All events", to: "/coordinator/new", icon: CalendarDays },
     { label: "Volunteers", to: "/coordinator/volunteers", icon: Users2 },
   ],
   admin: [

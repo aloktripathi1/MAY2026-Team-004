@@ -5,16 +5,13 @@ import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
-import { TaskStatusButtons } from "@/components/tasks/TaskStatusButtons";
 import { AssignTaskModal } from "@/components/coordinator/AssignTaskModal";
+import { VolunteerTaskBoard } from "@/components/coordinator/VolunteerTaskBoard";
 
 export const metadata: Metadata = {
   title: "Volunteers · Sangam",
   description: "Assign and track volunteer tasks.",
 };
-
-const columns = ["todo", "doing", "done"] as const;
-const columnLabels: Record<(typeof columns)[number], string> = { todo: "To do", doing: "Doing", done: "Done" };
 
 export default async function VolunteersPage() {
   const session = getMockSession();
@@ -35,7 +32,6 @@ export default async function VolunteersPage() {
     where: { eventId: { in: eventIds } },
     include: { event: true, assignee: true },
   });
-
 
   return (
     <>
@@ -66,31 +62,7 @@ export default async function VolunteersPage() {
         {/* Task board */}
         <div>
           <div className="text-mono-label mb-3">Task board</div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {columns.map(col => (
-              <div key={col} className="night-panel rounded-2xl p-4">
-                <div className="text-mono-label mb-3 flex items-center justify-between">
-                  <span>{columnLabels[col]}</span>
-                  <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-xs">{tasks.filter(t => t.status === col).length}</span>
-                </div>
-                <div className="space-y-2">
-                  {tasks.filter(t => t.status === col).length === 0 && (
-                    <div className="rounded-xl border border-dashed border-hairline p-4 text-center text-xs text-muted-foreground">Nothing here.</div>
-                  )}
-                  {tasks.filter(t => t.status === col).map(t => (
-                    <div key={t.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                      <div className="text-sm font-medium leading-snug">{t.title}</div>
-                      <div className="text-mono-label mt-1 line-clamp-2">{events.find(e => e.id === t.eventId)?.title ?? "-"}</div>
-                      <div className="mt-3 truncate text-xs text-muted-foreground">{t.assignee?.name ?? team.find(m => m.user.id === t.assigneeId)?.user.name ?? "-"}</div>
-                      <div className="mt-2">
-                        <TaskStatusButtons taskId={t.id} status={t.status} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <VolunteerTaskBoard initialTasks={tasks} events={events} team={team} />
         </div>
       </div>
     </>

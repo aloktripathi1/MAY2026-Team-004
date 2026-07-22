@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { getMockSession } from "@/lib/mock-session";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
+import { NewEventModal } from "@/components/coordinator/NewEventModal";
 import { EditDetailsButton } from "./EditDetailsButton";
 import { ParticipantList } from "./ParticipantList";
 
@@ -20,7 +19,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   return { title: `Event dashboard · Sangam`, description: "Manage this event." };
 }
 
-export default async function CoordinatorEventDashboard({ params, searchParams }: { params: { id: string }; searchParams?: { success?: string } }) {
+export default async function CoordinatorEventDashboard({ params }: { params: { id: string } }) {
   const session = getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
@@ -46,16 +45,10 @@ export default async function CoordinatorEventDashboard({ params, searchParams }
         actions={
           <>
             <EditDetailsButton event={{ id: event.id, slug: event.slug, title: event.title, description: event.description, isoDate: event.date.toISOString().slice(0, 10), time: event.time, venue: event.venue, capacity: event.capacity, tags: event.tags }} />
-            <Link href="/coordinator/new"><Btn size="sm"><Plus className="h-4 w-4" /> Create event</Btn></Link>
+            <NewEventModal variant="outline" size="sm" label="Create event" />
           </>
         }
       />
-
-      {searchParams?.success && (
-        <div className="mb-6 rounded-xl border border-success/20 bg-success/10 p-4 text-sm font-medium text-success">
-          🎉 Event published successfully!
-        </div>
-      )}
 
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label="Registered" value={rsvps.length} delta={`of ${event.capacity} capacity`} />

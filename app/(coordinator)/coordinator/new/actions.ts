@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
@@ -19,7 +18,7 @@ const eventSchema = z.object({
   tags: z.string().optional().default(""),
 });
 
-export type NewEventState = { error?: string };
+export type NewEventState = { error?: string; ok?: boolean };
 
 export async function createEventAction(_prevState: NewEventState, formData: FormData): Promise<NewEventState> {
   const session = getMockSession();
@@ -45,7 +44,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
   const tags = parseTagInput(parsed.data.tags);
   const slug = buildEventSlug(title);
 
-  const event = await prisma.event.create({
+  await prisma.event.create({
     data: {
       slug,
       title,
@@ -63,6 +62,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
   });
 
   revalidatePath("/coordinator");
+  revalidatePath("/coordinator/new");
   revalidatePath("/app/events");
-  redirect(`/coordinator/events/${event.slug}?success=true`);
+  return { ok: true };
 }

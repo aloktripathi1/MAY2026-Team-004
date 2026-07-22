@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Btn } from "@/components/ui/primitives";
 import { createEventAction, type NewEventState } from "./actions";
@@ -12,16 +12,22 @@ function SubmitButton() {
   return <Btn disabled={pending}>{pending ? "Publishing..." : "Publish event"}</Btn>;
 }
 
-export function NewEventForm() {
+export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
   const [tags, setTags] = useState<string[]>([]);
   const [state, formAction] = useFormState<NewEventState, FormData>(createEventAction, {});
+
+  useEffect(() => {
+    if (state.ok) {
+      onSuccess?.();
+    }
+  }, [state, onSuccess]);
 
   function toggleTag(t: string) {
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-col gap-4">
       <Field label="Title" name="title" placeholder="Cook-Off #43" />
       <Field label="Description" name="description" placeholder="What's it about? Who should show up?" area />
       <div className="grid gap-5 md:grid-cols-2">
@@ -72,7 +78,7 @@ function Field({
     <label className="block w-full">
       <div className="text-mono-label mb-1.5">{label}</div>
       {area ? (
-        <textarea name={name} required rows={4} placeholder={placeholder} className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
+        <textarea name={name} required rows={2} placeholder={placeholder} className="w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 py-2 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55" />
       ) : (
         <input
           name={name}

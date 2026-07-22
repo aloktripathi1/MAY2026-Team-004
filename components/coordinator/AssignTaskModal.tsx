@@ -45,7 +45,7 @@ export function AssignTaskModal({
       </Btn>
 
       <Modal open={isOpen} onClose={() => setIsOpen(false)} title="Assign a task">
-        <p className="-mt-2 mb-5 text-sm text-muted-foreground">
+        <p className="mb-4 text-sm text-muted-foreground break-words">
           Assigning to <span className="font-medium text-secondary">{assigneeName}</span>
         </p>
 
@@ -91,9 +91,9 @@ export function AssignTaskModal({
               required
               className="w-full rounded-lg border border-white/12 bg-[#0f0f14] px-3 py-2 text-sm text-white outline-none focus:border-secondary transition"
             >
-              <option value="">Select an event…</option>
+              <option value="" className="bg-[#0f0f14] text-white">Select an event…</option>
               {events.map((e) => (
-                <option key={e.id} value={e.id}>
+                <option key={e.id} value={e.id} className="bg-[#0f0f14] text-white">
                   {e.title}
                 </option>
               ))}
@@ -101,12 +101,12 @@ export function AssignTaskModal({
           </div>
 
           {state.error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400 break-words">
               {state.error}
             </div>
           )}
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-6 flex justify-end gap-3 pt-2">
             <Btn type="button" variant="ghost" onClick={() => setIsOpen(false)}>
               Cancel
             </Btn>

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getMockSession } from "@/lib/mock-session";
-import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { formatEventDate } from "@/lib/format";
+import { NewEventModal } from "@/components/coordinator/NewEventModal";
 
 export const metadata: Metadata = {
   title: "Coordinator · Sangam",
@@ -34,7 +34,7 @@ export default async function CoordinatorHome() {
     <>
       <PageHeader
         title={<>Run the day, <span className="text-secondary">without the drama.</span></>}
-        actions={<Link href="/coordinator/new"><Btn><Plus className="h-4 w-4" /> New event</Btn></Link>}
+        actions={<NewEventModal />}
       />
       <div className="grid gap-3 md:grid-cols-3">
         <Stat label="Live events" value={myEvents.length} />
