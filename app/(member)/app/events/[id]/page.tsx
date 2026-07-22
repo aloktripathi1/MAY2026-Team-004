@@ -37,7 +37,6 @@ export default async function EventDetail({ params }: { params: { id: string } }
       where: { eventId: event.id },
       include: { user: true },
       orderBy: { createdAt: "asc" },
-      take: 8,
     }),
     prisma.membership.findMany({
       where: { clubId: event.clubId, role: { in: ["Admin", "Coordinator"] } },
@@ -46,7 +45,9 @@ export default async function EventDetail({ params }: { params: { id: string } }
     }),
   ]);
 
-  const extraCount = Math.max(event._count.rsvps - attendees.length, 0);
+  const shownAttendees = attendees.slice(0, 8);
+  const extraAttendees = attendees.slice(8);
+  const extraCount = extraAttendees.length;
 
   return (
     <>
@@ -85,23 +86,30 @@ export default async function EventDetail({ params }: { params: { id: string } }
 
           <div className="night-panel rounded-2xl p-6">
             <div className="text-mono-label mb-4">Who's going</div>
-            {attendees.length === 0 ? (
+            {shownAttendees.length === 0 ? (
               <p className="text-sm text-muted-foreground">No one's RSVP'd yet - be the first.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {attendees.map((r, idx) => (
-                  <div
-                    key={r.id}
-                    title={r.user.name}
-                    className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-xs font-semibold ring-2 ring-background"
-                    style={{ background: `oklch(0.72 0.18 ${(idx * 47) % 360} / 25%)`, color: `oklch(0.9 0.2 ${(idx * 47) % 360})` }}
-                  >
-                    {r.user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase()}
-                  </div>
-                ))}
+                {shownAttendees.map((r) => {
+                  const female = isFemaleName(r.user.name);
+                  return (
+                    <div
+                      key={r.id}
+                      className="group relative grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] ring-2 ring-background"
+                    >
+                      {female ? <FemalePictogram /> : <MalePictogram />}
+                      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-surface-2 px-2 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                        {r.user.name}
+                      </span>
+                    </div>
+                  );
+                })}
                 {extraCount > 0 && (
-                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.06] text-xs font-semibold text-muted-foreground ring-2 ring-background">
+                  <div className="group relative grid h-9 w-9 place-items-center rounded-lg bg-white/[0.06] text-xs font-semibold text-muted-foreground ring-2 ring-background">
                     +{extraCount}
+                    <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-surface-2 px-2 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                      {extraAttendees.map((r) => r.user.name).join(", ")}
+                    </span>
                   </div>
                 )}
               </div>
@@ -133,6 +141,49 @@ export default async function EventDetail({ params }: { params: { id: string } }
         </aside>
       </div>
     </>
+  );
+}
+
+const FEMALE_FIRST_NAMES = new Set([
+  "ananya",
+  "ishita",
+  "meera",
+  "diya",
+  "sneha",
+  "priya",
+]);
+
+function isFemaleName(name: string) {
+  const first = name.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  return FEMALE_FIRST_NAMES.has(first);
+}
+
+function MalePictogram() {
+  return (
+    <svg viewBox="0 0 40 80" className="h-7 w-3.5" aria-hidden>
+      <g fill="#2F80ED">
+        <circle cx="20" cy="10" r="8" />
+        <path d="M12 22h16l6 24h-6v26h-5V46h-6v26h-5V46H6L12 22z" />
+      </g>
+    </svg>
+  );
+}
+
+function FemalePictogram() {
+  return (
+    <svg viewBox="0 0 40 80" className="h-7 w-3.5" aria-hidden>
+      <g fill="#FF5CA8">
+        <circle cx="20" cy="10" r="8" />
+        {/* arms */}
+        <rect x="2.5" y="24" width="5" height="20" rx="2.5" transform="rotate(28 5 24)" />
+        <rect x="32.5" y="24" width="5" height="20" rx="2.5" transform="rotate(-28 35 24)" />
+        {/* skirt: narrow shoulders → wide hem */}
+        <path d="M14 22h12l8 36H6L14 22z" />
+        {/* legs */}
+        <rect x="14.5" y="58" width="4.5" height="14" rx="1.5" />
+        <rect x="21" y="58" width="4.5" height="14" rx="1.5" />
+      </g>
+    </svg>
   );
 }
 
