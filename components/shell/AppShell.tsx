@@ -10,6 +10,7 @@ import {
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, PlusSquare, Package, ListChecks,
   Shield, Menu, X, LogOut, Ticket, Activity,
 } from "lucide-react";
+import { Avatar } from "@/components/ui/Avatar";
 
 type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
 
@@ -102,12 +103,7 @@ export function AppShell({
             {/* Role card */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
               <div className="flex items-center gap-3">
-                <div
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 text-sm font-semibold"
-                  style={{ background: `oklch(0.72 0.14 ${meta.hue} / 18%)`, color: `oklch(0.9 0.1 ${meta.hue})` }}
-                >
-                  {user.split(" ").map(s => s[0]).slice(0, 2).join("")}
-                </div>
+                <Avatar name={user} size="md" showBorder={false} className="border border-white/10" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-sidebar-foreground" title={user}>{user}</div>
                   <div className="text-xs leading-snug text-sidebar-foreground/65" title={`${club} · ${meta.badge}`}>{club} · {meta.badge}</div>

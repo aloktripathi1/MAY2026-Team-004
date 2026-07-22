@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, Users } from "lucide-react";
 import { StatusPill, Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
+import { Avatar } from "@/components/ui/Avatar";
 import { assignIssuesAction, updateIssuePriorityAction } from "./actions";
 
 export type IssueRow = {
@@ -14,6 +15,7 @@ export type IssueRow = {
   priority: string;
   status: string;
   raisedBy: string;
+  raisedByImage?: string | null;
   timeAgo: string;
   assigneeId: string | null;
   assigneeName: string | null;
@@ -161,9 +163,7 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
                 aria-label={`Select ${issue.title}`}
               />
               <div className="flex min-w-0 items-center gap-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
-                  {issue.raisedBy.split(" ").map((s) => s[0]).slice(0, 2).join("")}
-                </div>
+                <Avatar name={issue.raisedBy} image={issue.raisedByImage} size="sm" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">{issue.title}</div>
                   <div className="text-xs text-muted-foreground">#{issue.ticket} · {issue.raisedBy} · {issue.timeAgo}</div>

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { MembershipApprovalButtons } from "./ApprovalButtons";
 
 export const metadata: Metadata = {
@@ -33,9 +34,7 @@ export default async function ApprovalsPage() {
           {pendingMembers.length === 0 && <div className="night-panel rounded-2xl p-8 text-center text-sm text-muted-foreground">Inbox zero. Nice.</div>}
           {pendingMembers.map(m => (
             <GlassCard key={m.id} className="flex items-center gap-4 p-4">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
-                {m.user.name.split(" ").map(s => s[0]).join("")}
-              </div>
+              <Avatar name={m.user.name} image={m.user.image} size="md" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{m.user.name}</div>
                 <div className="text-xs text-muted-foreground">{m.user.rollNumber}</div>

@@ -5,6 +5,7 @@ import { TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { formatEventDate, formatTimeAgo } from "@/lib/format";
 import { AdminPageHeader } from "./AdminPageHeader";
 
@@ -154,9 +155,7 @@ export default async function AdminDashboard() {
               {pendingMembers.length === 0 && <div className="text-sm text-muted-foreground">Nothing pending.</div>}
               {pendingMembers.slice(0, 3).map(m => (
                 <div key={m.id} className="flex items-center gap-3 border-b border-hairline pb-3 last:border-b-0 last:pb-0">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
-                    {m.user.name.split(" ").map(s => s[0]).join("")}
-                  </div>
+                  <Avatar name={m.user.name} image={m.user.image} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm">{m.user.name}</div>
                     <div className="text-xs text-muted-foreground">{m.user.rollNumber} · {formatTimeAgo(m.joinedAt)}</div>

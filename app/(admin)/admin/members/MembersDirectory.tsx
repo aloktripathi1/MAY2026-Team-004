@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, Upload, UserPlus } from "lucide-react";
 import { PageHeader } from "@/components/shell/AppShell";
 import { StatusPill, Btn } from "@/components/ui/primitives";
+import { Avatar } from "@/components/ui/Avatar";
 import { AddMemberModal } from "./AddMemberModal";
 import { BulkImportModal } from "./BulkImportModal";
 
@@ -14,6 +15,7 @@ export type MemberRow = {
   role: string;
   status: string;
   joined: string;
+  image?: string | null;
 };
 
 export function MembersDirectory({ members }: { members: MemberRow[] }) {
@@ -57,9 +59,7 @@ export function MembersDirectory({ members }: { members: MemberRow[] }) {
           {filtered.map(m => (
             <div key={m.id} className="grid grid-cols-[1fr_120px_110px] items-center gap-4 px-6 py-4 transition hover:bg-white/[0.04] md:grid-cols-[2fr_120px_120px_100px_110px]">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/15 text-xs font-semibold text-white">
-                  {m.name.split(" ").map(s => s[0]).slice(0, 2).join("")}
-                </div>
+                <Avatar name={m.name} image={m.image} size="sm" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">{m.name}</div>
                   <div className="text-xs text-muted-foreground md:hidden">Joined {m.joined}</div>
