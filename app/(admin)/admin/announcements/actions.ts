@@ -11,6 +11,7 @@ const schema = z.object({
   body: z.string().min(1, "Body is required"),
   pinned: z.coerce.boolean().optional(),
   audience: z.enum(["All", "Coordinators", "Volunteers"]).default("All"),
+  priority: z.enum(["Low", "Medium", "High"]).default("Medium"),
 });
 
 export type AnnouncementFormState = { error?: string };
@@ -27,6 +28,7 @@ export async function createAnnouncementAction(_prevState: AnnouncementFormState
     body: formData.get("body"),
     pinned: formData.get("pinned") === "on",
     audience: formData.get("audience") || undefined,
+    priority: formData.get("priority") || undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
@@ -36,6 +38,7 @@ export async function createAnnouncementAction(_prevState: AnnouncementFormState
       body: parsed.data.body,
       pinned: parsed.data.pinned ?? false,
       audience: parsed.data.audience,
+      priority: parsed.data.priority,
       clubId: membership.clubId,
       authorId: session.user.id,
     },

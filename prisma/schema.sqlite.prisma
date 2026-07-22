@@ -116,6 +116,7 @@ model Announcement {
   createdAt DateTime @default(now())
   pinned    Boolean  @default(false)
   audience  String   @default("All")
+  priority  String   @default("Medium") // Low|Medium|High
 
   club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)

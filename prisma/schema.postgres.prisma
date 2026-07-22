@@ -182,6 +182,7 @@ model Announcement {
   createdAt DateTime @default(now())
   pinned    Boolean  @default(false)
   audience  AnnouncementAudience @default(All)
+  priority  Priority @default(Med)
 
   club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
