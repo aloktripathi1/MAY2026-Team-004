@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
+import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { formatEventDate } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -49,12 +50,7 @@ export default async function CoordinatorHome() {
               <Link key={e.id} href={`/coordinator/events/${e.slug}`}>
                 <GlassCard className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg" style={{ background: e.cover }}>
-                      {e.photo && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
-                      )}
-                    </div>
+                    <EventThumbnail title={e.title} cover={e.cover} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{e.title}</div>
                       <div className="text-xs text-muted-foreground">{formatEventDate(e.date)} · {e.venue}</div>

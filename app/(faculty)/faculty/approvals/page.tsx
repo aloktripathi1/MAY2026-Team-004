@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 import { FacultyApprovalButtons } from "./FacultyApprovalButtons";

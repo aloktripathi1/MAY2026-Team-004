@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
+import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { formatEventDate, formatTimeAgo } from "@/lib/format";
 import { AdminPageHeader } from "./AdminPageHeader";
 
@@ -131,7 +132,7 @@ export default async function AdminDashboard() {
               {upcomingEvents.length === 0 && <div className="p-4 text-sm text-muted-foreground">No upcoming events.</div>}
               {upcomingEvents.map(e => (
                 <div key={e.id} className="flex items-center gap-4 p-4">
-                  <div className="h-10 w-10 shrink-0 rounded-lg" style={{ background: e.cover }} />
+                  <EventThumbnail title={e.title} cover={e.cover} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{e.title}</div>
                     <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.rsvps}/{e.capacity}</div>
