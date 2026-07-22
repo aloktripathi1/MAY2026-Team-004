@@ -17,7 +17,7 @@ export function FacultyApprovalButtons({ eventId }: { eventId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex gap-2">
       <Btn size="sm" disabled={Boolean(choice) || pending} onClick={() => decide("approved", "Approved")}>
         <Check className="h-4 w-4" /> {choice ?? "Approve"}
       </Btn>

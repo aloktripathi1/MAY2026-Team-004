@@ -87,7 +87,9 @@ export default async function FacultyEventDetail({ params }: { params: { id: str
             {event.approval === "pending" ? (
               <>
                 <div className="mb-4 text-sm text-muted-foreground">This event is awaiting your approval. Review the details and decide whether to approve or reject.</div>
-                <FacultyApprovalButtons eventId={event.id} />
+                <div className="flex gap-2">
+                  <FacultyApprovalButtons eventId={event.id} />
+                </div>
               </>
             ) : (
               <div className="text-sm">
