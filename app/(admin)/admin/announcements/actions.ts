@@ -11,7 +11,7 @@ const schema = z.object({
   body: z.string().min(1, "Body is required"),
   pinned: z.coerce.boolean().optional(),
   audience: z.enum(["All", "Coordinators", "Volunteers"]).default("All"),
-  priority: z.enum(["Low", "Medium", "High"]).default("Medium"),
+  priority: z.enum(["Low", "Med", "High"]).default("Med"),
 });
 
 export type AnnouncementFormState = { error?: string; ok?: boolean };

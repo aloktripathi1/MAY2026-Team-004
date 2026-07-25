@@ -10,7 +10,7 @@ import {
 import { DEFAULT_NOTIFICATION_PREFS, parseNotificationPrefs } from "../lib/notification-prefs.ts";
 import { parseInterests } from "../lib/interests.ts";
 import { normalizeEventTags, serializeEventTags } from "../lib/event-tags.ts";
-import { getPrimaryClubMembership } from "../lib/session-helpers.ts";
+import { getPrimaryClubMembership, homePathForUser, accessibleAppRoles } from "../lib/session-helpers.ts";
 import {
   buildEventSlug,
   decideJoinRequestAction,
@@ -125,15 +125,9 @@ const tests: TestCase[] = [
     },
   },
   {
-    name: "serializeEventTags adapts to sqlite and non-sqlite database modes",
+    name: "serializeEventTags returns the tag array for Postgres",
     run: () => {
-      const originalDatabaseUrl = process.env.DATABASE_URL;
-      process.env.DATABASE_URL = "file:./dev.db";
-      assert.equal(serializeEventTags(["tech", "music"]), "tech,music");
-      process.env.DATABASE_URL = "postgresql://localhost:5432/sangam";
       assert.deepEqual(serializeEventTags(["tech", "music"]), ["tech", "music"]);
-      if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
-      else process.env.DATABASE_URL = originalDatabaseUrl;
     },
   },
   {
@@ -147,6 +141,46 @@ const tests: TestCase[] = [
     run: () => {
       assert.deepEqual(getPrimaryClubMembership(session, "Admin"), { clubId: "c1", role: "Member" });
       assert.deepEqual(getPrimaryClubMembership(session), { clubId: "c1", role: "Member" });
+    },
+  },
+  {
+    name: "homePathForUser prefers faculty, then highest club role",
+    run: () => {
+      assert.equal(homePathForUser({ isFaculty: true, memberships: [{ role: "Admin" }] }), "/faculty");
+      assert.equal(homePathForUser({ memberships: [{ role: "Member" }, { role: "Admin" }] }), "/admin");
+      assert.equal(homePathForUser({ memberships: [{ role: "Volunteer" }, { role: "Coordinator" }] }), "/coordinator");
+      assert.equal(homePathForUser({ memberships: [{ role: "Volunteer" }] }), "/volunteer");
+      assert.equal(homePathForUser({ memberships: [{ role: "Member" }] }), "/app");
+      assert.equal(homePathForUser({ memberships: [] }), "/app");
+    },
+  },
+  {
+    name: "accessibleAppRoles lists only roles the user can open",
+    run: () => {
+      assert.deepEqual(
+        accessibleAppRoles({
+          isFaculty: true,
+          memberships: [
+            { role: "Admin" },
+            { role: "Coordinator" },
+            { role: "Volunteer" },
+            { role: "Member" },
+          ],
+        }),
+        ["faculty", "admin", "coordinator", "volunteer", "member"],
+      );
+      assert.deepEqual(
+        accessibleAppRoles({ memberships: [{ role: "Admin" }] }),
+        ["admin", "member"],
+      );
+      assert.deepEqual(
+        accessibleAppRoles({ isFaculty: true, memberships: [] }),
+        ["faculty"],
+      );
+      assert.deepEqual(
+        accessibleAppRoles({ memberships: [{ role: "Member" }] }),
+        ["member"],
+      );
     },
   },
   {

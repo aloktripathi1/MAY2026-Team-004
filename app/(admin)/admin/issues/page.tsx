@@ -1,3 +1,4 @@
+import type { ClubRole } from "@prisma/client";
 import type { Metadata } from "next";
 import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   description: "Every ticket raised across the club, in one queue.",
 };
 
-const STAFF_ROLES = ["Coordinator", "Volunteer", "Admin"];
+const STAFF_ROLES: ClubRole[] = ["Coordinator", "Volunteer", "Admin"];
 
 export default async function AdminIssuesPage() {
   const session = getMockSession();

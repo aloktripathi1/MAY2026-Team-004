@@ -9,9 +9,6 @@ export function normalizeEventTags(tags: string[] | string | null | undefined): 
     .filter(Boolean);
 }
 
-export function serializeEventTags(tags: string[]): string[] | string {
-  const databaseUrl = process.env.DATABASE_URL ?? "";
-  const usesSqlite = databaseUrl.startsWith("file:") || databaseUrl.includes(".db");
-
-  return usesSqlite ? tags.join(",") : tags;
+export function serializeEventTags(tags: string[]): string[] {
+  return tags;
 }

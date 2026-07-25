@@ -18,10 +18,7 @@ export async function toggleJoinRequestAction(clubId: string) {
   if (action === "withdraw") {
     await prisma.membership.delete({ where: { id: existing!.id } });
   } else if (action === "create") {
-    const [user, club] = await Promise.all([
-      prisma.user.findUnique({ where: { id: session.user.id } }),
-      prisma.club.findUnique({ where: { id: clubId } }),
-    ]);
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
     if (!club) throw new Error("Club not found");
 
     await prisma.membership.create({
@@ -31,8 +28,6 @@ export async function toggleJoinRequestAction(clubId: string) {
         role: "Member",
         status: "Pending",
         joinedAt: new Date(),
-        user,
-        club,
       },
     });
   }

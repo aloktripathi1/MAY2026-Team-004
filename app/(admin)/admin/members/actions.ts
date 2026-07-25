@@ -51,7 +51,7 @@ export async function addMemberAction(_prevState: MemberFormState, formData: For
   if (existingMembership) return { error: `${parsed.data.name} is already a member of this club.` };
 
   await prisma.membership.create({
-    data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date(), user, club },
+    data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date() },
   });
 
   revalidatePath("/admin/members");
@@ -91,7 +91,7 @@ export async function bulkImportMembersAction(csvText: string): Promise<BulkImpo
     }
 
     await prisma.membership.create({
-      data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date(), user, club },
+      data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date() },
     });
     imported += 1;
   }

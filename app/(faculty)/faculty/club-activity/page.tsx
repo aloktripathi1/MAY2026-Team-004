@@ -19,7 +19,13 @@ export default async function ClubActivityPage() {
   const now = new Date();
   const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const clubs = await prisma.club.findMany({ orderBy: { name: "asc" } });
+  const clubs = await prisma.club.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { memberships: true } },
+      events: { orderBy: { date: "desc" }, take: 1 },
+    },
+  });
 
   const rows = await Promise.all(
     clubs.map(async (c) => {

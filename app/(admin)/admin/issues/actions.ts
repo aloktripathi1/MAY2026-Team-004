@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Priority } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMockSession } from "@/lib/mock-session";
 import { getPrimaryClubMembership } from "@/lib/session-helpers";
@@ -20,7 +21,7 @@ export async function assignIssuesAction(issueIds: string[], assigneeId: string 
   }
 
   for (const id of issueIds) {
-    await prisma.issue.update({ where: { id }, data: { assigneeId: assignee?.id ?? null, assignee } });
+    await prisma.issue.update({ where: { id }, data: { assigneeId: assignee?.id ?? null } });
   }
 
   revalidatePath("/admin/issues");
@@ -39,7 +40,7 @@ export async function updateIssuePriorityAction(issueId: string, priority: strin
 
   await prisma.issue.update({
     where: { id: issueId },
-    data: { priority },
+    data: { priority: priority as Priority },
   });
 
   revalidatePath("/admin/issues");

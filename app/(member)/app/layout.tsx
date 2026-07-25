@@ -3,6 +3,7 @@ import { getMockSession } from "@/lib/mock-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/AppShell";
+import { accessibleAppRoles } from "@/lib/session-helpers";
 
 export default async function MemberLayout({ children }: { children: ReactNode }) {
   const session = getMockSession();
@@ -13,7 +14,12 @@ export default async function MemberLayout({ children }: { children: ReactNode }
   const displayName = profile?.name ?? session.user.name ?? "Member";
 
   return (
-    <AppShell role="member" user={displayName} club={primaryClub}>
+    <AppShell
+      role="member"
+      user={displayName}
+      club={primaryClub}
+      availableRoles={accessibleAppRoles(session.user)}
+    >
       {children}
     </AppShell>
   );

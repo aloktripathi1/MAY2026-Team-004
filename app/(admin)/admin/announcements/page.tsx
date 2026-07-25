@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const priorityColors: Record<string, string> = {
   Low: "bg-blue-500/20 text-blue-300",
-  Medium: "bg-amber-500/20 text-amber-300",
+  Med: "bg-amber-500/20 text-amber-300",
   High: "bg-red-500/20 text-red-300",
 };
 
@@ -41,8 +41,8 @@ export default async function AnnouncementHistoryPage() {
               {a.audience && a.audience !== "All" && (
                 <span className="text-mono-label !text-[10px] text-secondary/80">→ {a.audience}</span>
               )}
-              <span className={`text-mono-label !text-[10px] px-2 py-0.5 rounded ${priorityColors[a.priority] || priorityColors.Medium}`}>
-                {a.priority}
+              <span className={`text-mono-label !text-[10px] px-2 py-0.5 rounded ${priorityColors[a.priority] || priorityColors.Med}`}>
+                {a.priority === "Med" ? "Medium" : a.priority}
               </span>
               <span className="ml-auto text-mono-label !text-[10px] text-muted-foreground/60">{formatTimeAgo(a.createdAt)}</span>
             </div>

@@ -1,6 +1,5 @@
-// Prisma schema — PostgreSQL (production). Real enums.
-// Local dev uses schema.sqlite.prisma instead (enums downgraded to validated strings,
-// since SQLite has no native enum type). Keep both models structurally in sync by hand.
+// Prisma schema — PostgreSQL (local Docker + production).
+// schema.sqlite.prisma is retained for reference only.
 
 generator client {
   provider = "prisma-client-js"

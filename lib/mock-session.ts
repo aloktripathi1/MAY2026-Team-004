@@ -1,6 +1,6 @@
-import { getAuthCookieUser } from "@/lib/auth-session";
+import { getAuthCookieUser, type SessionMembership } from "@/lib/auth-session";
 
-export type SessionMembership = { clubId: string; clubSlug: string; clubName: string; role: string; personaName: string };
+export type { SessionMembership };
 
 // The demo account (id "u1") holds all four club roles at once so QA can switch
 // personas without logging in as different people. Each role still displays as
@@ -24,7 +24,10 @@ export function getMockSession() {
         name: authUser.name,
         email: authUser.email,
         isFaculty: authUser.isFaculty ?? false,
-        memberships: [],
+        memberships: (authUser.memberships ?? []).map((m) => ({
+          ...m,
+          personaName: m.personaName || authUser.name,
+        })),
       },
       expires: "2099-12-31T23:59:59.999Z",
     };
@@ -32,11 +35,7 @@ export function getMockSession() {
 
   return {
     user: {
-      // Must match the demo user's real id in lib/prisma.ts's derived `users`
-      // array (seed member "m1" Ananya Rao -> "u1"), since every "You"-owned
-      // seed record (issues, tasks, countMeIns) resolves to that id. A mismatched
-      // id here means every "my issues" / "my tasks" / "have I counted myself in"
-      // lookup silently matches nothing.
+      // Must match the demo user id from prisma seed (member "m1" -> "u1").
       id: "u1",
       name: "Ananya Rao",
       email: "23s1000123@ds.study.iitm.ac.in",

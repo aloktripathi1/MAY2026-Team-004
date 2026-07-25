@@ -99,24 +99,44 @@ Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. See "Accessing
 
 ## Seed data
 
-`lib/seed-data.ts` is the single source of truth for everything the app displays: 8 clubs, 10 events (mixed upcoming/past, 3 currently pending faculty approval), 4 announcements, 5 issues, 4 tasks, 8 members, 6 venue/equipment rows (see "Known gaps" below), and 4 transparency-log entries. Edit it directly and restart the dev server to see changes — there's no seed script to run separately since it's loaded straight into the in-memory store.
+Run against Docker Postgres:
 
-## Known gaps vs. original plan
+```bash
+npm run db:up
+npm run db:push
+npm run db:seed
+```
 
-- Volunteer has a task list and an events view — no dedicated FAQ view yet (member and volunteer roles have no FAQ page; FAQ content only exists on the public landing page).
-- Venue and Equipment booking is not implemented as a feature — the `Venue`/`Equipment` models and seed data exist, but no page or Server Action anywhere reads or writes them. `Event.venue` is a plain free-text field, unrelated to the `Venue` model.
-- No real database, auth, or file storage — see the Tech Stack section. Image uploads (issue attachments, profile avatars) are stored as base64 data URLs in the in-memory store, not real file storage, which won't scale past the demo.
-- Automated tests are available for core business logic and workflow rules via `npm test`.
+`lib/seed-data.ts` plus `prisma/seed.ts` load clubs, events, and demo content. Team role accounts (for login testing) are seeded from the roster below.
 
 ## Team — Dhurandhar (MAY2026-Team-004)
 
-| Name | Role |
+| Name | Project role |
 |---|---|
 | Alok Kumar Tripathi | Team Lead, Backend |
 | Vishal Singh Baraiya | Product Manager |
 | Pardhiv Nukasani | Frontend |
 | Purnendu Shukla | Backend, Code Review |
 | Yalla Ashish Chandra Reddy | Testing |
+
+### App role test accounts (password = `FirstName@2026`)
+
+| Name | App role | Email | Password |
+|---|---|---|---|
+| Alok Kumar Tripathi | Faculty | 23f3003225@ds.study.iitm.ac.in | Alok@2026 |
+| Vishal Singh Baraiya | Admin | 23f2005593@ds.study.iitm.ac.in | Vishal@2026 |
+| Pardhiv Nukasani | Volunteer | 23f3004115@ds.study.iitm.ac.in | Pardhiv@2026 |
+| Purnendu Shukla | Coordinator | 22f2000147@ds.study.iitm.ac.in | Purnendu@2026 |
+| Yalla Ashish Chandra Reddy | Member | 23f3003728@ds.study.iitm.ac.in | Ashish@2026 |
+
+Roll numbers match the email local part (e.g. `23f3003225`). Club roles are attached to CodeChef (Admin), E-Cell (Coordinator), Sarga (Volunteer), and Paradox (Member).
+
+## Known gaps vs. original plan
+
+- Volunteer has a task list and an events view — no dedicated FAQ view yet (member and volunteer roles have no FAQ page; FAQ content only exists on the public landing page).
+- Venue and Equipment booking is not implemented as a feature — the `Venue`/`Equipment` models and seed data exist, but no page or Server Action anywhere reads or writes them. `Event.venue` is a plain free-text field, unrelated to the `Venue` model.
+- Image uploads (issue attachments, profile avatars) may still use data URLs in places; prefer real file storage before production scale.
+- Automated tests are available for core business logic and workflow rules via `npm test`.
 
 ## License
 

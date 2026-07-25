@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { getMockSession } from "@/lib/mock-session";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/AppShell";
+import { accessibleAppRoles } from "@/lib/session-helpers";
 
 export default async function CoordinatorLayout({ children }: { children: ReactNode }) {
   const session = getMockSession();
@@ -13,7 +14,12 @@ export default async function CoordinatorLayout({ children }: { children: ReactN
   const club = membership.clubName;
 
   return (
-    <AppShell role="coordinator" user={membership.personaName} club={club}>
+    <AppShell
+      role="coordinator"
+      user={membership.personaName}
+      club={club}
+      availableRoles={accessibleAppRoles(session.user)}
+    >
       {children}
     </AppShell>
   );

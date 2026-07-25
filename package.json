@@ -11,9 +11,17 @@
     "test": "node --experimental-strip-types tests/run-tests.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "db:migrate": "prisma migrate dev --schema=prisma/schema.sqlite.prisma",
-    "db:migrate:prod": "prisma migrate deploy --schema=prisma/schema.postgres.prisma",
-    "db:studio": "prisma studio --schema=prisma/schema.sqlite.prisma"
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:push": "npx prisma db push --schema=prisma/schema.prisma",
+    "db:seed": "npx prisma db seed",
+    "db:migrate": "npx prisma migrate dev --schema=prisma/schema.prisma",
+    "db:migrate:prod": "npx prisma migrate deploy --schema=prisma/schema.prisma",
+    "db:studio": "npx prisma studio --schema=prisma/schema.prisma"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "node --experimental-strip-types prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
