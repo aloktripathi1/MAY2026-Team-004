@@ -1,30 +1,23 @@
 "use server";
 
-import { z } from "zod";
-import bcrypt from "bcrypt";
 import { redirect } from "next/navigation";
-import { clearAuthCookies, setAuthCookies } from "@/lib/auth-session";
-import { homePathForUser } from "@/lib/session-helpers";
-import { prisma } from "@/lib/prisma";
-
-const loginSchema = z.object({
-  email: z.string().email("Use a valid email address"),
-  password: z.string().min(1, "Password is required"),
-  callbackUrl: z.string().optional(),
-});
+import { clearAuthCookies, setAuthCookies } from "@/backend/auth/session-cookies";
+import { authenticateUser } from "@/backend/auth/authenticate-user";
+import { loginSchema, safeRedirectPath } from "@/backend/auth/login-schema";
+import { homePathForUser } from "@/backend/auth/roles";
 
 export type LoginState = { error?: string };
 
-function safeRedirect(url: string | null | undefined, fallback: string) {
-  if (!url || !url.startsWith("/") || url.startsWith("//")) return fallback;
-  return url;
-}
-
+/**
+ * Form-based login (existing UI). Shares validation + auth with
+ * POST /api/auth/login. Keeps the same user-facing error strings.
+ * Mock/demo session remains in lib/mock-session.ts and [...nextauth].
+ */
 export async function loginAction(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
-    callbackUrl: formData.get("callbackUrl"),
+    callbackUrl: formData.get("callbackUrl") || undefined,
   });
 
   if (!parsed.success) {
@@ -32,38 +25,24 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   }
 
   const { email, password, callbackUrl } = parsed.data;
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: { memberships: { include: { club: true } } },
-  });
-
-  if (!user?.hashedPassword) {
-    return { error: "No Sangam account found for that email." };
+  const result = await authenticateUser(email, password);
+  if (!result.ok) {
+    return { error: result.message };
   }
-
-  const passwordMatches = await bcrypt.compare(password, user.hashedPassword);
-  if (!passwordMatches) {
-    return { error: "The email and password do not match." };
-  }
-
-  const memberships = user.memberships.map((m) => ({
-    clubId: m.clubId,
-    clubSlug: m.club.slug,
-    clubName: m.club.name,
-    role: m.role,
-    personaName: user.name,
-  }));
 
   setAuthCookies({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    isFaculty: user.isFaculty,
-    memberships,
+    id: result.user.id,
+    name: result.user.name,
+    email: result.user.email,
+    isFaculty: result.user.isFaculty,
+    memberships: result.user.memberships,
   });
 
-  const roleHome = homePathForUser({ isFaculty: user.isFaculty, memberships });
-  redirect(safeRedirect(callbackUrl, roleHome));
+  const roleHome = homePathForUser({
+    isFaculty: result.user.isFaculty,
+    memberships: result.user.memberships,
+  });
+  redirect(safeRedirectPath(callbackUrl, roleHome));
 }
 
 const DEMO_ROLE_PATHS = ["/app", "/coordinator", "/volunteer", "/admin", "/faculty"];

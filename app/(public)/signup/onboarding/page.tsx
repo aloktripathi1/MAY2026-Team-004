@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "@/components/auth/OnboardingForm";
-import { getAuthCookieUser } from "@/lib/auth-session";
+import { getAuthCookieUser } from "@/backend/auth/session-cookies";
 
 export const metadata: Metadata = {
   title: "Onboarding · Sangam",

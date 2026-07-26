@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { getAuthCookieUser } from "@/lib/auth-session";
+import { getAuthCookieUser } from "@/backend/auth/session-cookies";
 import { INTEREST_OPTIONS } from "@/lib/interests";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 
 const onboardingSchema = z.object({
   interests: z.array(z.enum(INTEREST_OPTIONS)).min(1, "Choose at least one interest").max(5, "Choose up to five interests"),
