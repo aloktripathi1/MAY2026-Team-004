@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import type { Priority } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { prisma } from "@/backend/db/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 
 export type AssignResult = { error?: string; ok?: boolean };
 

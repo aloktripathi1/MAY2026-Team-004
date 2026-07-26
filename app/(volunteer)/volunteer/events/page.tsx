@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";

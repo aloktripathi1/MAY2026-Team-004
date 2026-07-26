@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat } from "@/components/ui/primitives";
 

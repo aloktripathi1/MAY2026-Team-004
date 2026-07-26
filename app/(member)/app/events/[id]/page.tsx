@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getMockSession } from "@/lib/mock-session";
+import { getMockSession } from "@/backend/auth/mock-session";
 import { ArrowLeft, CalendarClock, MapPin, Users2 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 import { StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { normalizeEventTags } from "@/lib/event-tags";

@@ -2,10 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { parseTagInput, buildEventSlug } from "@/lib/workflow-rules";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { parseTagInput, buildEventSlug } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 
 const eventSchema = z.object({

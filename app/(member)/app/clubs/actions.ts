@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
-import { decideJoinRequestAction } from "@/lib/workflow-rules";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
+import { decideJoinRequestAction } from "@/backend/domain/workflow-rules";
 
 export async function toggleJoinRequestAction(clubId: string) {
   const session = getMockSession();

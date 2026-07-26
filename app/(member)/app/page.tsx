@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockSession } from "@/lib/mock-session";
+import { getMockSession } from "@/backend/auth/mock-session";
 import { CalendarClock, ArrowUpRight, Pin } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
 import { formatWeekday, formatDayNumber, formatIssueStatus, formatTimeAgo } from "@/lib/format";

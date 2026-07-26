@@ -2,10 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { prisma } from "@/lib/prisma";
-import { parseTagInput } from "@/lib/workflow-rules";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { prisma } from "@/backend/db/prisma";
+import { parseTagInput } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 
 async function requireCoordinatorForEvent(eventId: string) {

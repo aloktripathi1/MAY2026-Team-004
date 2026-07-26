@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockSession } from "@/lib/mock-session";
+import { getMockSession } from "@/backend/auth/mock-session";
 import { TrendingUp } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { prisma } from "@/backend/db/prisma";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { EventThumbnail } from "@/components/ui/EventThumbnail";

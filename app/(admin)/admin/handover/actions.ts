@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 
 export type TransferState = { error?: string; ok?: boolean };
 

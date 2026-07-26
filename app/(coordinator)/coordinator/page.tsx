@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { EventThumbnail } from "@/components/ui/EventThumbnail";

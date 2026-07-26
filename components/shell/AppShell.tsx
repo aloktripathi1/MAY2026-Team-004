@@ -11,7 +11,7 @@ import {
   Shield, Menu, X, LogOut, Ticket, Activity, User, SquareKanban, HandHelping, ShieldCheck, GraduationCap,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { APP_ROLE_HOME, type AppRole } from "@/lib/session-helpers";
+import { APP_ROLE_HOME, type AppRole } from "@/backend/auth/roles";
 
 type Role = AppRole;
 

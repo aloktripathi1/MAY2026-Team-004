@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
-import { updateTaskStatusAction } from "@/lib/actions/tasks";
+import { updateTaskStatusAction } from "@/backend/domain/tasks";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { formatTaskDue, formatTaskStatus } from "@/lib/format";
 import { cn } from "@/lib/utils";

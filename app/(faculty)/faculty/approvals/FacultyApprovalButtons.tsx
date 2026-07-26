@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
-import { facultySetEventApprovalAction } from "@/lib/actions/approvals";
+import { facultySetEventApprovalAction } from "@/backend/domain/approvals";
 
 interface FacultyApprovalButtonsProps {
   eventId: string;

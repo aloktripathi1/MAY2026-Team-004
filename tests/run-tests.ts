@@ -10,7 +10,7 @@ import {
 import { DEFAULT_NOTIFICATION_PREFS, parseNotificationPrefs } from "../lib/notification-prefs.ts";
 import { parseInterests } from "../lib/interests.ts";
 import { normalizeEventTags, serializeEventTags } from "../lib/event-tags.ts";
-import { getPrimaryClubMembership, homePathForUser, accessibleAppRoles } from "../lib/session-helpers.ts";
+import { getPrimaryClubMembership, homePathForUser, accessibleAppRoles } from "../backend/auth/roles.ts";
 import {
   buildEventSlug,
   decideJoinRequestAction,
@@ -24,7 +24,12 @@ import {
   requireClubAdminAccess,
   requireFacultyAccess,
   TASK_STATUSES,
-} from "../lib/workflow-rules.ts";
+} from "../backend/domain/workflow-rules.ts";
+import {
+  INSTITUTIONAL_EMAIL_DOMAIN,
+  signupSchema,
+} from "../backend/auth/signup-schema.ts";
+import { loginSchema, safeRedirectPath } from "../backend/auth/login-schema.ts";
 
 type TestCase = {
   name: string;
@@ -400,6 +405,145 @@ const tests: TestCase[] = [
     name: "requireFacultyAccess rejects non-faculty users",
     run: () => {
       assert.throws(() => requireFacultyAccess(false), /Faculty only/);
+    },
+  },
+  {
+    name: "signupSchema accepts institutional @ds.study.iitm.ac.in emails",
+    run: () => {
+      const parsed = signupSchema.safeParse({
+        name: "Ananya Rao",
+        email: "23s1000999@ds.study.iitm.ac.in",
+        rollNumber: "23s1000999",
+        password: "SecurePass1",
+      });
+      assert.equal(parsed.success, true);
+      if (parsed.success) {
+        assert.equal(parsed.data.email, "23s1000999@ds.study.iitm.ac.in");
+      }
+    },
+  },
+  {
+    name: "signupSchema lowercases institutional email",
+    run: () => {
+      const parsed = signupSchema.safeParse({
+        name: "Ananya Rao",
+        email: "23S1000999@DS.STUDY.IITM.AC.IN",
+        rollNumber: "23s1000999",
+        password: "SecurePass1",
+      });
+      assert.equal(parsed.success, true);
+      if (parsed.success) {
+        assert.equal(parsed.data.email, "23s1000999@ds.study.iitm.ac.in");
+      }
+    },
+  },
+  {
+    name: "signupSchema rejects non-institutional email domains",
+    run: () => {
+      const parsed = signupSchema.safeParse({
+        name: "Outside User",
+        email: "student@gmail.com",
+        rollNumber: "23s1000888",
+        password: "SecurePass1",
+      });
+      assert.equal(parsed.success, false);
+      if (!parsed.success) {
+        assert.match(
+          parsed.error.issues[0]?.message ?? "",
+          new RegExp(`@${INSTITUTIONAL_EMAIL_DOMAIN}`),
+        );
+      }
+    },
+  },
+  {
+    name: "signupSchema rejects email that only contains the domain as a substring",
+    run: () => {
+      const parsed = signupSchema.safeParse({
+        name: "Spoof User",
+        email: "evil@ds.study.iitm.ac.in.evil.com",
+        rollNumber: "23s1000777",
+        password: "SecurePass1",
+      });
+      assert.equal(parsed.success, false);
+    },
+  },
+  {
+    name: "signupSchema rejects short passwords",
+    run: () => {
+      const parsed = signupSchema.safeParse({
+        name: "Ananya Rao",
+        email: "23s1000999@ds.study.iitm.ac.in",
+        rollNumber: "23s1000999",
+        password: "short",
+      });
+      assert.equal(parsed.success, false);
+      if (!parsed.success) {
+        assert.match(parsed.error.issues[0]?.message ?? "", /at least 8/);
+      }
+    },
+  },
+  {
+    name: "signupSchema rejects missing name and roll number",
+    run: () => {
+      const missingName = signupSchema.safeParse({
+        name: "  ",
+        email: "23s1000999@ds.study.iitm.ac.in",
+        rollNumber: "23s1000999",
+        password: "SecurePass1",
+      });
+      assert.equal(missingName.success, false);
+
+      const missingRoll = signupSchema.safeParse({
+        name: "Ananya Rao",
+        email: "23s1000999@ds.study.iitm.ac.in",
+        rollNumber: "",
+        password: "SecurePass1",
+      });
+      assert.equal(missingRoll.success, false);
+    },
+  },
+  {
+    name: "loginSchema accepts institutional email and password",
+    run: () => {
+      const parsed = loginSchema.safeParse({
+        email: "23s1000123@ds.study.iitm.ac.in",
+        password: "sangam",
+      });
+      assert.equal(parsed.success, true);
+      if (parsed.success) {
+        assert.equal(parsed.data.email, "23s1000123@ds.study.iitm.ac.in");
+      }
+    },
+  },
+  {
+    name: "loginSchema rejects non-institutional email",
+    run: () => {
+      const parsed = loginSchema.safeParse({
+        email: "user@gmail.com",
+        password: "sangam",
+      });
+      assert.equal(parsed.success, false);
+    },
+  },
+  {
+    name: "loginSchema rejects empty password",
+    run: () => {
+      const parsed = loginSchema.safeParse({
+        email: "23s1000123@ds.study.iitm.ac.in",
+        password: "",
+      });
+      assert.equal(parsed.success, false);
+    },
+  },
+  {
+    name: "safeRedirectPath only allows same-origin relative paths",
+    run: () => {
+      assert.equal(safeRedirectPath("/admin", "/app"), "/admin");
+      assert.equal(safeRedirectPath("/coordinator/events", "/app"), "/coordinator/events");
+      assert.equal(safeRedirectPath("https://evil.com", "/app"), "/app");
+      assert.equal(safeRedirectPath("//evil.com", "/app"), "/app");
+      assert.equal(safeRedirectPath(undefined, "/app"), "/app");
+      assert.equal(safeRedirectPath("", "/faculty"), "/faculty");
     },
   },
 ];

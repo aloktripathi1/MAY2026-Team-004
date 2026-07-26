@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 import { ClubsBrowser } from "./ClubsBrowser";
 
 export const metadata: Metadata = {

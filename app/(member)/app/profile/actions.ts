@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getAuthCookieUser, setAuthCookies } from "@/lib/auth-session";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
+import { getAuthCookieUser, setAuthCookies } from "@/backend/auth/session-cookies";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS } from "@/lib/interests";
 import { parseNotificationPrefs, type NotificationPrefs } from "@/lib/notification-prefs";
 
