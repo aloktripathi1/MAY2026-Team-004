@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
-import { decideCountMeInAction } from "@/lib/workflow-rules";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
+import { decideCountMeInAction } from "@/backend/domain/workflow-rules";
 
 export async function toggleCountMeInAction(eventId: string, eventSlug: string) {
   const session = getMockSession();
