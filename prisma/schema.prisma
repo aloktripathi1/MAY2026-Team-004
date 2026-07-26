@@ -153,6 +153,7 @@ model Event {
   tags        String[]
   description String
   approval    ApprovalStatus @default(pending)
+  registrationLocked Boolean @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
