@@ -3,9 +3,9 @@ import { getMockSession } from "@/backend/auth/mock-session";
 import { Pin } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
-import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { formatTimeAgo } from "@/lib/format";
+import { AnnouncementsPageHeader } from "./AnnouncementsPageHeader";
 
 export const metadata: Metadata = {
   title: "Announcement History · Admin · Sangam",
@@ -23,14 +23,17 @@ export default async function AnnouncementHistoryPage() {
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 
-  const announcements = await prisma.announcement.findMany({
-    where: { clubId },
-    orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
-  });
+  const [announcements, memberCount] = await Promise.all([
+    prisma.announcement.findMany({
+      where: { clubId },
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.membership.count({ where: { clubId } }),
+  ]);
 
   return (
     <>
-      <PageHeader title={<>Announcement <span className="text-secondary">History</span></>} description="View all past announcements sent to your club members." />
+      <AnnouncementsPageHeader memberCount={memberCount} />
 
       <div className="space-y-2">
         {announcements.length === 0 && <div className="text-sm text-muted-foreground">No announcements yet.</div>}

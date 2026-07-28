@@ -28,9 +28,17 @@ export default async function VolunteerEventsPage({
 
   // Scoped to the volunteer's own (Active) club memberships — this page
   // previously showed every club's events regardless of membership (#85).
+  // Classified by the actual event date, not just the stored status field,
+  // which is set once and never transitions automatically (#89).
   const clubIds = session?.user.memberships.map((m) => m.clubId) ?? [];
+  const now = new Date();
   const list = await prisma.event.findMany({
-    where: { status: tab, clubId: { in: clubIds } },
+    where: {
+      clubId: { in: clubIds },
+      ...(tab === "upcoming"
+        ? { status: { not: "past" }, date: { gte: now } }
+        : { OR: [{ status: "past" }, { date: { lt: now } }] }),
+    },
     orderBy: { date: tab === "upcoming" ? "asc" : "desc" },
     include: { club: true, _count: { select: { countMeIns: true } } },
   });

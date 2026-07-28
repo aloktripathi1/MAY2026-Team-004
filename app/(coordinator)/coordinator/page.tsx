@@ -42,7 +42,7 @@ export default async function CoordinatorHome() {
         <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-mono-label mb-3">Your events</h2>
           <div className="space-y-2">
             {myEvents.length === 0 && <div className="text-sm text-muted-foreground">No upcoming events.</div>}
@@ -65,7 +65,7 @@ export default async function CoordinatorHome() {
             ))}
           </div>
         </div>
-        <div>
+        <div className="min-w-0">
           <h2 className="text-mono-label mb-3">Task board</h2>
           <div className="space-y-2">
             {tasks.length === 0 && <div className="text-sm text-muted-foreground">No tasks yet.</div>}

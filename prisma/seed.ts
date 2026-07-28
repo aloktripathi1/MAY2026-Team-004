@@ -14,6 +14,18 @@ import {
 
 const prisma = new PrismaClient();
 
+// lib/seed-data.ts authors event dates as fixed calendar dates (assuming
+// "today" was ~8 Jul 2026 — the boundary between its last "past" event,
+// 4 Jul, and first "upcoming" one, 11 Jul). Re-anchoring every event's date
+// to an offset from the actual seed run time keeps the same spread and the
+// same past/upcoming split no matter when `db:seed` runs (see issue #90) —
+// without this, the whole seed dataset "expires" a few weeks after it's written.
+const SEED_DATA_AUTHORED_TODAY = new Date("2026-07-08T00:00:00.000Z");
+function resolveSeedEventDate(isoDate: string): Date {
+  const offsetMs = new Date(isoDate).getTime() - SEED_DATA_AUTHORED_TODAY.getTime();
+  return new Date(Date.now() + offsetMs);
+}
+
 const clubNameToSlug: Record<string, string> = {
   CodeChef: "codechef",
   "E-Cell": "e-cell",
@@ -143,7 +155,7 @@ async function main() {
         slug: event.slug,
         title: event.title,
         clubId: club.id,
-        date: new Date(event.isoDate),
+        date: resolveSeedEventDate(event.isoDate),
         time: event.time,
         venue: event.venue,
         status: event.status,

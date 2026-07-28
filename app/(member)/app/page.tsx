@@ -16,11 +16,14 @@ export default async function MemberDashboard() {
   const session = await getMockSession();
   const userId = session!.user.id;
   const memberships = session!.user.memberships;
+  const clubIds = memberships.map((m) => m.clubId);
 
+  // Scoped to the member's own club memberships — this page previously
+  // showed every club's events/announcements regardless of membership (#88).
   const [upcoming, myIssues, announcements] = await Promise.all([
-    prisma.event.findMany({ where: { status: "upcoming" }, orderBy: { date: "asc" }, take: 4, include: { club: true, _count: { select: { countMeIns: true } } } }),
+    prisma.event.findMany({ where: { status: "upcoming", clubId: { in: clubIds } }, orderBy: { date: "asc" }, take: 4, include: { club: true, _count: { select: { countMeIns: true } } } }),
     prisma.issue.findMany({ where: { raisedById: userId }, orderBy: { createdAt: "desc" } }),
-    prisma.announcement.findMany({ orderBy: { createdAt: "desc" }, take: 4, include: { club: true } }),
+    prisma.announcement.findMany({ where: { clubId: { in: clubIds } }, orderBy: { createdAt: "desc" }, take: 4, include: { club: true } }),
   ]);
 
   const openTaskCount = await prisma.task.count({ where: { assigneeId: userId, status: { not: "done" } } });
@@ -54,6 +57,11 @@ export default async function MemberDashboard() {
               <Link href="/app/events" className="text-xs text-muted-foreground hover:text-foreground">See all →</Link>
             </div>
             <div className="space-y-4">
+              {upcoming.length === 0 && (
+                <div className="night-panel rounded-2xl p-4 text-sm text-muted-foreground">
+                  {memberships.length === 0 ? "Join a club to see its events here." : "No upcoming events this week."}
+                </div>
+              )}
               {upcoming.map(e => (
                 <Link key={e.id} href={`/app/events/${e.slug}`} className="block">
                   <GlassCard className="group flex items-center gap-5 p-4">
@@ -104,6 +112,11 @@ export default async function MemberDashboard() {
             <span className="text-mono-label">{announcements.length} new</span>
           </div>
           <div className="night-panel divide-y divide-hairline rounded-2xl">
+            {announcements.length === 0 && (
+              <div className="p-4 text-sm text-muted-foreground">
+                {memberships.length === 0 ? "Join a club to see its announcements here." : "No announcements yet."}
+              </div>
+            )}
             {announcements.map(a => (
               <div key={a.id} className="p-4">
                 <div className="mb-1.5 flex items-center gap-2">
