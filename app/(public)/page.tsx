@@ -246,6 +246,15 @@ function Hero() {
           </motion.div>
 
           <motion.div
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+            animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full text-center"
+          >
+            <p className="mono-label text-secondary">Watch it run</p>
+          </motion.div>
+
+          <motion.div
             style={{ y: previewY }}
             initial={shouldReduceMotion ? false : { opacity: 0, y: 28, rotateX: 4 }}
             animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0 }}
