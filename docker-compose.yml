@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sangam-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sangam
+      POSTGRES_PASSWORD: sangam
+      POSTGRES_DB: sangam
+    volumes:
+      - sangam_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sangam -d sangam"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sangam_pg_data:

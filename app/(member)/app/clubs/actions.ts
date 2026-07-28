@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
-import { decideJoinRequestAction } from "@/lib/workflow-rules";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
+import { decideJoinRequestAction } from "@/backend/domain/workflow-rules";
 
 export async function toggleJoinRequestAction(clubId: string) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const existing = await prisma.membership.findUnique({
@@ -18,10 +18,7 @@ export async function toggleJoinRequestAction(clubId: string) {
   if (action === "withdraw") {
     await prisma.membership.delete({ where: { id: existing!.id } });
   } else if (action === "create") {
-    const [user, club] = await Promise.all([
-      prisma.user.findUnique({ where: { id: session.user.id } }),
-      prisma.club.findUnique({ where: { id: clubId } }),
-    ]);
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
     if (!club) throw new Error("Club not found");
 
     await prisma.membership.create({
@@ -31,8 +28,6 @@ export async function toggleJoinRequestAction(clubId: string) {
         role: "Member",
         status: "Pending",
         joinedAt: new Date(),
-        user,
-        club,
       },
     });
   }

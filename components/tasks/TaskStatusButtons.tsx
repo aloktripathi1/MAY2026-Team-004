@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { updateTaskStatusAction } from "@/lib/actions/tasks";
+import { updateTaskStatusAction } from "@/backend/domain/tasks";
 
 const statuses = ["todo", "doing", "done"] as const;
 

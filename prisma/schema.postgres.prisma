@@ -112,6 +112,8 @@ model Club {
   emoji       String
   founded     String
   description String
+  banner      String
+  photo       String?
 
   memberships          Membership[]
   events               Event[]
@@ -146,7 +148,9 @@ model Event {
   venue       String
   status      EventStatus    @default(upcoming)
   capacity    Int
+  going       Int            @default(0)
   cover       String
+  photo       String?
   tags        String[]
   description String
   approval    ApprovalStatus @default(pending)

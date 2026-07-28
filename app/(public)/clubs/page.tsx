@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 import { ClubsBrowser } from "./ClubsBrowser";
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export default async function ClubsPage() {
     description: c.description,
     members: c._count.memberships,
     banner: c.banner,
-    photo: c.photo,
+    photo: c.photo ?? undefined,
   }));
 
   return <ClubsBrowser clubs={clubList} />;

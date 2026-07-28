@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";
@@ -23,7 +23,7 @@ export default async function VolunteerEventsPage({
   searchParams: { tab?: string };
 }) {
   const tab: "upcoming" | "past" = searchParams.tab === "past" ? "past" : "upcoming";
-  const session = getMockSession();
+  const session = await getMockSession();
 
   const list = await prisma.event.findMany({
     where: { status: tab },

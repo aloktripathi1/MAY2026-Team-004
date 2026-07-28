@@ -1,14 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import type { Priority } from "@prisma/client";
+import { prisma } from "@/backend/db/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 
 export type AssignResult = { error?: string; ok?: boolean };
 
 export async function assignIssuesAction(issueIds: string[], assigneeId: string | null): Promise<AssignResult> {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   if (!membership) return { error: "You must be a club admin to assign issues." };
   if (issueIds.length === 0) return { error: "Select at least one issue." };
@@ -20,7 +21,7 @@ export async function assignIssuesAction(issueIds: string[], assigneeId: string 
   }
 
   for (const id of issueIds) {
-    await prisma.issue.update({ where: { id }, data: { assigneeId: assignee?.id ?? null, assignee } });
+    await prisma.issue.update({ where: { id }, data: { assigneeId: assignee?.id ?? null } });
   }
 
   revalidatePath("/admin/issues");
@@ -28,7 +29,7 @@ export async function assignIssuesAction(issueIds: string[], assigneeId: string 
 }
 
 export async function updateIssuePriorityAction(issueId: string, priority: string): Promise<AssignResult> {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   if (!membership) return { error: "You must be a club admin to update issue priority." };
 
@@ -39,7 +40,7 @@ export async function updateIssuePriorityAction(issueId: string, priority: strin
 
   await prisma.issue.update({
     where: { id: issueId },
-    data: { priority },
+    data: { priority: priority as Priority },
   });
 
   revalidatePath("/admin/issues");

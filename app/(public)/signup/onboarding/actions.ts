@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { getAuthCookieUser } from "@/lib/auth-session";
+import { getAuthCookieUserId } from "@/backend/auth/session-cookies";
 import { INTEREST_OPTIONS } from "@/lib/interests";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 
 const onboardingSchema = z.object({
   interests: z.array(z.enum(INTEREST_OPTIONS)).min(1, "Choose at least one interest").max(5, "Choose up to five interests"),
@@ -21,13 +21,13 @@ export async function completeOnboardingAction(_prevState: OnboardingState, form
     return { error: parsed.error.issues[0]?.message ?? "Choose your interests" };
   }
 
-  const user = getAuthCookieUser();
-  if (!user) {
+  const userId = getAuthCookieUserId();
+  if (!userId) {
     redirect("/signup");
   }
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: { interests: JSON.stringify(parsed.data.interests) },
   });
 

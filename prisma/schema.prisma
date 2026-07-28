@@ -1,0 +1,270 @@
+// Prisma schema — PostgreSQL (local Docker + production).
+// schema.sqlite.prisma is retained for reference only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ClubCategory {
+  Technical
+  Cultural
+  Sports
+  Entrepreneurship
+  Literary
+  Social
+  Design
+}
+
+enum ClubRole {
+  Member
+  Volunteer
+  Coordinator
+  Admin
+}
+
+enum MembershipStatus {
+  Active
+  Pending
+  Inactive
+}
+
+enum AnnouncementAudience {
+  All
+  Coordinators
+  Volunteers
+}
+
+enum EventStatus {
+  upcoming
+  live
+  past
+}
+
+enum ApprovalStatus {
+  approved
+  pending
+  notRequired
+  rejected
+}
+
+enum IssueCategory {
+  Registration
+  Payment
+  Booking
+  Access
+  Other
+}
+
+enum IssueStatus {
+  Open
+  InProgress
+  Resolved
+}
+
+enum Priority {
+  Low
+  Med
+  High
+}
+
+enum TaskStatus {
+  todo
+  doing
+  done
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  hashedPassword String
+  name           String
+  rollNumber     String?  @unique
+  image          String?
+  interests      String   @default("[]")
+  notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}")
+  isFaculty      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships            Membership[]
+  issuesRaised           Issue[]        @relation("IssueRaisedBy")
+  issuesAssigned         Issue[]        @relation("IssueAssignee")
+  tasksAssigned          Task[]
+  contributions          Contribution[]
+  announcementsAuthored  Announcement[]
+  countMeIns             CountMeIn[]
+}
+
+model Club {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  name        String
+  tagline     String
+  category    ClubCategory
+  active      Boolean      @default(true)
+  hue         String
+  emoji       String
+  founded     String
+  description String
+  banner      String
+  photo       String?
+
+  memberships          Membership[]
+  events               Event[]
+  announcements        Announcement[]
+  venues               Venue[]
+  equipment            Equipment[]
+  transparencyEntries  TransparencyLogEntry[]
+  issues               Issue[]
+}
+
+model Membership {
+  id       String            @id @default(cuid())
+  userId   String
+  clubId   String
+  role     ClubRole          @default(Member)
+  status   MembershipStatus  @default(Active)
+  joinedAt DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+}
+
+model Event {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  clubId      String
+  date        DateTime
+  time        String
+  venue       String
+  status      EventStatus    @default(upcoming)
+  capacity    Int
+  going       Int            @default(0)
+  cover       String
+  photo       String?
+  tags        String[]
+  description String
+  approval    ApprovalStatus @default(pending)
+  registrationLocked Boolean @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  tasks          Task[]
+  contributions  Contribution[]
+  countMeIns     CountMeIn[]
+  transparencyEntries TransparencyLogEntry[]
+}
+
+model CountMeIn {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  checkedIn Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  clubId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  pinned    Boolean  @default(false)
+  audience  AnnouncementAudience @default(All)
+  priority  Priority @default(Med)
+
+  club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Issue {
+  id          String        @id @default(cuid())
+  title       String
+  category    IssueCategory
+  status      IssueStatus   @default(Open)
+  raisedById  String
+  assigneeId  String?
+  clubId      String?
+  createdAt   DateTime      @default(now())
+  priority    Priority      @default(Low)
+  attachments String[]      @default([])
+
+  raisedBy User  @relation("IssueRaisedBy", fields: [raisedById], references: [id], onDelete: Cascade)
+  assignee User? @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  club     Club? @relation(fields: [clubId], references: [id], onDelete: SetNull)
+}
+
+model Task {
+  id         String     @id @default(cuid())
+  title      String
+  eventId    String
+  role       String
+  dueAt      DateTime?
+  status     TaskStatus @default(todo)
+  priority   Priority   @default(Med)
+  assigneeId String
+
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignee User  @relation(fields: [assigneeId], references: [id], onDelete: Cascade)
+}
+
+model Contribution {
+  id          String   @id @default(cuid())
+  userId      String
+  eventId     String
+  role        String
+  hoursLogged Float
+  verifiedAt  DateTime
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Venue {
+  id           String  @id @default(cuid())
+  name         String
+  capacity     Int
+  availability String
+  clubId       String?
+
+  club Club? @relation(fields: [clubId], references: [id], onDelete: SetNull)
+}
+
+model Equipment {
+  id           String  @id @default(cuid())
+  name         String
+  quantity     Int
+  availability String
+  clubId       String?
+
+  club Club? @relation(fields: [clubId], references: [id], onDelete: SetNull)
+}
+
+model TransparencyLogEntry {
+  id         String   @id @default(cuid())
+  eventName  String // display name; historical entries often predate the current Event rows
+  eventId    String?
+  outcome    String
+  date       String
+  clubId     String
+  spend      String
+  attendance String
+
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+}

@@ -47,9 +47,9 @@ export function AnnouncementForm({ memberCount, onSuccess }: { memberCount: numb
         <label className="block">
           <div className="text-mono-label mb-1.5">Priority</div>
           <div className="relative">
-            <select name="priority" defaultValue="Medium" className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55">
+            <select name="priority" defaultValue="Med" className="w-full appearance-none rounded-xl border border-white/[0.12] bg-white/[0.035] py-2.5 pl-4 pr-9 text-sm text-white outline-none transition focus:border-secondary/55">
               <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
+              <option value="Med">Medium</option>
               <option value="High">High</option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

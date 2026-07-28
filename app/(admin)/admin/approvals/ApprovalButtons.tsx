@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
-import { setMembershipStatusAction, setEventApprovalAction } from "@/lib/actions/approvals";
+import { setMembershipStatusAction, setEventApprovalAction } from "@/backend/domain/approvals";
 
 export function MembershipApprovalButtons({ membershipId }: { membershipId: string }) {
   const [choice, setChoice] = useState<string | null>(null);

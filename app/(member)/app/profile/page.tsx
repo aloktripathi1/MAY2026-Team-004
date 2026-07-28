@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS, parseInterests } from "@/lib/interests";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const user = await prisma.user.findUnique({
     where: { id: session!.user.id },
     include: { memberships: { include: { club: true } } },

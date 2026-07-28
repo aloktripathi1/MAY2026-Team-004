@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { prisma } from "@/backend/db/prisma";
 
 const assignTaskSchema = z.object({
   title: z.string().min(1, "Task title is required"),
@@ -19,7 +19,7 @@ export async function assignTaskAction(
   _prevState: AssignTaskState,
   formData: FormData
 ): Promise<AssignTaskState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Coordinator");

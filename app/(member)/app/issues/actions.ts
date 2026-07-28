@@ -2,8 +2,8 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
 
 const issueSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -15,7 +15,7 @@ const issueSchema = z.object({
 export type IssueFormState = { error?: string; ok?: boolean };
 
 export async function createIssueAction(_prevState: IssueFormState, formData: FormData): Promise<IssueFormState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   let attachments: string[] = [];

@@ -1,23 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { prisma } from "@/backend/db/prisma";
 import {
   normalizeEventApproval,
   normalizeMembershipStatus,
   requireClubAdminAccess,
   requireFacultyAccess,
-} from "@/lib/workflow-rules";
+} from "@/backend/domain/workflow-rules";
 
 async function requireAdminForClub(clubId: string) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireClubAdminAccess(session.user.memberships, clubId);
 }
 
 async function requireFaculty() {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireFacultyAccess(session.user.isFaculty);
 }

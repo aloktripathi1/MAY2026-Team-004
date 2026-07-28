@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { prisma } from "@/backend/db/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 
 const ROLES = ["Member", "Volunteer", "Coordinator", "Admin"] as const;
 
@@ -16,7 +16,7 @@ const memberSchema = z.object({
 });
 
 async function resolveAdminClub() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const club = await prisma.club.findUnique({ where: { id: membership!.clubId } });
   if (!club) throw new Error("Club not found");
@@ -51,7 +51,7 @@ export async function addMemberAction(_prevState: MemberFormState, formData: For
   if (existingMembership) return { error: `${parsed.data.name} is already a member of this club.` };
 
   await prisma.membership.create({
-    data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date(), user, club },
+    data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date() },
   });
 
   revalidatePath("/admin/members");
@@ -91,7 +91,7 @@ export async function bulkImportMembersAction(csvText: string): Promise<BulkImpo
     }
 
     await prisma.membership.create({
-      data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date(), user, club },
+      data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date() },
     });
     imported += 1;
   }

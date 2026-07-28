@@ -2,14 +2,14 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { prisma } from "@/lib/prisma";
-import { parseTagInput } from "@/lib/workflow-rules";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { prisma } from "@/backend/db/prisma";
+import { parseTagInput } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 
 async function requireCoordinatorForEvent(eventId: string) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   const membership = getPrimaryClubMembership(session, "Coordinator");
   if (!membership) throw new Error("You must be a club coordinator.");
@@ -20,7 +20,7 @@ async function requireCoordinatorForEvent(eventId: string) {
 }
 
 export async function toggleCheckInAction(countMeInId: string, eventSlug: string) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const countMeIn = await prisma.countMeIn.findUniqueOrThrow({ where: { id: countMeInId } });

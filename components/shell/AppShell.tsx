@@ -7,12 +7,13 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
-  Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, Package, ListChecks,
-  Shield, Menu, X, LogOut, Ticket, Activity,
+  Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, ListChecks,
+  Shield, Menu, X, LogOut, Ticket, Activity, User, SquareKanban, HandHelping, ShieldCheck, GraduationCap,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { APP_ROLE_HOME, type AppRole } from "@/backend/auth/roles";
 
-type Role = "member" | "coordinator" | "admin" | "volunteer" | "faculty";
+type Role = AppRole;
 
 const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   member: [
@@ -48,26 +49,38 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   ],
 };
 
-const roleMeta: Record<Role, { name: string; hue: string; badge: string }> = {
-  member:      { name: "Member",      hue: "78",  badge: "You" },
-  coordinator: { name: "Coordinator", hue: "78",  badge: "Coord" },
-  admin:       { name: "Club Admin",  hue: "24",  badge: "Admin" },
-  volunteer:   { name: "Volunteer",   hue: "250", badge: "Vol" },
-  faculty:     { name: "Faculty",     hue: "155", badge: "Mentor" },
+const roleMeta: Record<Role, { name: string; hue: string; badge: string; icon: any }> = {
+  member:      { name: "Member",      hue: "78",  badge: "You",    icon: User },
+  coordinator: { name: "Coordinator", hue: "78",  badge: "Coord",  icon: SquareKanban },
+  admin:       { name: "Club Admin",  hue: "24",  badge: "Admin",  icon: ShieldCheck },
+  volunteer:   { name: "Volunteer",   hue: "250", badge: "Vol",    icon: HandHelping },
+  faculty:     { name: "Faculty",     hue: "155", badge: "Mentor", icon: GraduationCap },
 };
 
 export function AppShell({
-  role, user = "Ananya Rao", club = "CodeChef IITM BS", children,
-}: { role: Role; user?: string; club?: string; children: ReactNode }) {
+  role,
+  user = "Ananya Rao",
+  club = "CodeChef IITM BS",
+  availableRoles,
+  children,
+}: {
+  role: Role;
+  user?: string;
+  club?: string;
+  /** Roles this user can open. Omit or pass a single role to hide the switcher. */
+  availableRoles?: Role[];
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const reduceMotion = useReducedMotion();
   const currentPath = usePathname();
   const items = navByRole[role];
   const meta = roleMeta[role];
+  const switchableRoles = (availableRoles ?? [role]).filter((r, i, all) => all.indexOf(r) === i);
+  const showRoleSwitcher = switchableRoles.length > 1;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Mobile top bar */}
       <div className="night-nav sticky top-0 z-40 flex items-center justify-between px-4 py-3 md:hidden">
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -84,7 +97,6 @@ export function AppShell({
       </div>
 
       <div className="flex">
-        {/* Sidebar */}
         <aside
           className={[
             "night-nav fixed inset-y-0 left-0 z-30 w-72 shrink-0 rounded-none border-y-0 border-l-0",
@@ -100,7 +112,6 @@ export function AppShell({
               <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
             </Link>
 
-            {/* Role card */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
               <div className="flex items-center gap-3">
                 <Avatar name={user} size="md" showBorder={false} className="border border-white/10" />
@@ -109,6 +120,40 @@ export function AppShell({
                   <div className="text-xs leading-snug text-sidebar-foreground/65" title={`${club} · ${meta.badge}`}>{club} · {meta.badge}</div>
                 </div>
               </div>
+
+              {showRoleSwitcher && (
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <div className="text-mono-label mb-2 text-sidebar-foreground/50">Switch role</div>
+                  <div className="space-y-1" role="list" aria-label="Available roles">
+                    {switchableRoles.map((r) => {
+                      const option = roleMeta[r];
+                      const Icon = option.icon;
+                      const active = r === role;
+                      return (
+                        <Link
+                          key={r}
+                          href={APP_ROLE_HOME[r]}
+                          role="listitem"
+                          onClick={() => setOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={[
+                            "group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors duration-200",
+                            active
+                              ? "border border-secondary/50 bg-white/[0.075] font-semibold text-sidebar-foreground"
+                              : "border border-transparent text-sidebar-foreground/70 hover:bg-white/[0.06] hover:text-sidebar-foreground",
+                          ].join(" ")}
+                        >
+                          <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-secondary" : ""}`} />
+                          <span className="truncate">{option.name}</span>
+                          {active && (
+                            <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" aria-hidden />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <LayoutGroup id={`shell-nav-${role}`}>
@@ -169,7 +214,6 @@ export function AppShell({
           </div>
         </aside>
 
-        {/* Overlay */}
         {open && (
           <div
             className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm md:hidden"
@@ -177,7 +221,6 @@ export function AppShell({
           />
         )}
 
-        {/* Main — exit + enter so sidebar tab switches feel continuous */}
         <main className="min-w-0 flex-1">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div

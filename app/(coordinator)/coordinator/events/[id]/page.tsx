@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getMockSession } from "@/lib/mock-session";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
-import { prisma } from "@/lib/prisma";
+import { getMockSession } from "@/backend/auth/mock-session";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { NewEventModal } from "@/components/coordinator/NewEventModal";
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function CoordinatorEventDashboard({ params }: { params: { id: string } }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 

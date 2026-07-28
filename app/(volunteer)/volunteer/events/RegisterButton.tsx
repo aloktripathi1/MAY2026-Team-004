@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Btn } from "@/components/ui/primitives";
-import { toggleCountMeInAction } from "@/lib/actions/countMeIn";
+import { toggleCountMeInAction } from "@/backend/domain/countMeIn";
 
 type RegisterState = "register" | "registered" | "full" | "closed";
 

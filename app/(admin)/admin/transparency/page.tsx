@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/lib/mock-session";
+import { getMockSession } from "@/backend/auth/mock-session";
 import { Download } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { getPrimaryClubMembership } from "@/lib/session-helpers";
+import { prisma } from "@/backend/db/prisma";
+import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { PageHeader } from "@/components/shell/AppShell";
 import { StatusPill, Btn } from "@/components/ui/primitives";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function TransparencyPage() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarClock, MapPin } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/backend/db/prisma";
 import { StatusPill } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
