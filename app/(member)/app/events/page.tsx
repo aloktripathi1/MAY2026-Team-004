@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
+import { isEventPast } from "@/backend/domain/workflow-rules";
 
 export const metadata: Metadata = {
   title: "Events · Sangam",
@@ -15,8 +16,14 @@ export const metadata: Metadata = {
 export default async function EventsPage({ searchParams }: { searchParams: { tab?: string } }) {
   const tab: "upcoming" | "past" = searchParams.tab === "past" ? "past" : "upcoming";
 
+  // Classify by the actual event date, not just the stored status field,
+  // which is set once and never transitions automatically (#89).
+  const now = new Date();
   const list = await prisma.event.findMany({
-    where: { status: tab },
+    where:
+      tab === "upcoming"
+        ? { status: { not: "past" }, date: { gte: now } }
+        : { OR: [{ status: "past" }, { date: { lt: now } }] },
     orderBy: { date: tab === "upcoming" ? "asc" : "desc" },
     include: { club: true, _count: { select: { countMeIns: true } } },
   });
@@ -61,8 +68,11 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
                   <div className="mt-1 text-xs text-muted-foreground">{e.venue}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {e.status === "upcoming" && <StatusPill tone="lime">{e._count.countMeIns}/{e.capacity}</StatusPill>}
-                  {e.status === "past" && <StatusPill tone="slate">Logged</StatusPill>}
+                  {isEventPast(e) ? (
+                    <StatusPill tone="slate">Logged</StatusPill>
+                  ) : (
+                    <StatusPill tone="lime">{e._count.countMeIns}/{e.capacity}</StatusPill>
+                  )}
                 </div>
               </div>
             </GlassCard>
