@@ -91,6 +91,15 @@ export async function bulkImportMembers(clubId: string, rows: BulkImportRow[]) {
 
     let user = await prisma.user.findUnique({ where: { rollNumber: row.roll } });
     if (!user) {
+      // A different roll number can still collide on email (unique in the
+      // User model) — check before create so a duplicate email skips this
+      // row instead of throwing an unhandled Prisma unique-constraint error
+      // that would abort the whole import (see issue #76).
+      const existingByEmail = await prisma.user.findUnique({ where: { email: row.email } });
+      if (existingByEmail) {
+        skipped += 1;
+        continue;
+      }
       user = await prisma.user.create({
         data: { email: row.email, name: row.name, rollNumber: row.roll, hashedPassword: "", interests: "[]" },
       });

@@ -39,6 +39,12 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   redirect(safeRedirectPath(callbackUrl, roleHome));
 }
 
+/** Clears the session cookie and returns to /login. Used by the shell's "Log out" control. */
+export async function logoutAction() {
+  clearAuthCookies();
+  redirect("/login");
+}
+
 const DEMO_ROLE_PATHS = ["/app", "/coordinator", "/volunteer", "/admin", "/faculty"];
 
 // getMockSession() prefers a real signed-in session over the hardcoded demo
