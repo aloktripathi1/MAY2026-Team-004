@@ -4,22 +4,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { ArrowRight, Eye, EyeOff, GraduationCap, HandHelping, LockKeyhole, ShieldCheck, Sparkles, SquareKanban, User } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Sparkles } from "lucide-react";
 import { useFormState, useFormStatus } from "react-dom";
-import { demoRoleAction, loginAction, type LoginState } from "@/app/(public)/login/actions";
+import { loginAction, type LoginState } from "@/app/(public)/login/actions";
 import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
 import { Btn } from "@/components/ui/primitives";
 
 const initialLoginState: LoginState = {};
 const initialSignupState: SignupState = {};
-
-const DEMO_ROLES = [
-  { label: "Member", href: "/app", icon: User },
-  { label: "Coordinator", href: "/coordinator", icon: SquareKanban },
-  { label: "Volunteer", href: "/volunteer", icon: HandHelping },
-  { label: "Admin", href: "/admin", icon: ShieldCheck },
-  { label: "Faculty", href: "/faculty", icon: GraduationCap },
-];
 
 export function AuthShell({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
@@ -31,8 +23,8 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
         <div className="absolute inset-0 bg-[linear-gradient(oklch(1_0_0_/_3%)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0_/_3%)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_70%_52%_at_54%_28%,black,transparent_75%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 px-5 py-6 md:grid-cols-[1fr_470px] md:gap-10 md:px-8 lg:px-10">
-        <section className="hidden flex-col py-6 md:flex">
+      <div className="relative z-10 flex min-h-screen w-full flex-col md:flex-row">
+        <section className="hidden flex-1 flex-col px-10 py-10 md:flex md:border-r md:border-hairline lg:px-16 xl:px-20">
           <Link href="/" className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
@@ -51,12 +43,12 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
           </div>
         </section>
 
-        <section className="flex min-h-[calc(100vh-3rem)] items-center justify-center md:min-h-0">
+        <section className="flex flex-1 items-center justify-center px-5 py-10 md:flex-none md:basis-[480px] md:px-12 lg:basis-[560px] lg:px-16 xl:basis-[640px] xl:px-20 2xl:basis-[720px] 2xl:px-24">
           <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="night-panel w-full max-w-md rounded-2xl p-5 md:p-6"
+            className="w-full max-w-md"
           >
             <Link href="/" className="mb-8 flex items-center gap-3 md:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -68,19 +60,18 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.055] text-secondary">
                 {isSignup ? <Sparkles className="h-5 w-5" /> : <LockKeyhole className="h-5 w-5" />}
               </div>
-              <div className="text-mono-label mb-3 text-white/[0.52]">{isSignup ? "Create account" : "Secure sign in"}</div>
+              {isSignup && <div className="text-mono-label mb-3 text-white/[0.52]">Create account</div>}
               <h2 className="text-4xl font-black leading-[0.95] tracking-[-0.05em] text-white">
                 {isSignup ? "Join Sangam." : "Sign in."}
               </h2>
               <p className="mt-3 text-sm leading-6 text-white/[0.62]">
                 {isSignup
-                  ? "Create your account first. Interests move to the next step so recommendations can use real profile data."
-                  : "Use your Sangam account, or jump into a demo role for quick QA passes."}
+                  ? "Takes less than a minute."
+                  : "Use your Sangam account to continue."}
               </p>
             </div>
 
             {isSignup ? <SignupForm /> : <LoginForm />}
-            {!isSignup && <DemoRoleSwitcher />}
 
             <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5 text-xs text-white/[0.56]">
               <span>{isSignup ? "Already registered?" : "New to Sangam?"}</span>
@@ -92,35 +83,6 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
         </section>
       </div>
     </main>
-  );
-}
-
-function DemoRoleSwitcher() {
-  return (
-    <div className="mt-5 rounded-2xl border border-white/10 bg-black/15 p-3">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-mono-label text-white/50">Demo switcher</div>
-        <span className="rounded-md border border-secondary/25 bg-secondary/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-secondary">
-          QA
-        </span>
-      </div>
-      <div className="grid grid-cols-5 gap-1.5">
-        {DEMO_ROLES.map(({ label, href, icon: Icon }) => (
-          <form key={label} action={demoRoleAction}>
-            <input type="hidden" name="href" value={href} />
-            <button
-              type="submit"
-              title={`Continue as ${label}`}
-              aria-label={`Continue as ${label}`}
-              className="group flex min-h-16 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-1.5 py-2 text-white/[0.58] transition duration-200 hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
-            >
-              <Icon className="h-4 w-4" />
-              <span className="max-w-full truncate text-[10px] font-semibold leading-none">{label}</span>
-            </button>
-          </form>
-        ))}
-      </div>
-    </div>
   );
 }
 
