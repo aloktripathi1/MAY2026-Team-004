@@ -12,7 +12,19 @@ export type EventCapacitySnapshot = {
   capacity: number;
   going?: number | null;
   countMeInCount: number;
+  date?: Date | string;
 };
+
+/**
+ * Whether an event should be treated as past. Checks the actual date rather
+ * than trusting only the stored `status` field, which is set once and never
+ * automatically transitions as real time passes (see issue #66).
+ */
+export function isEventPast(event: { status: string; date?: Date | string }): boolean {
+  if (event.status === "past") return true;
+  if (!event.date) return false;
+  return new Date(event.date).getTime() < Date.now();
+}
 
 export function parseTagInput(tags: string | null | undefined): string[] {
   return (tags ?? "")
@@ -41,7 +53,7 @@ export function decideCountMeInAction(hasExistingCountMeIn: boolean, event: Even
   if (!event) throw new Error("Event not found");
 
   const spotsTaken = Math.max(Number(event.going ?? 0), event.countMeInCount);
-  if (event.status === "past" || spotsTaken >= event.capacity) {
+  if (isEventPast(event) || spotsTaken >= event.capacity) {
     throw new Error("Registration unavailable");
   }
 

@@ -34,6 +34,7 @@ export async function toggleCountMeInAction(eventId: string, eventSlug: string) 
                 capacity: event.capacity,
                 going: event.going,
                 countMeInCount: event._count.countMeIns,
+                date: event.date,
               }
             : null,
         );

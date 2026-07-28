@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatDayNumber } from "@/lib/format";
+import { isEventPast } from "@/backend/domain/workflow-rules";
 import { RegisterButton } from "./RegisterButton";
 import { EventsTabPanel, EventsTabToggle } from "./EventsTabMotion";
 
@@ -25,8 +26,11 @@ export default async function VolunteerEventsPage({
   const tab: "upcoming" | "past" = searchParams.tab === "past" ? "past" : "upcoming";
   const session = await getMockSession();
 
+  // Scoped to the volunteer's own (Active) club memberships — this page
+  // previously showed every club's events regardless of membership (#85).
+  const clubIds = session?.user.memberships.map((m) => m.clubId) ?? [];
   const list = await prisma.event.findMany({
-    where: { status: tab },
+    where: { status: tab, clubId: { in: clubIds } },
     orderBy: { date: tab === "upcoming" ? "asc" : "desc" },
     include: { club: true, _count: { select: { countMeIns: true } } },
   });
@@ -61,7 +65,7 @@ export default async function VolunteerEventsPage({
           const category = tags[0] ?? "Event";
           const spotsTaken = spotsTakenFor(event);
           const registered = registeredIds.has(event.id);
-          const isClosed = event.status === "past";
+          const isClosed = isEventPast(event);
           const isFull = !registered && spotsTaken >= event.capacity;
 
           return (

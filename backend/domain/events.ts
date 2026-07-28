@@ -140,6 +140,7 @@ export async function registerForEvent(userId: string, eventId: string) {
               capacity: event.capacity,
               going: event.going,
               countMeInCount: event._count.countMeIns,
+              date: event.date,
             }) === "cancel"
               ? "cancelled"
               : "registered";

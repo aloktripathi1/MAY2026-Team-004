@@ -15,6 +15,7 @@ import {
   buildEventSlug,
   decideJoinRequestAction,
   decideCountMeInAction,
+  isEventPast,
   EVENT_APPROVALS,
   MEMBERSHIP_STATUSES,
   normalizeEventApproval,
@@ -324,6 +325,46 @@ const tests: TestCase[] = [
         () => decideCountMeInAction(false, { status: "upcoming", capacity: 0, going: 0, countMeInCount: 0 }),
         /Registration unavailable/,
       );
+    },
+  },
+  {
+    name: "decideCountMeInAction rejects a stale 'upcoming' status once the event date has passed",
+    run: () => {
+      assert.throws(
+        () =>
+          decideCountMeInAction(false, {
+            status: "upcoming",
+            capacity: 50,
+            going: 10,
+            countMeInCount: 10,
+            date: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          }),
+        /Registration unavailable/,
+      );
+    },
+  },
+  {
+    name: "isEventPast treats a stored status of past as past regardless of date",
+    run: () => {
+      assert.equal(isEventPast({ status: "past", date: new Date(Date.now() + 24 * 60 * 60 * 1000) }), true);
+    },
+  },
+  {
+    name: "isEventPast derives past from the date even when status is stale",
+    run: () => {
+      assert.equal(isEventPast({ status: "upcoming", date: new Date(Date.now() - 24 * 60 * 60 * 1000) }), true);
+    },
+  },
+  {
+    name: "isEventPast treats a future date as not past",
+    run: () => {
+      assert.equal(isEventPast({ status: "upcoming", date: new Date(Date.now() + 24 * 60 * 60 * 1000) }), false);
+    },
+  },
+  {
+    name: "isEventPast treats a missing date as not past when status is upcoming",
+    run: () => {
+      assert.equal(isEventPast({ status: "upcoming" }), false);
     },
   },
   {
