@@ -4,6 +4,8 @@
 
 A community and society management platform. Single source of truth for membership, events, venues, equipment, tasks, and communication, replacing WhatsApp groups, Google Forms, and spreadsheets.
 
+**Live demo:** [try-sangam.vercel.app](https://try-sangam.vercel.app) — see [Demo accounts](#demo-accounts) below to sign in.
+
 ---
 
 ## Tech Stack
@@ -13,7 +15,7 @@ A community and society management platform. Single source of truth for membersh
 - Tailwind CSS
 - **Data layer**: `backend/db/prisma.ts` — the real Prisma Client, backed by Docker Postgres. Static/decorative content that isn't modeled as a DB table lives in `lib/seed-data.ts`.
 - **Auth**: a custom httpOnly-cookie session (`backend/auth/session-cookies.ts` + `backend/auth/mock-session.ts`), not NextAuth — `app/api/auth/[...nextauth]/route.ts` is a stub that returns `{ mode: "mock" }` for the demo-persona path; real signup/login goes through `app/api/auth/{signup,login,me}` and `backend/auth/*`.
-- `prisma/schema.postgres.prisma` / `schema.sqlite.prisma` describe the target data model for a future real-database migration. They're kept accurate and in sync, but nothing in the running app is actually wired to a live Postgres or SQLite database yet.
+- `prisma/schema.prisma` is the active schema (Postgres). Local dev runs against Docker Postgres (see [Getting Started](#getting-started)); production runs on Neon, provisioned via the Vercel Postgres integration. `schema.sqlite.prisma`/`schema.postgres.prisma` are earlier drafts kept for reference only — not wired to anything.
 
 ---
 
@@ -118,19 +120,9 @@ curl.exe -s -X POST http://localhost:3000/api/auth/signup -H "Content-Type: appl
 
 ## Accessing each persona
 
-There's no real login flow yet. The fastest way in is to just visit a persona's route directly — `/admin`, `/coordinator`, `/volunteer`, `/faculty`, or `/app` (member) — each is served by a single built-in demo session (`lib/mock-session.ts`) that holds every persona's role at once, so no sign-in step is required. The login/signup pages exist and have real-looking form validation, but since there's no live database backing user records with usable password hashes, the "Try a role" buttons on the login page are the intended way to switch personas, not typing credentials.
+Login is real: `/admin`, `/coordinator`, `/volunteer`, `/faculty`, and `/app` (member) all check a signed, httpOnly session cookie (`backend/auth/session-cookies.ts`) against the database, and redirect to `/login` if you're not signed in as a user who actually holds that role. Sign in with one of the [demo accounts](#demo-accounts) above — the all-in-one account switches between every role from the sidebar; the single-role team accounts are gated to exactly the role they were seeded with, which is useful for testing that the gating itself works.
 
-Each persona displays as a distinct, real seeded person even though they all share one underlying demo account:
-
-| Persona | Displayed as |
-|---|---|
-| Admin (`/admin`) | Ananya Rao — CodeChef IITM BS |
-| Coordinator (`/coordinator`) | Kabir Menon — E-Cell IITM BS |
-| Volunteer (`/volunteer`) | Ishita Deshpande — Sarga |
-| Member (`/app`) | Ananya Rao |
-| Faculty (`/faculty`) | Prof. R. Krishnan |
-
-Route-level gating still exists as real code — `middleware.ts` and each persona's `layout.tsx` check the session for the right role and redirect to `/app` otherwise — but since the demo session always holds every role simultaneously, none of those redirects actually trigger in this build.
+A separate, privileged "preview a role without signing in" demo persona exists (`backend/auth/mock-session.ts`) for local development convenience, but it's gated behind an `ALLOW_DEMO_SESSION` env var and hard-disabled in production — visiting a role's route with no session goes to `/login`, it does not fall back to a privileged account.
 
 ---
 
@@ -241,7 +233,17 @@ npm run db:seed
 
 ---
 
-### App role test accounts (password = `FirstName@2026`)
+### Demo accounts
+
+Log in with any of these at [try-sangam.vercel.app/login](https://try-sangam.vercel.app/login) (or locally at `/login`) — seeded by `prisma/seed.ts`.
+
+**All-in-one demo account** — one person, every role at once (Admin on CodeChef, Coordinator on E-Cell, Volunteer on Sarga, Member on Paradox, plus Faculty), so you can switch roles from the sidebar without signing in as five different people:
+
+| Email | Password |
+|---|---|
+| 23s1000123@ds.study.iitm.ac.in | sangam |
+
+**Single-role team accounts** (password = `FirstName@2026`) — each pinned to exactly one role, useful for testing role-gating and cross-club authorization:
 
 | Name | App role | Email | Password |
 |---|---|---|---|
