@@ -119,21 +119,21 @@ You can paste or load `docs/openapi.yaml` into [editor.swagger.io](https://edito
 
 ## Testing
 
-### Unit tests (Node)
+Everything runs on Jest. Two suites, split because they need different things to run:
+
+### Unit tests
+
+Pure logic in `lib/` and `backend/*` (formatters, auth-role helpers, workflow rules like `isEventPast`, Zod schemas). No server or database needed.
 
 ```bash
 npm test
 ```
 
-If your Node build doesn't support native TypeScript stripping (`ERR_NO_TYPESCRIPT`), run it with `npx tsx tests/run-tests.ts` instead.
+### Integration tests (live HTTP)
 
-### Integration tests (pytest, live HTTP)
-
-Hits real Next.js route handlers over HTTP (`tests/pytest/`). The app and database both need to be running.
+Hits real Next.js route handlers over HTTP (`tests/integration/`), covering every REST endpoint under `app/api/`. The app and database both need to be running.
 
 ```bash
-npm run test:pytest:install
-
 # Terminal 1: app + database
 npm run db:up
 npm run db:push
@@ -141,10 +141,12 @@ npm run db:seed
 npm run dev
 
 # Terminal 2: tests
-python3 -m pytest -s
+npm run test:integration
 ```
 
 Optional env var: `SANGAM_BASE_URL` (defaults to `http://localhost:3000`).
+
+Role-scoped endpoints (coordinator, admin, faculty) authenticate as the matching seeded team account from [Demo accounts](#demo-accounts) rather than relying on the `ALLOW_DEMO_SESSION` shortcut, so the suite exercises the same session and authorization path a real user would hit. It also covers the concurrency fix behind event registration (ten genuinely simultaneous requests for one capacity slot, asserting exactly one winner) and the security-relevant paths: anonymous access to every protected route and API, a forged session cookie, cross-role authorization, and 404s for missing dynamic pages.
 
 Written test-case docs, in the course-required format, live under `docs/test-cases/`.
 
@@ -222,6 +224,10 @@ lib/                      frontend-facing helpers, safe to import from client co
 prisma/
   schema.prisma            active schema (schema.postgres.prisma / .sqlite.prisma: reference only)
   migrations/, seed.ts
+
+tests/
+  unit/          Jest unit tests, mirrors the lib/ and backend/ source tree
+  integration/   Jest integration tests, live HTTP against app/api/ (needs a running app + database)
 ```
 
 ---
