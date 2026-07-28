@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { APP_ROLE_HOME, type AppRole } from "@/backend/auth/roles";
+import { logoutAction } from "@/app/(public)/login/actions";
 
 type Role = AppRole;
 
@@ -202,14 +203,15 @@ export function AppShell({
             </LayoutGroup>
 
             <div className="mt-2 border-t border-white/10 pt-3">
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/65 transition hover:bg-white/[0.06] hover:text-sidebar-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Log out</span>
-              </Link>
+              <form action={logoutAction} onSubmit={() => setOpen(false)}>
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-sidebar-foreground/65 transition hover:bg-white/[0.06] hover:text-sidebar-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </button>
+              </form>
             </div>
           </div>
         </aside>

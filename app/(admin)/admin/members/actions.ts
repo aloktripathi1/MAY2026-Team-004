@@ -23,12 +23,24 @@ async function resolveAdminClub() {
   return club;
 }
 
-async function upsertUser(name: string, roll: string, email: string) {
-  const existing = await prisma.user.findUnique({ where: { rollNumber: roll } });
-  if (existing) return existing;
-  return prisma.user.create({
+type UpsertUserResult = { ok: true; user: Awaited<ReturnType<typeof prisma.user.create>> } | { ok: false; error: string };
+
+async function upsertUser(name: string, roll: string, email: string): Promise<UpsertUserResult> {
+  const existingByRoll = await prisma.user.findUnique({ where: { rollNumber: roll } });
+  if (existingByRoll) return { ok: true, user: existingByRoll };
+
+  // A different roll number can still collide on email (unique in the User
+  // model) — check before create so this surfaces as a clean message instead
+  // of an unhandled Prisma unique-constraint crash (see issue #76).
+  const existingByEmail = await prisma.user.findUnique({ where: { email } });
+  if (existingByEmail) {
+    return { ok: false, error: `${email} is already registered to a different roll number.` };
+  }
+
+  const user = await prisma.user.create({
     data: { email, name, rollNumber: roll, hashedPassword: "", interests: "[]", isFaculty: false },
   });
+  return { ok: true, user };
 }
 
 export type MemberFormState = { error?: string; ok?: boolean };
@@ -43,7 +55,9 @@ export async function addMemberAction(_prevState: MemberFormState, formData: For
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
   const club = await resolveAdminClub();
-  const user = await upsertUser(parsed.data.name, parsed.data.roll, parsed.data.email);
+  const result = await upsertUser(parsed.data.name, parsed.data.roll, parsed.data.email);
+  if (!result.ok) return { error: result.error };
+  const user = result.user;
 
   const existingMembership = await prisma.membership.findUnique({
     where: { userId_clubId: { userId: user.id, clubId: club.id } },
@@ -81,7 +95,12 @@ export async function bulkImportMembersAction(csvText: string): Promise<BulkImpo
       continue;
     }
 
-    const user = await upsertUser(parsed.data.name, parsed.data.roll, parsed.data.email);
+    const result = await upsertUser(parsed.data.name, parsed.data.roll, parsed.data.email);
+    if (!result.ok) {
+      skipped += 1;
+      continue;
+    }
+    const user = result.user;
     const existingMembership = await prisma.membership.findUnique({
       where: { userId_clubId: { userId: user.id, clubId: club.id } },
     });

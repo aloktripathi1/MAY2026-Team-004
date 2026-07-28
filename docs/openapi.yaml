@@ -87,7 +87,7 @@ paths:
           description: Account created. Session cookies set.
           headers:
             Set-Cookie:
-              description: httpOnly session cookies (sangam_user_id and related)
+              description: httpOnly signed session cookie (sangam_session)
               schema:
                 type: string
           content:
@@ -220,7 +220,7 @@ paths:
           description: Authenticated. Session cookies set.
           headers:
             Set-Cookie:
-              description: httpOnly session cookies (sangam_user_id and related)
+              description: httpOnly signed session cookie (sangam_session)
               schema:
                 type: string
           content:
@@ -370,6 +370,48 @@ paths:
                 error:
                   code: INTERNAL_ERROR
                   message: Could not load current user. Please try again.
+                userStory: "1.1"
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Clear the session cookie
+      description: |
+        Clears the signed sangam_session cookie. There is no separate
+        bearer/access token in Sangam and no server-side session store — the
+        cookie IS the credential, so clearing it is the entire logout. A raw
+        copy of the cookie value made before logout would still verify (it's
+        a stateless HMAC signature, not a revocable server-side record); if
+        that threat matters for your deployment, move to a server-side
+        session store with revocation instead. Always returns 200, even if
+        no session was present.
+
+        User Story 1.1 - Institutional Credential Verification (session teardown)
+      operationId: authLogout
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      responses:
+        "200":
+          description: Session cookie cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      loggedOut:
+                        type: boolean
+                  userStory:
+                    type: string
+              example:
+                success: true
+                data:
+                  loggedOut: true
                 userStory: "1.1"
 
   /api/auth/{nextauth}:
@@ -1488,12 +1530,14 @@ components:
     SangamSessionCookie:
       type: apiKey
       in: cookie
-      name: sangam_user_id
+      name: sangam_session
       description: |
         Session established by POST /api/auth/signup or POST /api/auth/login.
-        Related cookies (sangam_user_name, sangam_user_email, sangam_user_faculty,
-        sangam_user_memberships) are also set; /me requires a valid sangam_user_id
-        that resolves to a user in the database.
+        A single httpOnly cookie holding an HMAC-signed userId — name, email,
+        role, and memberships are never stored client-side and are always
+        loaded fresh from the database per request. There is no separate
+        bearer/access token: this cookie is the only credential, and
+        POST /api/auth/logout clears it. See backend/auth/session-cookies.ts.
 
   schemas:
     SignupRequest:
