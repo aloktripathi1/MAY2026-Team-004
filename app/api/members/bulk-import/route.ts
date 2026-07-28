@@ -16,7 +16,7 @@ const rowSchema = z.object({
 
 const bodySchema = z.object({
   clubId: z.string().min(1, "clubId is required"),
-  rows: z.array(rowSchema).min(1, "At least one row is required"),
+  rows: z.array(rowSchema).min(1, "At least one row is required").max(500, "At most 500 rows per import"),
 });
 
 export async function POST(request: Request) {

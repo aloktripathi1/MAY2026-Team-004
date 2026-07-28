@@ -47,7 +47,7 @@ export default async function MemberDashboard() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         {/* Left column */}
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
           <div>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-mono-label">Your week</h2>
@@ -98,7 +98,7 @@ export default async function MemberDashboard() {
         </section>
 
         {/* Right column */}
-        <section>
+        <section className="min-w-0">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-mono-label">Announcements</h2>
             <span className="text-mono-label">{announcements.length} new</span>

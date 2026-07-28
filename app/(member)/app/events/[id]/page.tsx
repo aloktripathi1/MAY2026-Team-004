@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
+import { isEventPast } from "@/backend/domain/workflow-rules";
 import { CountMeInButton } from "./CountMeInButton";
 
 async function getEvent(slug: string) {
@@ -114,6 +115,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
               initialCountedIn={Boolean(myCountMeIn)}
               capacity={event.capacity}
               going={event._count.countMeIns}
+              isPast={isEventPast(event)}
             />
           </div>
 

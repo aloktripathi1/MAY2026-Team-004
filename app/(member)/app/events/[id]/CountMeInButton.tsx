@@ -6,8 +6,8 @@ import { Btn } from "@/components/ui/primitives";
 import { toggleCountMeInAction } from "./actions";
 
 export function CountMeInButton({
-  eventId, eventSlug, initialCountedIn, capacity, going,
-}: { eventId: string; eventSlug: string; initialCountedIn: boolean; capacity: number; going: number }) {
+  eventId, eventSlug, initialCountedIn, capacity, going, isPast,
+}: { eventId: string; eventSlug: string; initialCountedIn: boolean; capacity: number; going: number; isPast: boolean }) {
   const [countedIn, setCountedIn] = useState(initialCountedIn);
   const [pending, startTransition] = useTransition();
 
@@ -16,6 +16,14 @@ export function CountMeInButton({
       await toggleCountMeInAction(eventId, eventSlug);
       setCountedIn((value) => !value);
     });
+  }
+
+  if (isPast && !countedIn) {
+    return (
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground">
+        This event has ended. Registration is closed.
+      </div>
+    );
   }
 
   return (

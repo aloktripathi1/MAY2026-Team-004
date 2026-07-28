@@ -74,6 +74,8 @@ export async function addMemberAction(_prevState: MemberFormState, formData: For
 
 export type BulkImportResult = { imported: number; skipped: number; error?: string };
 
+const MAX_BULK_IMPORT_ROWS = 500;
+
 export async function bulkImportMembersAction(csvText: string): Promise<BulkImportResult> {
   const lines = csvText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.length === 0) return { imported: 0, skipped: 0, error: "The CSV file is empty." };
@@ -81,6 +83,9 @@ export async function bulkImportMembersAction(csvText: string): Promise<BulkImpo
   const looksLikeHeader = /name/i.test(lines[0]) && /roll/i.test(lines[0]);
   const rows = looksLikeHeader ? lines.slice(1) : lines;
   if (rows.length === 0) return { imported: 0, skipped: 0, error: "No member rows found in the CSV." };
+  if (rows.length > MAX_BULK_IMPORT_ROWS) {
+    return { imported: 0, skipped: 0, error: `CSV has ${rows.length} rows; the limit is ${MAX_BULK_IMPORT_ROWS} per import.` };
+  }
 
   const club = await resolveAdminClub();
   let imported = 0;

@@ -34,7 +34,7 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 md:py-14">
+    <main className="mx-auto max-w-6xl px-5 py-10 md:py-14">
       <Link href="/" className="text-mono-label mb-6 inline-flex items-center gap-1.5 hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Back</Link>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
         <div>
@@ -48,7 +48,9 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
       <div className="glass mt-8 flex flex-wrap items-center gap-2 rounded-2xl p-2.5">
         <div className="flex flex-1 items-center gap-2 px-3">
           <Search className="h-4 w-4 text-muted-foreground" />
+          <label htmlFor="clubs-search" className="sr-only">Search clubs</label>
           <input
+            id="clubs-search"
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search a club or a vibe…"
@@ -57,7 +59,7 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
         </div>
         <div className="flex flex-wrap gap-1">
           {categories.map(c => (
-            <button key={c} onClick={() => setCat(c)}
+            <button key={c} type="button" onClick={() => setCat(c)}
               className={`rounded-full px-3 py-1.5 text-xs transition ${cat === c ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface-2"}`}>
               {c}
             </button>
@@ -98,6 +100,6 @@ export function ClubsBrowser({ clubs }: { clubs: ClubListItem[] }) {
           </motion.div>
         ))}
       </div>
-    </div>
+    </main>
   );
 }
