@@ -19,7 +19,7 @@ export async function assignTaskAction(
   _prevState: AssignTaskState,
   formData: FormData
 ): Promise<AssignTaskState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Coordinator");

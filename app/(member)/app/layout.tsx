@@ -6,7 +6,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { accessibleAppRoles } from "@/backend/auth/roles";
 
 export default async function MemberLayout({ children }: { children: ReactNode }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) redirect("/login");
 
   const profile = await prisma.user.findUnique({ where: { id: session.user.id } });

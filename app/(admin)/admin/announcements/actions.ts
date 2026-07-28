@@ -17,7 +17,7 @@ const schema = z.object({
 export type AnnouncementFormState = { error?: string; ok?: boolean };
 
 export async function createAnnouncementAction(_prevState: AnnouncementFormState, formData: FormData): Promise<AnnouncementFormState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");

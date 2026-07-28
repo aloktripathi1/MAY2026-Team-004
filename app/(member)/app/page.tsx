@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MemberDashboard() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const userId = session!.user.id;
   const memberships = session!.user.memberships;
 

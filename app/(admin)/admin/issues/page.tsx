@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const STAFF_ROLES: ClubRole[] = ["Coordinator", "Volunteer", "Admin"];
 
 export default async function AdminIssuesPage() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 

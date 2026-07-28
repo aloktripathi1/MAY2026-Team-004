@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AppClubs() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const myClubIds = new Set(session!.user.memberships.map((m) => m.clubId));
 
   const [allClubs, profile, pendingMemberships] = await Promise.all([

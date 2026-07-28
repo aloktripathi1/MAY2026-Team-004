@@ -5,7 +5,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { accessibleAppRoles } from "@/backend/auth/roles";
 
 export default async function VolunteerLayout({ children }: { children: ReactNode }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) redirect("/login");
 
   const volunteerMembership = session.user.memberships.find((m) => m.role === "Volunteer") ?? session.user.memberships[0];

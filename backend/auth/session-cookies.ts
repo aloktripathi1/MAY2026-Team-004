@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { signSessionValue, verifySessionValue } from "@/backend/auth/cookie-signing";
 
 export type SessionMembership = {
   clubId: string;
@@ -8,69 +9,32 @@ export type SessionMembership = {
   personaName: string;
 };
 
-export const AUTH_USER_ID_COOKIE = "sangam_user_id";
-export const AUTH_USER_NAME_COOKIE = "sangam_user_name";
-export const AUTH_USER_EMAIL_COOKIE = "sangam_user_email";
-export const AUTH_USER_FACULTY_COOKIE = "sangam_user_faculty";
-export const AUTH_USER_MEMBERSHIPS_COOKIE = "sangam_user_memberships";
+export const AUTH_SESSION_COOKIE = "sangam_session";
 
 const cookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
   path: "/",
   maxAge: 60 * 60 * 24 * 30,
 };
 
-export type AuthCookieUser = {
-  id: string;
-  name: string;
-  email: string;
-  isFaculty?: boolean;
-  memberships?: SessionMembership[];
-};
-
-export function setAuthCookies(user: AuthCookieUser) {
-  const store = cookies();
-  store.set(AUTH_USER_ID_COOKIE, user.id, cookieOptions);
-  store.set(AUTH_USER_NAME_COOKIE, user.name, cookieOptions);
-  store.set(AUTH_USER_EMAIL_COOKIE, user.email, cookieOptions);
-  store.set(AUTH_USER_FACULTY_COOKIE, user.isFaculty ? "1" : "0", cookieOptions);
-  store.set(AUTH_USER_MEMBERSHIPS_COOKIE, JSON.stringify(user.memberships ?? []), cookieOptions);
+/**
+ * Sets the session cookie to a signed reference to `userId`. Name, email,
+ * role, and membership data are intentionally NOT stored client-side —
+ * they're loaded fresh from the database on every request (see
+ * getCurrentUserById) so a tampered cookie can't grant a different
+ * identity or role than the one the server actually issued.
+ */
+export function setAuthCookies(userId: string) {
+  cookies().set(AUTH_SESSION_COOKIE, signSessionValue(userId), cookieOptions);
 }
 
 export function clearAuthCookies() {
-  const store = cookies();
-  store.delete(AUTH_USER_ID_COOKIE);
-  store.delete(AUTH_USER_NAME_COOKIE);
-  store.delete(AUTH_USER_EMAIL_COOKIE);
-  store.delete(AUTH_USER_FACULTY_COOKIE);
-  store.delete(AUTH_USER_MEMBERSHIPS_COOKIE);
+  cookies().delete(AUTH_SESSION_COOKIE);
 }
 
-export function getAuthCookieUser(): AuthCookieUser | null {
-  const store = cookies();
-  const id = store.get(AUTH_USER_ID_COOKIE)?.value;
-  const name = store.get(AUTH_USER_NAME_COOKIE)?.value;
-  const email = store.get(AUTH_USER_EMAIL_COOKIE)?.value;
-
-  if (!id || !name || !email) return null;
-
-  let memberships: SessionMembership[] = [];
-  const rawMemberships = store.get(AUTH_USER_MEMBERSHIPS_COOKIE)?.value;
-  if (rawMemberships) {
-    try {
-      const parsed = JSON.parse(rawMemberships);
-      if (Array.isArray(parsed)) memberships = parsed;
-    } catch {
-      memberships = [];
-    }
-  }
-
-  return {
-    id,
-    name,
-    email,
-    isFaculty: store.get(AUTH_USER_FACULTY_COOKIE)?.value === "1",
-    memberships,
-  };
+/** Returns the authenticated user's id, or null if the cookie is missing, malformed, or tampered with. */
+export function getAuthCookieUserId(): string | null {
+  return verifySessionValue(cookies().get(AUTH_SESSION_COOKIE)?.value);
 }

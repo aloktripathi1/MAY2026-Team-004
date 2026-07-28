@@ -8,7 +8,7 @@ const USER_STORY_LIST = "1.2";
 const USER_STORY_JOIN = "1.3";
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY_LIST });
   }
@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 }
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY_JOIN });
   }

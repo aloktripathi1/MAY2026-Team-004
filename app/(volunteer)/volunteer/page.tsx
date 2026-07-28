@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function VolunteerHome() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const userId = session!.user.id;
 
   const [tasks, contributions, countMeIns] = await Promise.all([

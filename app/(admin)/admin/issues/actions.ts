@@ -9,7 +9,7 @@ import { getPrimaryClubMembership } from "@/backend/auth/roles";
 export type AssignResult = { error?: string; ok?: boolean };
 
 export async function assignIssuesAction(issueIds: string[], assigneeId: string | null): Promise<AssignResult> {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   if (!membership) return { error: "You must be a club admin to assign issues." };
   if (issueIds.length === 0) return { error: "Select at least one issue." };
@@ -29,7 +29,7 @@ export async function assignIssuesAction(issueIds: string[], assigneeId: string 
 }
 
 export async function updateIssuePriorityAction(issueId: string, priority: string): Promise<AssignResult> {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   if (!membership) return { error: "You must be a club admin to update issue priority." };
 

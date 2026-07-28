@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getAuthCookieUser, setAuthCookies } from "@/backend/auth/session-cookies";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS } from "@/lib/interests";
@@ -33,7 +32,7 @@ export async function updateProfileAction(
   _prevState: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const imageRaw = formData.get("image");
@@ -58,13 +57,6 @@ export async function updateProfileAction(
     },
   });
 
-  // Keep shell/nav name in sync when a real auth session cookie is present.
-  // Demo-role mode clears cookies and relies on the DB name via layout.
-  const authUser = getAuthCookieUser();
-  if (authUser && authUser.id === session.user.id) {
-    setAuthCookies({ ...authUser, name: parsed.data.name });
-  }
-
   revalidatePath("/app/profile");
   revalidatePath("/app/clubs");
   revalidatePath("/app");
@@ -72,7 +64,7 @@ export async function updateProfileAction(
 }
 
 export async function toggleNotificationPrefAction(key: keyof NotificationPrefs) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });

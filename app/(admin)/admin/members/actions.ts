@@ -16,7 +16,7 @@ const memberSchema = z.object({
 });
 
 async function resolveAdminClub() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const club = await prisma.club.findUnique({ where: { id: membership!.clubId } });
   if (!club) throw new Error("Club not found");

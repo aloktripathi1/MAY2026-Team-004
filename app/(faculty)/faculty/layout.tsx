@@ -5,7 +5,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { accessibleAppRoles } from "@/backend/auth/roles";
 
 export default async function FacultyLayout({ children }: { children: ReactNode }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) redirect("/login");
   if (!session.user.isFaculty) redirect("/app");
 

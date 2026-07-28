@@ -19,7 +19,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export default async function AnnouncementHistoryPage() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 

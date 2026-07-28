@@ -69,13 +69,16 @@ export async function authenticateUser(email: string, password: string): Promise
     };
   }
 
-  const memberships: SessionMembership[] = user.memberships.map((m) => ({
-    clubId: m.clubId,
-    clubSlug: m.club.slug,
-    clubName: m.club.name,
-    role: m.role,
-    personaName: user.name,
-  }));
+  // Pending/Inactive memberships must not grant role access (see issue #83).
+  const memberships: SessionMembership[] = user.memberships
+    .filter((m) => m.status === "Active")
+    .map((m) => ({
+      clubId: m.clubId,
+      clubSlug: m.club.slug,
+      clubName: m.club.name,
+      role: m.role,
+      personaName: user.name,
+    }));
 
   return {
     ok: true,

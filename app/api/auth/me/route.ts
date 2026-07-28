@@ -1,4 +1,4 @@
-import { getAuthCookieUser, setAuthCookies } from "@/backend/auth/session-cookies";
+import { getAuthCookieUserId } from "@/backend/auth/session-cookies";
 import { getCurrentUserById } from "@/backend/auth/get-current-user";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
 
@@ -11,13 +11,13 @@ const USER_STORY = "1.1";
 /**
  * GET /api/auth/me — return the current user and all held roles/memberships.
  *
- * Production path only: requires real session cookies from signup/login.
- * Does NOT use getMockSession() demo fallback (kept separate in lib/mock-session.ts
- * and /api/auth/[...nextauth]).
+ * Production path only: requires a real, signed session cookie from
+ * signup/login. Does NOT use the demo persona fallback (see
+ * backend/auth/mock-session.ts) — anonymous or tampered requests always get 401.
  */
 export async function GET() {
-  const cookieUser = getAuthCookieUser();
-  if (!cookieUser) {
+  const userId = getAuthCookieUserId();
+  if (!userId) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", {
       status: 401,
       userStory: USER_STORY,
@@ -25,22 +25,13 @@ export async function GET() {
   }
 
   try {
-    const result = await getCurrentUserById(cookieUser.id);
+    const result = await getCurrentUserById(userId);
     if (!result.ok) {
       return jsonError("UNAUTHENTICATED", result.message, {
         status: 401,
         userStory: USER_STORY,
       });
     }
-
-    // Refresh cookies from DB so membership/role changes stay in sync.
-    setAuthCookies({
-      id: result.user.id,
-      name: result.user.name,
-      email: result.user.email,
-      isFaculty: result.user.isFaculty,
-      memberships: result.user.memberships,
-    });
 
     return jsonSuccess(result.user, { status: 200, userStory: USER_STORY });
   } catch (error) {

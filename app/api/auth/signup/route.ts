@@ -38,12 +38,7 @@ export async function POST(request: Request) {
       });
     }
 
-    setAuthCookies({
-      id: result.user.id,
-      name: result.user.name,
-      email: result.user.email,
-      isFaculty: result.user.isFaculty,
-    });
+    setAuthCookies(result.user.id);
 
     return jsonSuccess(
       {

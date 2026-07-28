@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY });
   }

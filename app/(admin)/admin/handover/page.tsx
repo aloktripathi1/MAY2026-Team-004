@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HandoverPage() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 

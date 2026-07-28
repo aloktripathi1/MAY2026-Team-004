@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
 import {
@@ -104,50 +105,71 @@ export async function updateEvent(
   return { ok: true, event: updated } as const;
 }
 
+// Runs the whole check-then-write under Serializable isolation so concurrent
+// registrations for the same event can't all read the same under-capacity
+// count and overbook it (see issue #73). Postgres aborts the losing
+// transaction(s) with a serialization failure (P2034), which we surface as a
+// normal "capacity reached" response instead of a 500.
 export async function registerForEvent(userId: string, eventId: string) {
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { _count: { select: { countMeIns: true } } },
-  });
-  if (!event) return { ok: false, code: "EVENT_NOT_FOUND", message: "Event not found." } as const;
-
-  const existing = await prisma.countMeIn.findUnique({
-    where: { userId_eventId: { userId, eventId } },
-  });
-
-  if (event.registrationLocked) {
-    return {
-      ok: false,
-      code: "REGISTRATION_LOCKED",
-      message: "Registration is locked for this event.",
-    } as const;
-  }
-
-  let action: "registered" | "cancelled";
   try {
-    action =
-      decideCountMeInAction(Boolean(existing), {
-        status: event.status,
-        capacity: event.capacity,
-        going: event.going,
-        countMeInCount: event._count.countMeIns,
-      }) === "cancel"
-        ? "cancelled"
-        : "registered";
-  } catch (err) {
-    return {
-      ok: false,
-      code: "REGISTRATION_UNAVAILABLE",
-      message: err instanceof Error ? err.message : "Registration unavailable.",
-    } as const;
-  }
+    return await prisma.$transaction(
+      async (tx) => {
+        const event = await tx.event.findUnique({
+          where: { id: eventId },
+          include: { _count: { select: { countMeIns: true } } },
+        });
+        if (!event) return { ok: false, code: "EVENT_NOT_FOUND", message: "Event not found." } as const;
 
-  if (action === "cancelled") {
-    await prisma.countMeIn.delete({ where: { id: existing!.id } });
-  } else {
-    await prisma.countMeIn.create({ data: { userId, eventId } });
+        const existing = await tx.countMeIn.findUnique({
+          where: { userId_eventId: { userId, eventId } },
+        });
+
+        if (event.registrationLocked) {
+          return {
+            ok: false,
+            code: "REGISTRATION_LOCKED",
+            message: "Registration is locked for this event.",
+          } as const;
+        }
+
+        let action: "registered" | "cancelled";
+        try {
+          action =
+            decideCountMeInAction(Boolean(existing), {
+              status: event.status,
+              capacity: event.capacity,
+              going: event.going,
+              countMeInCount: event._count.countMeIns,
+            }) === "cancel"
+              ? "cancelled"
+              : "registered";
+        } catch (err) {
+          return {
+            ok: false,
+            code: "REGISTRATION_UNAVAILABLE",
+            message: err instanceof Error ? err.message : "Registration unavailable.",
+          } as const;
+        }
+
+        if (action === "cancelled") {
+          await tx.countMeIn.delete({ where: { id: existing!.id } });
+        } else {
+          await tx.countMeIn.create({ data: { userId, eventId } });
+        }
+        return { ok: true, action } as const;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") {
+      return {
+        ok: false,
+        code: "REGISTRATION_UNAVAILABLE",
+        message: "This event just reached capacity. Please try again.",
+      } as const;
+    }
+    throw err;
   }
-  return { ok: true, action } as const;
 }
 
 export async function checkInAttendee(memberships: SessionMembership[], eventId: string, countMeInId: string) {

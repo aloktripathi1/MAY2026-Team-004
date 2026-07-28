@@ -21,7 +21,7 @@ const eventSchema = z.object({
 export type NewEventState = { error?: string; ok?: boolean };
 
 export async function createEventAction(_prevState: NewEventState, formData: FormData): Promise<NewEventState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Coordinator");

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function IssuesPage() {
-  const session = getMockSession();
+  const session = await getMockSession();
 
   const myIssues = await prisma.issue.findMany({
     where: { raisedById: session!.user.id },

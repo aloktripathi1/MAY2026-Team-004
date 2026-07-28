@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { getAuthCookieUser } from "@/backend/auth/session-cookies";
+import { getAuthCookieUserId } from "@/backend/auth/session-cookies";
 import { INTEREST_OPTIONS } from "@/lib/interests";
 import { prisma } from "@/backend/db/prisma";
 
@@ -21,13 +21,13 @@ export async function completeOnboardingAction(_prevState: OnboardingState, form
     return { error: parsed.error.issues[0]?.message ?? "Choose your interests" };
   }
 
-  const user = getAuthCookieUser();
-  if (!user) {
+  const userId = getAuthCookieUserId();
+  if (!userId) {
     redirect("/signup");
   }
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: { interests: JSON.stringify(parsed.data.interests) },
   });
 

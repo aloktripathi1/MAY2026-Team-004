@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 type ActivityItem = { label: string; context: string; at: Date };
 
 export default async function AdminDashboard() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Admin");
   const clubId = membership!.clubId;
 

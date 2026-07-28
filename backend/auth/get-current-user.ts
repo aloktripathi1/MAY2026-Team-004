@@ -38,13 +38,17 @@ export async function getCurrentUserById(userId: string): Promise<GetCurrentUser
     };
   }
 
-  const memberships: SessionMembership[] = user.memberships.map((m) => ({
-    clubId: m.clubId,
-    clubSlug: m.club.slug,
-    clubName: m.club.name,
-    role: m.role,
-    personaName: user.name,
-  }));
+  // Pending/Inactive memberships must not grant role access — only an Active
+  // membership authorizes the corresponding club role (see issue #83).
+  const memberships: SessionMembership[] = user.memberships
+    .filter((m) => m.status === "Active")
+    .map((m) => ({
+      clubId: m.clubId,
+      clubSlug: m.club.slug,
+      clubName: m.club.name,
+      role: m.role,
+      personaName: user.name,
+    }));
 
   const profile = {
     isFaculty: user.isFaculty,

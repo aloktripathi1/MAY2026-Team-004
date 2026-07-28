@@ -23,7 +23,7 @@ export default async function VolunteerEventsPage({
   searchParams: { tab?: string };
 }) {
   const tab: "upcoming" | "past" = searchParams.tab === "past" ? "past" : "upcoming";
-  const session = getMockSession();
+  const session = await getMockSession();
 
   const list = await prisma.event.findMany({
     where: { status: tab },

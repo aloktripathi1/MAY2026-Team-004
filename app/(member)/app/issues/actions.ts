@@ -15,7 +15,7 @@ const issueSchema = z.object({
 export type IssueFormState = { error?: string; ok?: boolean };
 
 export async function createIssueAction(_prevState: IssueFormState, formData: FormData): Promise<IssueFormState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   let attachments: string[] = [];

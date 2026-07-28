@@ -45,7 +45,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     });
   }
 
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY_EDIT });
   }

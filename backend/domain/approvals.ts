@@ -11,13 +11,13 @@ import {
 } from "@/backend/domain/workflow-rules";
 
 async function requireAdminForClub(clubId: string) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireClubAdminAccess(session.user.memberships, clubId);
 }
 
 async function requireFaculty() {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireFacultyAccess(session.user.isFaculty);
 }

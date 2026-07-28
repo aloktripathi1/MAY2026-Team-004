@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function CoordinatorEventDashboard({ params }: { params: { id: string } }) {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 

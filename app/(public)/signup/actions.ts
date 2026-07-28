@@ -9,8 +9,8 @@ export type SignupState = { error?: string; ok?: boolean };
 
 /**
  * Form-based signup (existing UI). Shares validation + create logic with
- * POST /api/auth/signup. Mock/demo session flow remains in lib/mock-session.ts
- * and app/api/auth/[...nextauth].
+ * POST /api/auth/signup. Demo session flow remains in
+ * backend/auth/mock-session.ts and app/api/auth/[...nextauth].
  */
 export async function signupAction(_prevState: SignupState, formData: FormData): Promise<SignupState> {
   const parsed = signupSchema.safeParse({
@@ -29,11 +29,6 @@ export async function signupAction(_prevState: SignupState, formData: FormData):
     return { error: result.message };
   }
 
-  setAuthCookies({
-    id: result.user.id,
-    name: result.user.name,
-    email: result.user.email,
-    isFaculty: result.user.isFaculty,
-  });
+  setAuthCookies(result.user.id);
   redirect("/signup/onboarding");
 }

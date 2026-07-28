@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CoordinatorHome() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const membership = getPrimaryClubMembership(session!, "Coordinator");
   const clubId = membership!.clubId;
 

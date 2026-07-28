@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
-  const session = getMockSession();
+  const session = await getMockSession();
   const user = await prisma.user.findUnique({
     where: { id: session!.user.id },
     include: { memberships: { include: { club: true } } },

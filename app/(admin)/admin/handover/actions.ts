@@ -10,7 +10,7 @@ export type TransferState = { error?: string; ok?: boolean };
 // Atomically swaps the Admin role: current admin's membership demotes to
 // Coordinator, the chosen successor's membership promotes to Admin.
 export async function transferAdminAction(_prevState: TransferState, formData: FormData): Promise<TransferState> {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const currentMembership = getPrimaryClubMembership(session, "Admin");

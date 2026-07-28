@@ -6,7 +6,7 @@ import { prisma } from "@/backend/db/prisma";
 import { decideJoinRequestAction } from "@/backend/domain/workflow-rules";
 
 export async function toggleJoinRequestAction(clubId: string) {
-  const session = getMockSession();
+  const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const existing = await prisma.membership.findUnique({

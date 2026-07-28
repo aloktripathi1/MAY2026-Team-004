@@ -29,7 +29,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
   const event = await getEvent(params.id);
   if (!event) notFound();
 
-  const session = getMockSession();
+  const session = await getMockSession();
   const [myCountMeIn, attendees, organizers] = await Promise.all([
     prisma.countMeIn.findUnique({
       where: { userId_eventId: { userId: session!.user.id, eventId: event.id } },
