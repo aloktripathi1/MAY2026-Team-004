@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
 import { normalizeMembershipStatus, requireClubAdminAccess } from "@/backend/domain/workflow-rules";
@@ -33,21 +34,28 @@ export async function applyToJoinClub(userId: string, clubId: string) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
   if (!club) return { ok: false, code: "CLUB_NOT_FOUND", message: "Club not found." } as const;
 
+  const alreadyMember = {
+    ok: false,
+    code: "ALREADY_MEMBER",
+    message: "Already a member of, or already applied to, this club.",
+  } as const;
+
   const existing = await prisma.membership.findUnique({
     where: { userId_clubId: { userId, clubId } },
   });
-  if (existing) {
-    return {
-      ok: false,
-      code: "ALREADY_MEMBER",
-      message: "Already a member of, or already applied to, this club.",
-    } as const;
-  }
+  if (existing) return alreadyMember;
 
-  const membership = await prisma.membership.create({
-    data: { userId, clubId, role: "Member", status: "Pending" },
-  });
-  return { ok: true, membership } as const;
+  try {
+    const membership = await prisma.membership.create({
+      data: { userId, clubId, role: "Member", status: "Pending" },
+    });
+    return { ok: true, membership } as const;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return alreadyMember;
+    }
+    throw error;
+  }
 }
 
 export async function updateMembershipStatus(
@@ -91,31 +99,35 @@ export async function bulkImportMembers(clubId: string, rows: BulkImportRow[]) {
 
     let user = await prisma.user.findUnique({ where: { rollNumber: row.roll } });
     if (!user) {
-      // A different roll number can still collide on email (unique in the
-      // User model) — check before create so a duplicate email skips this
-      // row instead of throwing an unhandled Prisma unique-constraint error
-      // that would abort the whole import (see issue #76).
-      const existingByEmail = await prisma.user.findUnique({ where: { email: row.email } });
-      if (existingByEmail) {
+      await prisma.user.createMany({
+        data: [
+          {
+            email: row.email,
+            name: row.name,
+            rollNumber: row.roll,
+            hashedPassword: "",
+            interests: "[]",
+          },
+        ],
+        skipDuplicates: true,
+      });
+      user = await prisma.user.findUnique({ where: { rollNumber: row.roll } });
+      if (!user) {
+        // The insert was skipped because this email belongs to another roll.
         skipped += 1;
         continue;
       }
-      user = await prisma.user.create({
-        data: { email: row.email, name: row.name, rollNumber: row.roll, hashedPassword: "", interests: "[]" },
-      });
     }
 
-    const existing = await prisma.membership.findUnique({
-      where: { userId_clubId: { userId: user.id, clubId } },
+    const created = await prisma.membership.createMany({
+      data: [{ userId: user.id, clubId, role, status: "Active" }],
+      skipDuplicates: true,
     });
-    if (existing) {
+    if (created.count === 0) {
       skipped += 1;
       continue;
     }
 
-    await prisma.membership.create({
-      data: { userId: user.id, clubId, role, status: "Active" },
-    });
     imported += 1;
   }
 
