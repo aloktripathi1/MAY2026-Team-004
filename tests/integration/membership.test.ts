@@ -16,6 +16,7 @@
  * demo-persona fallback — that fallback is gated behind ALLOW_DEMO_SESSION
  * and off by default (see #81/#72).
  */
+import { prisma } from "@/backend/db/prisma";
 import { deleteMembershipsByIds, deleteUsersByEmails } from "./db-cleanup";
 import { ApiClient, isApiAvailable, requireApiAvailable, reportCase, login, signupAndLogin, uniqueIdentity, CLUB_IDS, SEEDED_ACCOUNTS } from "./helpers";
 
@@ -116,6 +117,29 @@ it("returns 409 for a duplicate join request", async () => {
   });
 });
 
+it("returns 201 and 409 for simultaneous duplicate join requests", async () => {
+  const identity = uniqueIdentity();
+  createdEmails.push(identity.email);
+  await signupAndLogin(client, identity);
+
+  const path = `/api/clubs/${CLUB_IDS.arena}/members`;
+  const responses = await Promise.all([client.post(path), client.post(path)]);
+  const statuses = responses.map((response) => response.status).sort();
+
+  expect(statuses).toEqual([201, 409]);
+
+  const created = responses.find((response) => response.status === 201);
+  const duplicate = responses.find((response) => response.status === 409);
+  expect(created?.body.data.membership.status).toBe("Pending");
+  expect(duplicate?.body.error.code).toBe("ALREADY_MEMBER");
+
+  createdMembershipIds.push(created!.body.data.membership.id);
+  const membershipCount = await prisma.membership.count({
+    where: { clubId: CLUB_IDS.arena, user: { email: identity.email } },
+  });
+  expect(membershipCount).toBe(1);
+});
+
 it("returns 404 for an unknown club", async () => {
   const identity = uniqueIdentity();
   createdEmails.push(identity.email);
@@ -195,6 +219,34 @@ it("bulk-imports members for the club's own admin", async () => {
     expect(res.body.data.skipped).toBe(0);
     expect(res.body.userStory).toBe("1.5");
   });
+});
+
+it("handles simultaneous identical bulk imports without server errors", async () => {
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+  const rows = [0, 1].map((index) => ({
+    name: `Concurrent Bulk User ${index}`,
+    roll: `23tconcurrent${suffix}${index}`,
+    email: `pytest.bulk.concurrent.${suffix}.${index}@ds.study.iitm.ac.in`,
+    role: "Member",
+  }));
+  createdEmails.push(...rows.map((row) => row.email));
+  const payload = { clubId: CLUB_IDS.codechef, rows };
+
+  const responses = await Promise.all([
+    adminClient.post(BULK_IMPORT_PATH, payload),
+    adminClient.post(BULK_IMPORT_PATH, payload),
+  ]);
+
+  expect(responses.map((response) => response.status).sort()).toEqual([200, 200]);
+  expect(responses.reduce((total, response) => total + response.body.data.imported, 0)).toBe(2);
+  expect(responses.reduce((total, response) => total + response.body.data.skipped, 0)).toBe(2);
+
+  const userCount = await prisma.user.count({ where: { email: { in: rows.map((row) => row.email) } } });
+  const membershipCount = await prisma.membership.count({
+    where: { clubId: CLUB_IDS.codechef, user: { email: { in: rows.map((row) => row.email) } } },
+  });
+  expect(userCount).toBe(2);
+  expect(membershipCount).toBe(2);
 });
 
 it("forbids bulk import for a club the caller doesn't administer", async () => {
