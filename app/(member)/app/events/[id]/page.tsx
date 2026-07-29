@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageSession } from "@/backend/auth/page-session";
 import { ArrowLeft, CalendarClock, MapPin, Users2 } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
 import { StatusPill } from "@/components/ui/primitives";
@@ -30,10 +30,10 @@ export default async function EventDetail({ params }: { params: { id: string } }
   const event = await getEvent(params.id);
   if (!event) notFound();
 
-  const session = await getMockSession();
+  const session = await requirePageSession();
   const [myCountMeIn, attendees, organizers] = await Promise.all([
     prisma.countMeIn.findUnique({
-      where: { userId_eventId: { userId: session!.user.id, eventId: event.id } },
+      where: { userId_eventId: { userId: session.user.id, eventId: event.id } },
     }),
     prisma.countMeIn.findMany({
       where: { eventId: event.id },

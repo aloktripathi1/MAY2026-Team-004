@@ -1,8 +1,7 @@
 import type { ClubRole } from "@prisma/client";
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageMembership } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
-import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { PageHeader } from "@/components/shell/AppShell";
 import { formatTimeAgo } from "@/lib/format";
 import { IssuesBoard, type IssueRow, type AssignableMember } from "./IssuesBoard";
@@ -15,9 +14,8 @@ export const metadata: Metadata = {
 const STAFF_ROLES: ClubRole[] = ["Coordinator", "Volunteer", "Admin"];
 
 export default async function AdminIssuesPage() {
-  const session = await getMockSession();
-  const membership = getPrimaryClubMembership(session!, "Admin");
-  const clubId = membership!.clubId;
+  const { membership } = await requirePageMembership("Admin");
+  const clubId = membership.clubId;
 
   const club = await prisma.club.findUnique({ where: { id: clubId } });
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageSession } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS, parseInterests } from "@/lib/interests";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
-  const session = await getMockSession();
+  const session = await requirePageSession();
   const user = await prisma.user.findUnique({
-    where: { id: session!.user.id },
+    where: { id: session.user.id },
     include: { memberships: { include: { club: true } } },
   });
 

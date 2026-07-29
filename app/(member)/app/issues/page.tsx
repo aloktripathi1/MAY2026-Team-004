@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageSession } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { IssuesClient } from "./IssuesClient";
@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function IssuesPage() {
-  const session = await getMockSession();
+  const session = await requirePageSession();
 
   const myIssues = await prisma.issue.findMany({
-    where: { raisedById: session!.user.id },
+    where: { raisedById: session.user.id },
     orderBy: { createdAt: "desc" },
     include: { raisedBy: true },
   });

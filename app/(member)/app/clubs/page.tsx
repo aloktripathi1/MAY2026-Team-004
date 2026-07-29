@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageSession } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { parseInterests } from "@/lib/interests";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -12,13 +12,13 @@ export const metadata: Metadata = {
 };
 
 export default async function AppClubs() {
-  const session = await getMockSession();
-  const myClubIds = new Set(session!.user.memberships.map((m) => m.clubId));
+  const session = await requirePageSession();
+  const myClubIds = new Set(session.user.memberships.map((m) => m.clubId));
 
   const [allClubs, profile, pendingMemberships] = await Promise.all([
     prisma.club.findMany({ orderBy: { name: "asc" } }),
-    prisma.user.findUnique({ where: { id: session!.user.id } }),
-    prisma.membership.findMany({ where: { userId: session!.user.id, status: "Pending" } }),
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    prisma.membership.findMany({ where: { userId: session.user.id, status: "Pending" } }),
   ]);
 
   const pendingClubIds = new Set(pendingMemberships.map((m) => m.clubId));
