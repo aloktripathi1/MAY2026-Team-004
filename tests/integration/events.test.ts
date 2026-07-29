@@ -136,6 +136,7 @@ it("lists events filtered by club", async () => {
     expect(Array.isArray(events)).toBe(true);
     expect(events.length).toBeGreaterThan(0);
     expect(events.every((e: any) => e.clubId === CLUB_IDS.eCell)).toBe(true);
+    expect(events.every((e: any) => typeof e._count.countMeIns === "number")).toBe(true);
     expect(res.body.userStory).toBe("2.5");
   });
 });

@@ -10,7 +10,6 @@ export type EventApproval = (typeof EVENT_APPROVALS)[number];
 export type EventCapacitySnapshot = {
   status: string;
   capacity: number;
-  going?: number | null;
   countMeInCount: number;
   date?: Date | string;
 };
@@ -52,8 +51,7 @@ export function decideCountMeInAction(hasExistingCountMeIn: boolean, event: Even
   if (hasExistingCountMeIn) return "cancel";
   if (!event) throw new Error("Event not found");
 
-  const spotsTaken = Math.max(Number(event.going ?? 0), event.countMeInCount);
-  if (isEventPast(event) || spotsTaken >= event.capacity) {
+  if (isEventPast(event) || event.countMeInCount >= event.capacity) {
     throw new Error("Registration unavailable");
   }
 
