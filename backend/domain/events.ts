@@ -62,7 +62,7 @@ export async function listEvents(filters: { clubId?: string; status?: string }) 
       ...(filters.clubId ? { clubId: filters.clubId } : {}),
       ...(filters.status ? { status: filters.status as "upcoming" | "live" | "past" } : {}),
     },
-    include: { club: true },
+    include: { club: true, _count: { select: { countMeIns: true } } },
     orderBy: { date: "asc" },
   });
 }
@@ -138,7 +138,6 @@ export async function registerForEvent(userId: string, eventId: string) {
             decideCountMeInAction(Boolean(existing), {
               status: event.status,
               capacity: event.capacity,
-              going: event.going,
               countMeInCount: event._count.countMeIns,
               date: event.date,
             }) === "cancel"

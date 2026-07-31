@@ -81,24 +81,23 @@ describe("decideCountMeInAction", () => {
   });
 
   it("allows registration when spots remain", () => {
-    expect(decideCountMeInAction(false, { status: "upcoming", capacity: 50, going: 20, countMeInCount: 18 })).toBe("register");
+    expect(decideCountMeInAction(false, { status: "upcoming", capacity: 50, countMeInCount: 18 })).toBe("register");
   });
 
-  it("rejects full events based on displayed attendance", () => {
-    expect(() =>
-      decideCountMeInAction(false, { status: "upcoming", capacity: 20, going: 20, countMeInCount: 18 }),
-    ).toThrow(/Registration unavailable/);
+  it("ignores the legacy promotional going count when live registrations have space", () => {
+    const event = { status: "upcoming", capacity: 20, going: 20, countMeInCount: 18 };
+    expect(decideCountMeInAction(false, event)).toBe("register");
   });
 
   it("rejects full events based on Count Me In count", () => {
     expect(() =>
-      decideCountMeInAction(false, { status: "upcoming", capacity: 20, going: 12, countMeInCount: 20 }),
+      decideCountMeInAction(false, { status: "upcoming", capacity: 20, countMeInCount: 20 }),
     ).toThrow(/Registration unavailable/);
   });
 
   it("rejects past events", () => {
     expect(() =>
-      decideCountMeInAction(false, { status: "past", capacity: 50, going: 10, countMeInCount: 10 }),
+      decideCountMeInAction(false, { status: "past", capacity: 50, countMeInCount: 10 }),
     ).toThrow(/Registration unavailable/);
   });
 
@@ -107,16 +106,16 @@ describe("decideCountMeInAction", () => {
   });
 
   it("allows registration for the very last remaining spot", () => {
-    expect(decideCountMeInAction(false, { status: "upcoming", capacity: 20, going: 19, countMeInCount: 15 })).toBe("register");
+    expect(decideCountMeInAction(false, { status: "upcoming", capacity: 20, countMeInCount: 19 })).toBe("register");
   });
 
-  it("treats a null going count as zero attendance", () => {
-    expect(decideCountMeInAction(false, { status: "upcoming", capacity: 5, going: null, countMeInCount: 3 })).toBe("register");
+  it("treats zero CountMeIn rows as no attendance", () => {
+    expect(decideCountMeInAction(false, { status: "upcoming", capacity: 5, countMeInCount: 0 })).toBe("register");
   });
 
   it("rejects events with zero capacity", () => {
     expect(() =>
-      decideCountMeInAction(false, { status: "upcoming", capacity: 0, going: 0, countMeInCount: 0 }),
+      decideCountMeInAction(false, { status: "upcoming", capacity: 0, countMeInCount: 0 }),
     ).toThrow(/Registration unavailable/);
   });
 
@@ -125,7 +124,6 @@ describe("decideCountMeInAction", () => {
       decideCountMeInAction(false, {
         status: "upcoming",
         capacity: 50,
-        going: 10,
         countMeInCount: 10,
         date: new Date(Date.now() - 24 * 60 * 60 * 1000),
       }),

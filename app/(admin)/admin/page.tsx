@@ -47,18 +47,13 @@ export default async function AdminDashboard() {
   // Real signal, simplified: Count Me Ins created in the last 7 days for this club's events, bucketed by weekday.
   const recentCountMeIns = await prisma.countMeIn.findMany({
     where: { createdAt: { gte: sevenDaysAgo }, event: { clubId } },
-    include: { event: true },
+    include: { event: { include: { _count: { select: { countMeIns: true } } } } },
   });
   const weeklyAttendance = [0, 0, 0, 0, 0, 0, 0];
   for (const r of recentCountMeIns) {
     const day = (r.createdAt.getDay() + 6) % 7; // Mon=0..Sun=6
     weeklyAttendance[day]++;
   }
-  // The mock dataset only produces a handful of real Count Me Ins, so this chart can look
-  // thin or empty depending on when it's viewed. Layer in a fixed demo baseline so
-  // it always reads as a real week of activity.
-  const demoWeeklyBaseline = [4, 7, 5, 6, 9, 5, 3];
-  for (let i = 0; i < weeklyAttendance.length; i++) weeklyAttendance[i] += demoWeeklyBaseline[i];
   const weeklyAttendanceTotal = weeklyAttendance.reduce((sum, v) => sum + v, 0);
   const maxAttendance = Math.max(...weeklyAttendance, 1);
 
@@ -78,7 +73,7 @@ export default async function AdminDashboard() {
   }
   if (recentCountMeIns.length > 0) {
     const latestCountMeIn = [...recentCountMeIns].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-    activity.push({ label: `New Count Me In for ${latestCountMeIn.event.title}`, context: `${latestCountMeIn.event.going}/${latestCountMeIn.event.capacity} going`, at: latestCountMeIn.createdAt });
+    activity.push({ label: `New Count Me In for ${latestCountMeIn.event.title}`, context: `${latestCountMeIn.event._count.countMeIns}/${latestCountMeIn.event.capacity} going`, at: latestCountMeIn.createdAt });
   }
   activity.sort((a, b) => b.at.getTime() - a.at.getTime());
   const recentActivity = activity.slice(0, 4);
@@ -133,7 +128,7 @@ export default async function AdminDashboard() {
                   <EventThumbnail title={e.title} cover={e.cover} photo={e.photo} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{e.title}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · {e._count.countMeIns}/{e.capacity}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{formatEventDate(e.date)} · <span data-event-attendance={e.id} data-attendance-count={e._count.countMeIns}>{e._count.countMeIns}/{e.capacity}</span></div>
                   </div>
                   <StatusPill tone={e.approval === "approved" ? "green" : e.approval === "pending" ? "amber" : e.approval === "rejected" ? "magenta" : "slate"}>
                     {e.approval === "approved" ? "OK" : e.approval === "pending" ? "Pending" : e.approval === "rejected" ? "Rejected" : "-"}

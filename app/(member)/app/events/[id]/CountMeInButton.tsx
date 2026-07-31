@@ -6,8 +6,8 @@ import { Btn } from "@/components/ui/primitives";
 import { toggleCountMeInAction } from "./actions";
 
 export function CountMeInButton({
-  eventId, eventSlug, initialCountedIn, capacity, going, isPast,
-}: { eventId: string; eventSlug: string; initialCountedIn: boolean; capacity: number; going: number; isPast: boolean }) {
+  eventId, eventSlug, initialCountedIn, capacity, attendeeCount, isPast,
+}: { eventId: string; eventSlug: string; initialCountedIn: boolean; capacity: number; attendeeCount: number; isPast: boolean }) {
   const [countedIn, setCountedIn] = useState(initialCountedIn);
   const [pending, startTransition] = useTransition();
 
@@ -34,7 +34,7 @@ export function CountMeInButton({
           aria-hidden={countedIn}
         >
           <div className="text-3xl font-black tracking-[-0.05em] text-white">Grab a spot.</div>
-          <div className="mt-2 text-xs text-muted-foreground">{capacity - going} of {capacity} left. Locks 2 hrs before start.</div>
+          <div className="mt-2 text-xs text-muted-foreground">{capacity - attendeeCount} of {capacity} left. Locks 2 hrs before start.</div>
         </div>
         <div
           className={`col-start-1 row-start-1 ${countedIn ? "" : "invisible pointer-events-none"}`}

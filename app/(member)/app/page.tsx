@@ -79,7 +79,7 @@ export default async function MemberDashboard() {
                     </div>
                     <div className="hidden text-right sm:block">
                       <div className="text-mono-label">Going</div>
-                      <div className="text-display text-2xl">{e._count.countMeIns}</div>
+                      <div className="text-display text-2xl" data-event-attendance={e.id} data-attendance-count={e._count.countMeIns}>{e._count.countMeIns}</div>
                     </div>
                     <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-secondary" />
                   </GlassCard>

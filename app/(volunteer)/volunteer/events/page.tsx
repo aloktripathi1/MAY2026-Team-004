@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   description: "Everything happening across your clubs.",
 };
 
-function spotsTakenFor(event: { going?: number | null; _count: { countMeIns: number } }) {
-  return Math.max(Number(event.going ?? 0), event._count.countMeIns);
+function spotsTakenFor(event: { _count: { countMeIns: number } }) {
+  return event._count.countMeIns;
 }
 
 export default async function VolunteerEventsPage({
@@ -97,7 +97,9 @@ export default async function VolunteerEventsPage({
 
                 <div className="col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:flex-col sm:items-end sm:justify-center sm:gap-1.5">
                   <div className="font-mono text-xs tabular-nums text-muted-foreground">
-                    {spotsTaken}/{event.capacity}
+                    <span data-event-attendance={event.id} data-attendance-count={spotsTaken}>
+                      {spotsTaken}/{event.capacity}
+                    </span>
                   </div>
                   <RegisterButton
                     eventId={event.id}

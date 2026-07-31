@@ -114,7 +114,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
               eventSlug={event.slug}
               initialCountedIn={Boolean(myCountMeIn)}
               capacity={event.capacity}
-              going={event._count.countMeIns}
+              attendeeCount={event._count.countMeIns}
               isPast={isEventPast(event)}
             />
           </div>
