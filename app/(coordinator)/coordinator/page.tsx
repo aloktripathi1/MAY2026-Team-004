@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageMembership } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
-import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
 import { EventThumbnail } from "@/components/ui/EventThumbnail";
@@ -15,9 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function CoordinatorHome() {
-  const session = await getMockSession();
-  const membership = getPrimaryClubMembership(session!, "Coordinator");
-  const clubId = membership!.clubId;
+  const { membership } = await requirePageMembership("Coordinator");
+  const clubId = membership.clubId;
 
   const [myEvents, volunteerCount] = await Promise.all([
     prisma.event.findMany({ where: { clubId, status: "upcoming" }, orderBy: { date: "asc" }, take: 3, include: { _count: { select: { countMeIns: true } } } }),

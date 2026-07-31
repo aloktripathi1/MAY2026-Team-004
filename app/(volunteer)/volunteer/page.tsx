@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageSession } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default async function VolunteerHome() {
-  const session = await getMockSession();
-  const userId = session!.user.id;
+  const session = await requirePageSession();
+  const userId = session.user.id;
 
   const [tasks, contributions, countMeIns] = await Promise.all([
     prisma.task.findMany({

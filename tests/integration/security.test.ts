@@ -8,14 +8,49 @@
  *   npm run db:up && npm run db:push && npm run db:seed && npm run dev
  *   npm run test:integration
  */
+import { readFile } from "node:fs/promises";
 import { deleteUsersByEmails } from "./db-cleanup";
-import { ApiClient, isApiAvailable, requireApiAvailable, reportCase, signupAndLogin, uniqueIdentity, BASE_URL, CLUB_IDS } from "./helpers";
+import { ApiClient, isApiAvailable, requireApiAvailable, reportCase, signupAndLogin, uniqueIdentity, BASE_URL, CLUB_IDS, login, SEEDED_ACCOUNTS } from "./helpers";
 
 const createdEmails: string[] = [];
 let client: ApiClient;
+let serverErrorLogStart = "";
+
+const protectedPagePaths = [
+  "/admin",
+  "/admin/announcements",
+  "/admin/approvals",
+  "/admin/handover",
+  "/admin/issues",
+  "/admin/members",
+  "/admin/transparency",
+  "/coordinator",
+  "/coordinator/events/fusion-night-vi",
+  "/coordinator/new",
+  "/coordinator/volunteers",
+  "/volunteer",
+  "/faculty",
+  "/app",
+  "/app/clubs",
+  "/app/events/fusion-night-vi",
+  "/app/issues",
+  "/app/profile",
+] as const;
+
+async function readServerErrorLog() {
+  const path = process.env.SANGAM_SERVER_ERROR_LOG;
+  if (!path) return "";
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return "";
+    throw error;
+  }
+}
 
 beforeAll(async () => {
   requireApiAvailable(await isApiAvailable());
+  serverErrorLogStart = await readServerErrorLog();
 });
 
 beforeEach(() => {
@@ -30,7 +65,7 @@ afterAll(async () => {
 });
 
 describe("anonymous access to protected pages", () => {
-  it.each(["/admin", "/coordinator", "/volunteer", "/faculty", "/app"])("redirects %s to /login instead of granting a privileged session", async (path) => {
+  it.each(protectedPagePaths)("redirects %s to /login instead of granting a privileged session", async (path) => {
     const res = await fetch(new URL(path, BASE_URL), { redirect: "manual" });
     const expected = { status: [307, 302], location: "/login" };
     const actual = { status: res.status, location: res.headers.get("location") };
@@ -40,8 +75,44 @@ describe("anonymous access to protected pages", () => {
       expect(res.headers.get("location")).toContain("/login");
     });
   });
+
+  it("does not write application exceptions for anonymous redirects", async () => {
+    if (!process.env.SANGAM_SERVER_ERROR_LOG) return;
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const currentLog = await readServerErrorLog();
+    const redirectLogOutput = currentLog.slice(serverErrorLogStart.length);
+
+    expect(redirectLogOutput).not.toMatch(
+      /TypeError|Cannot read properties of null/,
+    );
+  });
 });
 
+describe("authenticated protected page access", () => {
+  it.each([
+    { path: "/admin", account: SEEDED_ACCOUNTS.admin },
+    { path: "/coordinator", account: SEEDED_ACCOUNTS.coordinator },
+    { path: "/volunteer", account: SEEDED_ACCOUNTS.volunteer },
+  ])("renders $path for the matching role", async ({ path, account }) => {
+    const roleClient = new ApiClient();
+    await login(roleClient, account.email, account.password);
+    const response = await fetch(new URL(path, BASE_URL), {
+      headers: {
+        Cookie: `sangam_session=${roleClient.getCookie("sangam_session")}`,
+      },
+      redirect: "manual",
+    });
+
+    reportCase(
+      `GET ${path} - matching authenticated role`,
+      account.email,
+      { status: 200 },
+      { status: response.status },
+      () => expect(response.status).toBe(200),
+    );
+  });
+});
 describe("anonymous access to protected APIs", () => {
   it("returns 401 for GET /api/auth/me", async () => {
     const res = await client.get("/api/auth/me");

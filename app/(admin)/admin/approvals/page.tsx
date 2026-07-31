@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageMembership } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
-import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
@@ -13,9 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ApprovalsPage() {
-  const session = await getMockSession();
-  const membership = getPrimaryClubMembership(session!, "Admin");
-  const clubId = membership!.clubId;
+  const { membership } = await requirePageMembership("Admin");
+  const clubId = membership.clubId;
 
   const pendingMembers = await prisma.membership.findMany({
     where: { clubId, status: "Pending" },

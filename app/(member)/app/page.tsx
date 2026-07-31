@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { requirePageSession } from "@/backend/auth/page-session";
 import { CalendarClock, ArrowUpRight, Pin } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 };
 
 export default async function MemberDashboard() {
-  const session = await getMockSession();
-  const userId = session!.user.id;
-  const memberships = session!.user.memberships;
+  const session = await requirePageSession();
+  const userId = session.user.id;
+  const memberships = session.user.memberships;
   const clubIds = memberships.map((m) => m.clubId);
 
   // Scoped to the member's own club memberships — this page previously
@@ -31,7 +31,7 @@ export default async function MemberDashboard() {
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const firstName = (session!.user.name ?? "there").split(" ")[0];
+  const firstName = (session.user.name ?? "there").split(" ")[0];
 
   return (
     <>

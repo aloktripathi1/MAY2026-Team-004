@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getMockSession } from "@/backend/auth/mock-session";
-import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { requirePageMembership } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill } from "@/components/ui/primitives";
@@ -20,9 +19,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function CoordinatorEventDashboard({ params }: { params: { id: string } }) {
-  const session = await getMockSession();
-  const membership = getPrimaryClubMembership(session!, "Coordinator");
-  const clubId = membership!.clubId;
+  const { membership } = await requirePageMembership("Coordinator");
+  const clubId = membership.clubId;
 
   const event = await getEventForCoordinator(params.id, clubId);
   if (!event) notFound();
