@@ -4,7 +4,7 @@ import { requirePageMembership } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
-import { formatEventDate } from "@/lib/format";
+import { formatEventDate, formatWeekday, formatDayNumber } from "@/lib/format";
 import { NewEventModal } from "@/components/coordinator/NewEventModal";
 import { Calendar, MapPin, Users, Tag } from "lucide-react";
 
@@ -48,12 +48,17 @@ export default async function AllEventsPage() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-4">
                     <div
-                      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10"
+                      className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/10 text-center"
                       style={{ background: e.cover }}
                     >
-                      {e.photo && (
+                      {e.photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={e.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+                        <img src={e.photo} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <div>
+                          <div className="text-mono-label !text-[8px] text-white/80">{formatWeekday(e.date)}</div>
+                          <div className="text-display -mt-0.5 text-lg text-white">{formatDayNumber(e.date)}</div>
+                        </div>
                       )}
                     </div>
 
