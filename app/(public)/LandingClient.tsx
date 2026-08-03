@@ -504,7 +504,7 @@ function Events({ events }: { events: LandingEvent[] }) {
           <div className="md:col-span-2">
             <p className="mono-label text-secondary">03 / CURRENT SIGNAL</p>
             <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl">
-              The week is already moving.
+              What&apos;s on this week.
             </h2>
           </div>
           <div className="night-panel rounded-2xl p-5">
