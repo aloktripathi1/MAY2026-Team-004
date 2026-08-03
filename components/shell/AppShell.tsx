@@ -61,12 +61,14 @@ const roleMeta: Record<Role, { name: string; hue: string; badge: string; icon: a
 export function AppShell({
   role,
   user = "Ananya Rao",
-  club = "CodeChef IITM BS",
+  club,
   availableRoles,
   children,
 }: {
   role: Role;
   user?: string;
+  /** Omit for institution-wide roles (faculty) — a club name here would be
+   * redundant since the whole app is already IITM BS-scoped (#108). */
   club?: string;
   /** Roles this user can open. Omit or pass a single role to hide the switcher. */
   availableRoles?: Role[];
@@ -77,6 +79,7 @@ export function AppShell({
   const currentPath = usePathname();
   const items = navByRole[role];
   const meta = roleMeta[role];
+  const identityLine = club ? `${club} · ${meta.badge}` : `${meta.name} ${meta.badge}`;
   const switchableRoles = (availableRoles ?? [role]).filter((r, i, all) => all.indexOf(r) === i);
   const showRoleSwitcher = switchableRoles.length > 1;
 
@@ -118,7 +121,7 @@ export function AppShell({
                 <Avatar name={user} size="md" showBorder={false} className="border border-white/10" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-sidebar-foreground" title={user}>{user}</div>
-                  <div className="text-xs leading-snug text-sidebar-foreground/65" title={`${club} · ${meta.badge}`}>{club} · {meta.badge}</div>
+                  <div className="text-xs leading-snug text-sidebar-foreground/65" title={identityLine}>{identityLine}</div>
                 </div>
               </div>
 

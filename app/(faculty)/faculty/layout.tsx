@@ -13,7 +13,6 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
     <AppShell
       role="faculty"
       user={session.user.name ?? "Faculty"}
-      club="IITM BS"
       availableRoles={accessibleAppRoles(session.user)}
     >
       {children}
