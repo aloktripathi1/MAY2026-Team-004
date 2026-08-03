@@ -38,11 +38,11 @@ export function GlassCard({
 
 export function Stat({ label, value, delta }: { label: string; value: string | number; delta?: string }) {
   return (
-    <div className="night-panel relative overflow-hidden rounded-2xl p-5">
-      <div className="text-mono-label">{label}</div>
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="font-mono text-4xl font-semibold leading-none tracking-[-0.08em] text-white">{value}</span>
-        {delta && <span className="text-xs text-secondary">{delta}</span>}
+    <div className="night-panel relative min-w-0 overflow-hidden rounded-2xl p-4 md:p-5">
+      <div className="text-mono-label truncate">{label}</div>
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:mt-3">
+        <span className="font-mono text-3xl font-semibold leading-none tracking-[-0.08em] text-white md:text-4xl">{value}</span>
+        {delta && <span className="truncate text-xs text-secondary">{delta}</span>}
       </div>
     </div>
   );

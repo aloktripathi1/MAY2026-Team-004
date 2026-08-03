@@ -36,7 +36,7 @@ export default async function MetricsPage() {
     <>
       <PageHeader title={<>The <span className="text-secondary">state</span> of the union.</>} description="Real membership and activity signals across every club." />
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Stat label="Total clubs" value={clubs.length} />
         <Stat label="New signups (30d)" value={newSignups} />
         <Stat label="Total members" value={clubs.reduce((sum, c) => sum + c._count.memberships, 0)} />

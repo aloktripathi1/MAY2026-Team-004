@@ -82,7 +82,7 @@ export default async function AdminDashboard() {
     <>
       <AdminPageHeader clubName={club?.name ?? "Your club"} memberCount={totalMembers} />
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Link href="/admin/members" className="block rounded-2xl transition-shadow duration-300 ease-out hover:shadow-[0_24px_60px_-32px_oklch(0_0_0/70%)]">
           <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />
         </Link>

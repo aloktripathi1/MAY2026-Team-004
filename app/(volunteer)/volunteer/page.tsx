@@ -58,7 +58,7 @@ export default async function VolunteerHome() {
         description={`${active} active · ${done} done. Keep status updated so coordinators can plan.`}
       />
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Stat label="Active tasks" value={active} />
         <Stat label="Events supported" value={supportedEventIds.size} />
         <Stat label="Hours contributed" value={`${hoursLogged}h`} />

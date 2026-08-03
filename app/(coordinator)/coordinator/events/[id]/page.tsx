@@ -48,7 +48,7 @@ export default async function CoordinatorEventDashboard({ params }: { params: { 
         }
       />
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Registered" value={countMeIns.length} delta={`of ${event.capacity} capacity`} />
         <Stat label="Checked in" value={checkedInCount} delta={`of ${countMeIns.length} confirmed`} />
         <Stat label="Volunteers" value={volunteerIds.size} delta={`${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} assigned`} />

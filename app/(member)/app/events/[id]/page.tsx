@@ -79,7 +79,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
             <p className="text-base leading-relaxed text-foreground/90">{event.description}</p>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <InfoTile icon={CalendarClock} label="When" value={`${formatEventDate(event.date)} · ${event.time}`} />
             <InfoTile icon={MapPin} label="Where" value={event.venue} />
             <InfoTile icon={Users2} label="Capacity" value={`${event._count.countMeIns} / ${event.capacity}`} />

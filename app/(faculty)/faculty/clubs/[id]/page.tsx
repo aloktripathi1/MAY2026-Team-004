@@ -74,7 +74,7 @@ export default async function FacultyClubDetail({ params }: { params: { id: stri
         description={club.tagline ?? "Club overview."}
       />
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Stat label="Active members" value={members.length} />
         <Stat label="Upcoming events" value={upcomingEvents.length} />
         <Stat label="Open issues" value={openIssuesCount} />

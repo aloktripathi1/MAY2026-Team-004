@@ -34,7 +34,7 @@ export default async function CoordinatorHome() {
         title={<>Run the day, <span className="text-secondary">without the drama.</span></>}
         actions={<NewEventModal />}
       />
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Stat label="Live events" value={myEvents.length} />
         <Stat label="Volunteers assigned" value={volunteerCount} />
         <Stat label="Tasks open" value={tasks.filter(t => t.status !== "done").length} />

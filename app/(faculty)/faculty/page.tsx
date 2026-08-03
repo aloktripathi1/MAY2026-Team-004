@@ -33,7 +33,7 @@ export default async function FacultyHome() {
   return (
     <>
       <PageHeader title={<>Club activity, <span className="text-secondary">at a glance.</span></>} description="Signals. Not surveillance." />
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Clubs monitored" value={clubs.length} />
         <Stat label="Events this month" value={eventsThisMonth} />
         <Stat label="Pending approvals" value={pendingApprovals} delta={pendingApprovals > 0 ? "Needs you" : undefined} />

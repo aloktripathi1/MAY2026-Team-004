@@ -41,7 +41,7 @@ export default async function MemberDashboard() {
         actions={<Link href="/app/events"><Btn variant="outline" size="sm">This week →</Btn></Link>}
       />
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Clubs joined" value={memberships.length} />
         <Stat label="Upcoming events" value={upcoming.length} />
         <Stat label="Open tasks" value={openTaskCount} />
