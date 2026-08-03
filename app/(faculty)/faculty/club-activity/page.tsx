@@ -49,7 +49,7 @@ export default async function ClubActivityPage() {
       />
       <div className="space-y-2">
         {rows.map(({ club: c, newMembers30d, engagement }) => (
-          <Link key={c.id} href={`/faculty/clubs/${c.id}`}>
+          <Link key={c.id} href={`/faculty/clubs/${c.id}`} className="block">
             <GlassCard className="flex flex-wrap items-center gap-4 p-4">
               <div
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-sm font-semibold"

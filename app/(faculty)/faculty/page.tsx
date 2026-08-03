@@ -44,7 +44,7 @@ export default async function FacultyHome() {
           <div className="text-mono-label mb-3">Clubs under mentorship</div>
           <div className="space-y-2">
             {clubs.map(c => (
-              <Link key={c.id} href={`/faculty/clubs/${c.id}`}>
+              <Link key={c.id} href={`/faculty/clubs/${c.id}`} className="block">
                 <GlassCard className="flex items-center gap-3 p-4">
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg"
                        style={{ background: `oklch(0.72 0.18 ${c.hue} / 15%)`, color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>

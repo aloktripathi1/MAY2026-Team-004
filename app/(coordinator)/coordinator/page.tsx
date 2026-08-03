@@ -45,7 +45,7 @@ export default async function CoordinatorHome() {
           <div className="space-y-2">
             {myEvents.length === 0 && <div className="text-sm text-muted-foreground">No upcoming events.</div>}
             {myEvents.map(e => (
-              <Link key={e.id} href={`/coordinator/events/${e.slug}`}>
+              <Link key={e.id} href={`/coordinator/events/${e.slug}`} className="block">
                 <GlassCard className="p-4">
                   <div className="flex items-center gap-3">
                     <EventThumbnail title={e.title} cover={e.cover} photo={e.photo} size="sm" />
