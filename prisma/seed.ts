@@ -1,10 +1,12 @@
 import bcrypt from "bcrypt";
-import { PrismaClient, type ApprovalStatus, type IssueStatus, type Prisma } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import {
   announcements as seedAnnouncements,
   clubs as seedClubs,
   contributions as seedContributions,
+  eventAttendees as seedEventAttendees,
   events as seedEvents,
+  faculty as seedFaculty,
   issues as seedIssues,
   members as seedMembers,
   resources as seedResources,
@@ -14,48 +16,18 @@ import {
 
 const prisma = new PrismaClient();
 
-// lib/seed-data.ts authors event dates as fixed calendar dates (assuming
-// "today" was ~8 Jul 2026 — the boundary between its last "past" event,
-// 4 Jul, and first "upcoming" one, 11 Jul). Re-anchoring every event's date
-// to an offset from the actual seed run time keeps the same spread and the
-// same past/upcoming split no matter when `db:seed` runs (see issue #90) —
-// without this, the whole seed dataset "expires" a few weeks after it's written.
-const SEED_DATA_AUTHORED_TODAY = new Date("2026-07-08T00:00:00.000Z");
-function resolveSeedEventDate(isoDate: string): Date {
-  const offsetMs = new Date(isoDate).getTime() - SEED_DATA_AUTHORED_TODAY.getTime();
-  return new Date(Date.now() + offsetMs);
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Resolves a days-ago/days-from-now offset against the actual seed run time, every time — see issue #90. */
+function fromNow(days: number): Date {
+  return new Date(Date.now() + days * DAY_MS);
+}
+function ago(days: number): Date {
+  return fromNow(-days);
 }
 
-const clubNameToSlug: Record<string, string> = {
-  CodeChef: "codechef",
-  "E-Cell": "e-cell",
-  Sarga: "sarga",
-  Paradox: "paradox",
-  Kalakriti: "kalakriti",
-  Arena: "arena",
-  Prakriti: "prakriti",
-  Quill: "quill",
-};
-
-function memberUserId(memberId: string) {
-  return memberId.replace("m", "u");
-}
-
-function mapApproval(approval: string): ApprovalStatus {
-  if (approval === "not-required") return "notRequired";
-  if (approval === "approved" || approval === "pending" || approval === "rejected") return approval;
-  return "pending";
-}
-
-function mapIssueStatus(status: string): IssueStatus {
-  if (status === "In progress") return "InProgress";
-  if (status === "Open" || status === "Resolved" || status === "InProgress") return status;
-  return "Open";
-}
-
-function parseJoined(joined: string) {
-  const parsed = new Date(`1 ${joined}`);
-  return Number.isNaN(parsed.getTime()) ? new Date("2023-08-01") : parsed;
+function mapApproval(approval: string) {
+  if (approval === "not-required") return "notRequired" as const;
+  return approval as "approved" | "pending" | "rejected";
 }
 
 async function main() {
@@ -75,6 +47,7 @@ async function main() {
 
   const passwordHash = await bcrypt.hash("sangam", 10);
 
+  // ---------- clubs ----------
   await prisma.club.createMany({
     data: seedClubs.map((club) => ({
       id: club.id,
@@ -91,216 +64,173 @@ async function main() {
       photo: club.photo ?? null,
     })),
   });
+  const clubIdBySlug = new Map(seedClubs.map((c) => [c.slug, c.id]));
 
-  const users = [
-    ...seedMembers.map((member) => ({
+  // ---------- bulk members (m1..mN) ----------
+  const memberUserId = (memberId: string) => memberId.replace(/^m/, "u");
+  await prisma.user.createMany({
+    data: seedMembers.map((member) => ({
       id: memberUserId(member.id),
       email: `${member.roll}@ds.study.iitm.ac.in`,
       name: member.name,
       rollNumber: member.roll,
       hashedPassword: passwordHash,
-      interests:
-        member.id === "m1"
-          ? JSON.stringify(["Technical", "Design", "Entrepreneurship"])
-          : "[]",
+      interests: JSON.stringify(member.interests),
       isFaculty: false,
     })),
-    {
-      id: "u-faculty",
-      email: "faculty.mentor@ds.study.iitm.ac.in",
-      name: "Prof. R. Krishnan",
-      rollNumber: null as string | null,
+  });
+
+  const membershipRows: Prisma.MembershipCreateManyInput[] = seedMembers.flatMap((member) =>
+    member.memberships.map((m) => ({
+      id: `${member.id}-${m.clubSlug}`,
+      userId: memberUserId(member.id),
+      clubId: clubIdBySlug.get(m.clubSlug)!,
+      role: m.role,
+      status: m.status,
+      joinedAt: ago(m.joinedDaysAgo),
+    })),
+  );
+
+  // Demo session (u1) holds three extra roles beyond her own CodeChef Admin
+  // seat, for QA persona switching from a single account.
+  const demoMemberships: Prisma.MembershipCreateManyInput[] = [
+    { id: "demo-u1-e-cell", userId: "u1", clubId: "c6", role: "Coordinator", status: "Active", joinedAt: ago(620) },
+    { id: "demo-u1-sarga", userId: "u1", clubId: "c3", role: "Volunteer", status: "Active", joinedAt: ago(620) },
+    { id: "demo-u1-paradox", userId: "u1", clubId: "c2", role: "Member", status: "Active", joinedAt: ago(620) },
+  ];
+  await prisma.membership.createMany({ data: [...membershipRows, ...demoMemberships] });
+
+  // ---------- dedicated faculty (no club membership, isFaculty only) ----------
+  await prisma.user.createMany({
+    data: seedFaculty.map((f) => ({
+      id: `u-${f.id}`,
+      email: f.email,
+      name: f.name,
+      rollNumber: null,
       hashedPassword: passwordHash,
       interests: "[]",
       isFaculty: true,
-    },
-  ];
+    })),
+  });
 
-  await prisma.user.createMany({ data: users });
+  // ---------- events ----------
+  await prisma.event.createMany({
+    data: seedEvents.map((event, index) => ({
+      id: event.id,
+      slug: event.slug,
+      title: event.title,
+      clubId: clubIdBySlug.get(event.clubSlug)!,
+      date: fromNow(event.daysOffset),
+      time: event.time,
+      venue: event.venue,
+      status: event.status,
+      capacity: event.capacity,
+      going: event.going,
+      cover: event.cover,
+      photo: event.photo ?? null,
+      tags: event.tags,
+      description: event.description,
+      approval: mapApproval(event.approval),
+      createdAt: ago(-event.daysOffset + 30 + index * 0.01),
+      updatedAt: ago(Math.max(-event.daysOffset - 1, 0)),
+    })),
+  });
+  const eventIdBySlug = new Map(seedEvents.map((e) => [e.slug, e.id]));
 
-  const membershipRows: Prisma.MembershipCreateManyInput[] = seedMembers.flatMap((member) =>
-    member.clubs.map((clubName) => {
-      const clubSlug = clubNameToSlug[clubName] ?? clubName.toLowerCase();
-      const club = seedClubs.find((c) => c.slug === clubSlug) ?? seedClubs[0];
-      return {
-        id: `${member.id}-${club.slug}`,
-        userId: memberUserId(member.id),
-        clubId: club.id,
-        role: member.role,
-        status: member.status,
-        joinedAt: parseJoined(member.joined),
-      };
-    }),
-  );
+  // ---------- event attendees (CountMeIn) ----------
+  await prisma.countMeIn.createMany({
+    data: seedEventAttendees.map((a, index) => ({
+      id: `countmein-${index + 1}`,
+      eventId: eventIdBySlug.get(a.eventSlug)!,
+      userId: memberUserId(a.memberId),
+      checkedIn: a.checkedIn,
+      createdAt: ago(a.registeredDaysAgo),
+    })),
+  });
 
-  // Demo session (u1) holds four roles for QA persona switching.
-  const demoMemberships: Prisma.MembershipCreateManyInput[] = [
-    { id: "m1-codechef", userId: "u1", clubId: "c1", role: "Admin", status: "Active", joinedAt: parseJoined("Aug 2023") },
-    { id: "demo-u1-e-cell", userId: "u1", clubId: "c6", role: "Coordinator", status: "Active", joinedAt: parseJoined("Aug 2023") },
-    { id: "demo-u1-sarga", userId: "u1", clubId: "c3", role: "Volunteer", status: "Active", joinedAt: parseJoined("Aug 2023") },
-    { id: "demo-u1-paradox", userId: "u1", clubId: "c2", role: "Member", status: "Active", joinedAt: parseJoined("Aug 2023") },
-  ];
+  // ---------- announcements ----------
+  await prisma.announcement.createMany({
+    data: seedAnnouncements.map((a) => ({
+      id: a.id,
+      title: a.title,
+      body: a.body,
+      clubId: clubIdBySlug.get(a.clubSlug)!,
+      authorId: "u1",
+      pinned: a.pinned,
+      audience: a.audience,
+      priority: a.priority,
+      createdAt: ago(a.daysAgo),
+    })),
+  });
 
-  const membershipByKey = new Map<string, Prisma.MembershipCreateManyInput>();
-  for (const row of [...membershipRows, ...demoMemberships]) {
-    membershipByKey.set(`${row.userId}:${row.clubId}`, row);
-  }
-  await prisma.membership.createMany({ data: [...membershipByKey.values()] });
+  // ---------- issues ----------
+  await prisma.issue.createMany({
+    data: seedIssues.map((issue) => ({
+      id: issue.id,
+      title: issue.title,
+      category: issue.category,
+      status: issue.status,
+      raisedById: memberUserId(issue.raisedById),
+      assigneeId: issue.assigneeId ? memberUserId(issue.assigneeId) : null,
+      clubId: issue.clubSlug ? clubIdBySlug.get(issue.clubSlug)! : null,
+      priority: issue.priority,
+      createdAt: ago(issue.daysAgo),
+    })),
+  });
 
-  for (const [index, event] of seedEvents.entries()) {
-    const club = seedClubs.find((c) => c.slug === event.clubSlug) ?? seedClubs[0];
-    await prisma.event.create({
-      data: {
-        id: event.id,
-        slug: event.slug,
-        title: event.title,
-        clubId: club.id,
-        date: resolveSeedEventDate(event.isoDate),
-        time: event.time,
-        venue: event.venue,
-        status: event.status,
-        capacity: event.capacity,
-        going: event.going,
-        cover: event.cover,
-        photo: event.photo ?? null,
-        tags: event.tags,
-        description: event.description,
-        approval: mapApproval(event.approval),
-        createdAt: new Date(Date.now() - index * 2 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - index * 24 * 60 * 60 * 1000),
-      },
-    });
-  }
+  // ---------- tasks ----------
+  await prisma.task.createMany({
+    data: seedTasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      eventId: eventIdBySlug.get(task.eventSlug)!,
+      role: task.role,
+      dueAt: fromNow(task.dueInDays),
+      status: task.status,
+      priority: task.priority,
+      assigneeId: memberUserId(task.assigneeId),
+    })),
+  });
 
-  for (const [index, announcement] of seedAnnouncements.entries()) {
-    const club = seedClubs.find((c) => c.slug === announcement.clubSlug) ?? seedClubs[0];
-    await prisma.announcement.create({
-      data: {
-        id: announcement.id,
-        title: announcement.title,
-        body: announcement.body,
-        clubId: club.id,
-        authorId: "u1",
-        pinned: Boolean(announcement.pinned),
-        audience: announcement.audience ?? "All",
-        priority: "Med",
-        createdAt: new Date(Date.now() - (index + 1) * 3 * 60 * 60 * 1000),
-      },
-    });
-  }
+  // ---------- contributions ----------
+  await prisma.contribution.createMany({
+    data: seedContributions.map((c) => ({
+      id: c.id,
+      userId: memberUserId(c.memberId),
+      eventId: eventIdBySlug.get(c.eventSlug)!,
+      role: c.role,
+      hoursLogged: c.hoursLogged,
+      verifiedAt: ago(c.verifiedDaysAgo),
+    })),
+  });
 
-  for (const [index, issue] of seedIssues.entries()) {
-    const club = issue.clubSlug ? seedClubs.find((c) => c.slug === issue.clubSlug) : seedClubs[0];
-    const raisedByUser =
-      issue.raisedBy === "You"
-        ? users[0]
-        : (users.find((u) => u.name === issue.raisedBy) ?? users[index % users.length]);
-    await prisma.issue.create({
-      data: {
-        id: issue.id,
-        title: issue.title,
-        category: issue.category,
-        status: mapIssueStatus(issue.status),
-        raisedById: raisedByUser.id,
-        clubId: club?.id ?? null,
-        priority: issue.priority,
-        attachments: issue.attachments ?? [],
-        createdAt: new Date(Date.now() - (index + 1) * 6 * 60 * 60 * 1000),
-      },
-    });
-  }
-
-  // Issues without an explicit club still need one for admin dashboards (club-scoped).
-  await prisma.issue.updateMany({ where: { clubId: null }, data: { clubId: "c1" } });
-
-  for (const [index, task] of seedTasks.entries()) {
-    const event =
-      seedEvents.find((e) => e.title.includes(task.event.replace("Cook-Off #41", "Cook-Off"))) ??
-      seedEvents[index % seedEvents.length];
-    const assignee =
-      task.assignee === "You"
-        ? users[0]
-        : (users.find((u) => u.name === task.assignee) ?? users[index % users.length]);
-    await prisma.task.create({
-      data: {
-        id: task.id,
-        title: task.title,
-        eventId: event.id,
-        role: task.role,
-        dueAt: task.dueAt ? new Date(task.dueAt) : new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
-        status: task.status,
-        priority: task.priority,
-        assigneeId: assignee.id,
-      },
-    });
-  }
-
-  for (const [index, entry] of seedContributions.entries()) {
-    const event = seedEvents.find((e) => e.title.includes(entry.event)) ?? seedEvents[index % seedEvents.length];
-    const user = entry.assignee === "You" ? users[0] : (users.find((u) => u.name === entry.assignee) ?? users[0]);
-    await prisma.contribution.create({
-      data: {
-        id: entry.id,
-        userId: user.id,
-        eventId: event.id,
-        role: entry.role,
-        hoursLogged: entry.hoursLogged,
-        verifiedAt: new Date(entry.date),
-      },
-    });
-  }
-
-  const countMeInPool = users.filter((user) => !user.isFaculty && !["u1", "u2", "u3"].includes(user.id));
-  for (const event of seedEvents) {
-    const n = Math.min(event.going, 8);
-    for (let index = 0; index < n; index += 1) {
-      const user = countMeInPool[index % countMeInPool.length];
-      await prisma.countMeIn.create({
-        data: {
-          id: `${event.id}-countmein-${index}`,
-          eventId: event.id,
-          userId: user.id,
-          checkedIn: false,
-          createdAt: new Date(Date.now() - index * 18 * 60 * 60 * 1000),
-        },
-      });
-    }
-  }
-
+  // ---------- venues & equipment ----------
   await prisma.venue.createMany({
     data: seedResources
-      .filter((resource) => resource.type === "Venue")
+      .filter((r) => r.type === "Venue")
       .map(({ id, name, capacity, availability }) => ({ id, name, capacity, availability })),
   });
-
   await prisma.equipment.createMany({
     data: seedResources
-      .filter((resource) => resource.type === "Equipment")
-      .map(({ id, name, capacity, availability }) => ({
-        id,
-        name,
-        quantity: capacity,
-        availability,
-      })),
+      .filter((r) => r.type === "Equipment")
+      .map(({ id, name, capacity, availability }) => ({ id, name, quantity: capacity, availability })),
   });
 
-  for (const entry of transparencyLog) {
-    const club =
-      seedClubs.find((c) => entry.club.includes(c.name.split(" ")[0])) ?? seedClubs[0];
-    await prisma.transparencyLogEntry.create({
-      data: {
-        id: entry.id,
-        eventName: entry.event,
-        outcome: entry.outcome,
-        date: entry.date,
-        clubId: club.id,
-        spend: entry.spend,
-        attendance: entry.attendance,
-      },
-    });
-  }
+  // ---------- transparency log (one per past event) ----------
+  await prisma.transparencyLogEntry.createMany({
+    data: transparencyLog.map((t) => ({
+      id: t.id,
+      eventName: t.eventName,
+      eventId: eventIdBySlug.get(t.eventSlug) ?? null,
+      outcome: t.outcome,
+      date: ago(t.daysAgo).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+      clubId: clubIdBySlug.get(t.clubSlug)!,
+      spend: t.spend,
+      attendance: t.attendance,
+    })),
+  });
 
-  // Team test accounts — one per app role (emails/roll from team roster).
+  // ---------- team test accounts — one per app role (documented in README) ----------
   // Password pattern: FirstName@2026
   const teamAccounts = [
     {
@@ -371,13 +301,14 @@ async function main() {
           clubId: account.membership.clubId,
           role: account.membership.role,
           status: "Active",
-          joinedAt: new Date("2024-08-01"),
+          joinedAt: ago(600),
         },
       });
     }
   }
 
   console.log("Seed complete.");
+  console.log(`Clubs: ${seedClubs.length} · Members: ${seedMembers.length + teamAccounts.length + seedFaculty.length} · Events: ${seedEvents.length} · Tasks: ${seedTasks.length} · Announcements: ${seedAnnouncements.length} · Issues: ${seedIssues.length}`);
   console.log("Demo login: 23s1000123@ds.study.iitm.ac.in / sangam");
   console.log("Team role logins (password = FirstName@2026):");
   for (const account of teamAccounts) {
