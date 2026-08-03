@@ -48,14 +48,10 @@ export function Stat({ label, value, delta }: { label: string; value: string | n
   );
 }
 
-export function Btn({
-  variant = "primary", size = "md", children, className, ...props
-}: {
-  variant?: "primary" | "ghost" | "outline" | "hot";
-  size?: "sm" | "md" | "lg";
-  children: ReactNode;
-  className?: string;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+type BtnVariant = "primary" | "ghost" | "outline" | "hot";
+type BtnSize = "sm" | "md" | "lg";
+
+function btnClasses(variant: BtnVariant, size: BtnSize, className?: string) {
   const base = "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
   const sizes = { sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-5 py-3 text-sm" };
   const variants = {
@@ -64,9 +60,37 @@ export function Btn({
     outline: "border border-white/[0.12] bg-white/[0.035] text-foreground hover:border-white/[0.24] hover:bg-white/[0.06]",
     ghost: "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
   };
+  return cn(base, sizes[size], variants[variant], className);
+}
+
+export function Btn({
+  variant = "primary", size = "md", children, className, ...props
+}: {
+  variant?: BtnVariant;
+  size?: BtnSize;
+  children: ReactNode;
+  className?: string;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button className={cn(base, sizes[size], variants[variant], className)} {...props}>
+    <button className={btnClasses(variant, size, className)} {...props}>
       {children}
     </button>
+  );
+}
+
+/** Anchor rendered with Btn's exact styling — for real navigation/downloads
+ * (e.g. a file export) where a <button> with no action would be a dead click. */
+export function BtnLink({
+  variant = "primary", size = "md", children, className, ...props
+}: {
+  variant?: BtnVariant;
+  size?: BtnSize;
+  children: ReactNode;
+  className?: string;
+} & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return (
+    <a className={btnClasses(variant, size, className)} {...props}>
+      {children}
+    </a>
   );
 }

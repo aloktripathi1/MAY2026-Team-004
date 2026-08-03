@@ -3,7 +3,7 @@ import { requirePageMembership } from "@/backend/auth/page-session";
 import { Download } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, Btn, StatusPill } from "@/components/ui/primitives";
+import { GlassCard, BtnLink, StatusPill } from "@/components/ui/primitives";
 import { TransferAdminForm } from "./TransferAdminForm";
 
 export const metadata: Metadata = {
@@ -38,7 +38,7 @@ export default async function HandoverPage() {
       <PageHeader
         title={<>Handover, <span className="text-secondary">without the folklore.</span></>}
         description="One export, five steps. Your successor inherits history, not just vibes."
-        actions={<Btn><Download className="h-4 w-4" /> Full data export</Btn>}
+        actions={<BtnLink href={`/api/clubs/${clubId}/export`} download><Download className="h-4 w-4" /> Full data export</BtnLink>}
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">

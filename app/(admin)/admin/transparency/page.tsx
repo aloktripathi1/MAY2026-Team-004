@@ -3,7 +3,7 @@ import { requirePageMembership } from "@/backend/auth/page-session";
 import { Download } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
 import { PageHeader } from "@/components/shell/AppShell";
-import { StatusPill, Btn } from "@/components/ui/primitives";
+import { StatusPill, BtnLink } from "@/components/ui/primitives";
 
 export const metadata: Metadata = {
   title: "Transparency · Admin · Sangam",
@@ -24,7 +24,7 @@ export default async function TransparencyPage() {
       <PageHeader
         title={<>Every event, <span className="text-secondary">accounted for.</span></>}
         description="Outcome, spend, attendance. Auto-logged. Members and faculty can read this."
-        actions={<Btn size="sm" variant="outline"><Download className="h-4 w-4" /> Export CSV</Btn>}
+        actions={<BtnLink size="sm" variant="outline" href={`/api/clubs/${clubId}/transparency/export`} download><Download className="h-4 w-4" /> Export CSV</BtnLink>}
       />
       <div className="night-panel overflow-hidden rounded-2xl">
         {log.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No entries logged yet.</div>}
