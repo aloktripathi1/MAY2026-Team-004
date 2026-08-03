@@ -11,15 +11,3 @@ export const INTEREST_CATEGORY_MAP: Record<string, string[]> = {
   sustainability: ["social"],
   writing: ["literary"],
 };
-
-export function clubMatchesInterest(
-  club: { name: string; category: string; tagline: string; description: string },
-  interest: string,
-): boolean {
-  const haystack = `${club.name} ${club.category} ${club.tagline} ${club.description}`.toLowerCase();
-  const normalized = interest.toLowerCase();
-  const categories = INTEREST_CATEGORY_MAP[normalized] ?? [normalized];
-  const categoryMatch = categories.some((category) => club.category.toLowerCase() === category);
-  const textMatch = categories.some((category) => haystack.includes(category)) || haystack.includes(normalized);
-  return categoryMatch || textMatch;
-}
