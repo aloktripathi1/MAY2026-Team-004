@@ -1,13 +1,43 @@
 /**
- * Integration tests for POST /api/assistant/query — the Ask Sangam panel.
- * One shared endpoint, role-aware answers via the authenticated session.
+ * Integration tests for POST /api/assistant/query — the Ask Sangam panel's
+ * real three-step Claude flow (classify -> scoped Prisma query -> generate).
+ * Requires ANTHROPIC_API_KEY to be set; these hit the real Claude API.
  */
-import { ApiClient, isApiAvailable, requireApiAvailable, login, SEEDED_ACCOUNTS } from "./helpers";
+import { prisma } from "@/backend/db/prisma";
+import { ApiClient, isApiAvailable, requireApiAvailable, login, SEEDED_ACCOUNTS, CLUB_IDS } from "./helpers";
 
 const QUERY_PATH = "/api/assistant/query";
 
+let coordinatorTaskId: string | null = null;
+
 beforeAll(async () => {
   requireApiAvailable(await isApiAvailable());
+
+  // None of the known-password seeded accounts happen to have a Task row
+  // assigned right now, so create one for the coordinator account here (and
+  // clean it up in afterAll) rather than asserting against unauthenticatable
+  // randomly-seeded users.
+  const coordinator = await prisma.user.findUnique({ where: { email: SEEDED_ACCOUNTS.coordinator.email } });
+  const event = await prisma.event.findFirst({ where: { clubId: CLUB_IDS.eCell } });
+  if (coordinator && event) {
+    const task = await prisma.task.create({
+      data: {
+        title: "Confirm sponsor banner placement",
+        eventId: event.id,
+        role: "Coordinator",
+        assigneeId: coordinator.id,
+        status: "todo",
+        priority: "Med",
+      },
+    });
+    coordinatorTaskId = task.id;
+  }
+});
+
+afterAll(async () => {
+  if (coordinatorTaskId) {
+    await prisma.task.delete({ where: { id: coordinatorTaskId } }).catch(() => {});
+  }
 });
 
 it("requires authentication", async () => {
@@ -25,46 +55,74 @@ it("rejects an empty query", async () => {
   expect(res.body.success).toBe(false);
 });
 
-it("answers a member's question about their memberships with a membership source", async () => {
+it("answers a membership_status question grounded in the member's real memberships", async () => {
   const client = new ApiClient();
   await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
-  const res = await client.request("POST", QUERY_PATH, { json: { query: "Which clubs am I a member of?" } });
+  const res = await client.request("POST", QUERY_PATH, { json: { query: "Which clubs am I a member of, and what's my role?" } });
   expect(res.status).toBe(200);
   expect(res.body.success).toBe(true);
   expect(res.body.data.sourceType).toBe("membership");
-  expect(typeof res.body.data.answer).toBe("string");
-  expect(res.body.data.answer.length).toBeGreaterThan(0);
+  expect(res.body.data.answer.toLowerCase()).toContain("paradox");
 });
 
-it("answers a coordinator's task question with a task source", async () => {
+it("answers a task_lookup question grounded in the coordinator's real assigned tasks", async () => {
+  if (!coordinatorTaskId) return; // seed data missing an E-Cell event to attach the test task to
+
   const client = new ApiClient();
   await login(client, SEEDED_ACCOUNTS.coordinator.email, SEEDED_ACCOUNTS.coordinator.password);
-  const res = await client.request("POST", QUERY_PATH, { json: { query: "What tasks do I have?" } });
+
+  const res = await client.request("POST", QUERY_PATH, { json: { query: "What's on my task list right now?" } });
   expect(res.status).toBe(200);
   expect(res.body.data.sourceType).toBe("task");
+  expect(res.body.data.answer.toLowerCase()).toContain("sponsor banner");
 });
 
-it("scopes an admin's pending-approvals question to their own club(s)", async () => {
-  const client = new ApiClient();
-  await login(client, SEEDED_ACCOUNTS.admin.email, SEEDED_ACCOUNTS.admin.password);
-  const res = await client.request("POST", QUERY_PATH, { json: { query: "How many pending approvals do I have?" } });
-  expect(res.status).toBe(200);
-  expect(res.body.data.sourceType).toBe("membership");
-  expect(res.body.data.answer).toMatch(/pending membership/i);
-});
-
-it("answers a faculty member's approvals question institution-wide, not membership-scoped", async () => {
-  const client = new ApiClient();
-  await login(client, SEEDED_ACCOUNTS.faculty.email, SEEDED_ACCOUNTS.faculty.password);
-  const res = await client.request("POST", QUERY_PATH, { json: { query: "How many pending approvals do I have?" } });
-  expect(res.status).toBe(200);
-  expect(res.body.data.sourceType).toBe("event");
-});
-
-it("falls back gracefully for an unrecognized question", async () => {
+it("answers an event_lookup question grounded in the member's own club's next event", async () => {
   const client = new ApiClient();
   await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
-  const res = await client.request("POST", QUERY_PATH, { json: { query: "asdkjhaskjdh nonsense query" } });
+  const nextEvent = await prisma.event.findFirst({
+    where: { clubId: CLUB_IDS.paradox, date: { gte: new Date() } },
+    orderBy: { date: "asc" },
+  });
+  if (!nextEvent) return; // seed data has no future Paradox event right now — nothing to assert
+
+  const res = await client.request("POST", QUERY_PATH, { json: { query: "When's my next event?" } });
+  expect(res.status).toBe(200);
+  expect(res.body.data.sourceType).toBe("event");
+  expect(res.body.data.answer.toLowerCase()).toContain(nextEvent!.title.toLowerCase());
+});
+
+it("never leaks another club's event data to a member who isn't in that club", async () => {
+  const client = new ApiClient();
+  await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password); // Paradox (c2) only
+  const codechefEvent = await prisma.event.findFirst({ where: { clubId: CLUB_IDS.codechef } });
+  if (!codechefEvent) return; // no CodeChef event in seed data — nothing to assert
+
+  const res = await client.request("POST", QUERY_PATH, { json: { query: `Tell me about the "${codechefEvent!.title}" event.` } });
+  expect(res.status).toBe(200);
+  // Scoped query returns nothing for a club this member doesn't belong to —
+  // must hit the fixed no-data response, never a Claude-improvised answer
+  // and never the real CodeChef event details.
+  expect(res.body.data.sourceType).toBeNull();
+  expect(res.body.data.answer).toBe("I don't have that information.");
+  expect(res.body.data.answer.toLowerCase()).not.toContain(codechefEvent!.title.toLowerCase());
+});
+
+it("returns the fixed no-data response instead of a hallucinated answer when nothing matches", async () => {
+  const client = new ApiClient();
+  await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
+  // Plain members aren't assigned Tasks in the seed data, so this intent
+  // resolves but the scoped query legitimately returns zero rows.
+  const res = await client.request("POST", QUERY_PATH, { json: { query: "What tasks have been assigned to me?" } });
   expect(res.status).toBe(200);
   expect(res.body.data.sourceType).toBeNull();
+  expect(res.body.data.answer).toBe("I don't have that information.");
+});
+
+it("scopes an admin's announcement question to their own club's announcements", async () => {
+  const client = new ApiClient();
+  await login(client, SEEDED_ACCOUNTS.admin.email, SEEDED_ACCOUNTS.admin.password);
+  const res = await client.request("POST", QUERY_PATH, { json: { query: "What's the latest announcement for my club?" } });
+  expect(res.status).toBe(200);
+  expect(res.body.data.sourceType).toBe("announcement");
 });
