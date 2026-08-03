@@ -33,7 +33,12 @@ const classificationSchema = z.object({
   intent: z.enum(["event_lookup", "task_lookup", "announcement_lookup", "membership_status", "unrelated"]),
   entities: z
     .object({
-      eventName: z.string().nullable().optional(),
+      // A specific event, club, or topic the question names — applies across
+      // all four intents (a named event for event/task lookups, a named
+      // club for membership/announcement lookups, a topic keyword for
+      // announcements). Omitted for generic questions like "what's on my
+      // task list" that don't name anything specific.
+      subject: z.string().nullable().optional(),
     })
     .default({}),
 });
@@ -49,7 +54,7 @@ Classify the user's question into exactly one intent:
 - "membership_status": questions about the user's own club memberships, roles, or membership status.
 - "unrelated": the question is NOT about any of the above — general knowledge, small talk, greetings, unrelated topics, or anything this app has no data for. Use this whenever the question doesn't genuinely fit one of the four categories above. Do not force a fit just because a keyword loosely overlaps.
 
-If the question names a specific event or club, extract it as entities.eventName. Otherwise omit it.
+If the question names a specific event, club, or topic (e.g. "tasks for the Winter Fest", "announcement about the hackathon", "am I a member of Paradox"), extract it as entities.subject. Omit it for generic questions ("what's on my task list", "what are the latest announcements").
 Return ONLY the structured JSON output. No prose, no markdown, no explanation.`;
 
 const GENERATE_SYSTEM_PROMPT = `You are "Ask Sangam", answering a user's question using ONLY the JSON data provided below.
@@ -103,12 +108,12 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
   if (!user.isFaculty && clubIds.length === 0) return NO_DATA_ANSWER;
 
   const scopeFilter = clubIds.length > 0 ? { clubId: { in: clubIds } } : {};
-  const nameFilter = entities.eventName
+  const nameFilter = entities.subject
     ? {
         status: { not: "past" as const },
         OR: [
-          { title: { contains: entities.eventName, mode: "insensitive" as const } },
-          { club: { name: { contains: entities.eventName, mode: "insensitive" as const } } },
+          { title: { contains: entities.subject, mode: "insensitive" as const } },
+          { club: { name: { contains: entities.subject, mode: "insensitive" as const } } },
         ],
       }
     : { date: { gte: new Date() } };
@@ -133,7 +138,7 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
     status: e.status,
   }));
 
-  return generateAnswer(entities.eventName ?? "next event", data, {
+  return generateAnswer(entities.subject ?? "next event", data, {
     sourceType: "event",
     sourceLabel: events[0].title,
     sourceHref: user.memberships.some((m) => m.role === "Coordinator" && m.clubId === events[0].clubId)
@@ -142,15 +147,28 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
   });
 }
 
-async function handleTaskLookup(user: AssistantSessionUser): Promise<AssistantAnswer> {
+async function handleTaskLookup(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
   // Scoped to the requester's own assigned tasks only.
+  const subjectFilter = entities.subject
+    ? {
+        event: {
+          OR: [
+            { title: { contains: entities.subject, mode: "insensitive" as const } },
+            { club: { name: { contains: entities.subject, mode: "insensitive" as const } } },
+          ],
+        },
+      }
+    : {};
+
   const tasks = await prisma.task.findMany({
-    where: { assigneeId: user.id, status: { not: "done" } },
+    where: { assigneeId: user.id, status: { not: "done" }, ...subjectFilter },
     include: { event: true },
     orderBy: [{ dueAt: "asc" }],
     take: 3,
   });
 
+  // A named subject that matches nothing is a hard "no" — never fall back
+  // to the requester's unrelated real tasks just because they have some.
   if (tasks.length === 0) return NO_DATA_ANSWER;
 
   const data = tasks.map((t) => ({
@@ -161,22 +179,35 @@ async function handleTaskLookup(user: AssistantSessionUser): Promise<AssistantAn
     priority: t.priority,
   }));
 
-  return generateAnswer("my tasks", data, {
+  return generateAnswer(entities.subject ?? "my tasks", data, {
     sourceType: "task",
     sourceLabel: tasks[0].title,
     sourceHref: user.isFaculty ? "/faculty" : user.memberships.some((m) => m.role === "Coordinator") ? "/coordinator" : "/volunteer",
   });
 }
 
-async function handleAnnouncementLookup(user: AssistantSessionUser): Promise<AssistantAnswer> {
+async function handleAnnouncementLookup(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
   const clubIds = scopedClubIds(user);
+  const scopeFilter = clubIds.length > 0 ? { OR: [{ clubId: { in: clubIds } }, { audience: "All" as const }] } : { audience: "All" as const };
+  const subjectFilter = entities.subject
+    ? {
+        OR: [
+          { title: { contains: entities.subject, mode: "insensitive" as const } },
+          { body: { contains: entities.subject, mode: "insensitive" as const } },
+          { club: { name: { contains: entities.subject, mode: "insensitive" as const } } },
+        ],
+      }
+    : {};
+
   const announcements = await prisma.announcement.findMany({
-    where: clubIds.length > 0 ? { OR: [{ clubId: { in: clubIds } }, { audience: "All" }] } : { audience: "All" },
+    where: { AND: [scopeFilter, subjectFilter] },
     include: { club: true },
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
     take: 3,
   });
 
+  // A named topic that matches nothing is a hard "no" — never fall back to
+  // generic latest announcements just because some exist.
   if (announcements.length === 0) return NO_DATA_ANSWER;
 
   const data = announcements.map((a) => ({
@@ -186,27 +217,33 @@ async function handleAnnouncementLookup(user: AssistantSessionUser): Promise<Ass
     pinned: a.pinned,
   }));
 
-  return generateAnswer("latest announcements", data, {
+  return generateAnswer(entities.subject ?? "latest announcements", data, {
     sourceType: "announcement",
     sourceLabel: announcements[0].title,
     sourceHref: user.isFaculty ? "/faculty" : "/app",
   });
 }
 
-async function handleMembershipStatus(user: AssistantSessionUser): Promise<AssistantAnswer> {
+async function handleMembershipStatus(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
   // Always scoped to the requester's own userId — never another user's memberships.
-  const memberships = await prisma.membership.findMany({
+  const allMemberships = await prisma.membership.findMany({
     where: { userId: user.id },
     include: { club: true },
   });
 
-  if (memberships.length === 0 && !user.isFaculty) return NO_DATA_ANSWER;
+  // A specific club named that the user isn't actually in is a hard "no" —
+  // never fall back to listing their real, unrelated memberships instead.
+  const memberships = entities.subject
+    ? allMemberships.filter((m) => m.club.name.toLowerCase().includes(entities.subject!.toLowerCase()))
+    : allMemberships;
+
+  if (memberships.length === 0 && !(user.isFaculty && !entities.subject)) return NO_DATA_ANSWER;
 
   const data = user.isFaculty
     ? { isFaculty: true, memberships: memberships.map((m) => ({ club: m.club.name, role: m.role, status: m.status })) }
     : { memberships: memberships.map((m) => ({ club: m.club.name, role: m.role, status: m.status })) };
 
-  return generateAnswer("my membership status", data, {
+  return generateAnswer(entities.subject ?? "my membership status", data, {
     sourceType: "membership",
     sourceLabel: memberships[0]?.club.name,
     sourceHref: "/app/profile",
@@ -227,11 +264,11 @@ export async function answerAssistantQuery(user: AssistantSessionUser, question:
       case "event_lookup":
         return await handleEventLookup(user, classification.entities);
       case "task_lookup":
-        return await handleTaskLookup(user);
+        return await handleTaskLookup(user, classification.entities);
       case "announcement_lookup":
-        return await handleAnnouncementLookup(user);
+        return await handleAnnouncementLookup(user, classification.entities);
       case "membership_status":
-        return await handleMembershipStatus(user);
+        return await handleMembershipStatus(user, classification.entities);
       case "unrelated":
         return NO_DATA_ANSWER;
     }

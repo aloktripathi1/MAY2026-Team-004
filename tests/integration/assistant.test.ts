@@ -126,3 +126,29 @@ describe("questions unrelated to any app data", () => {
     expect(res.body.data.answer).toBe("I don't have that information.");
   });
 });
+
+describe("named-but-nonexistent subjects within a real intent", () => {
+  // task_lookup/announcement_lookup/membership_status used to ignore any
+  // specific subject named in the question entirely and just dump the
+  // requester's real *latest* tasks/announcements/memberships regardless —
+  // so asking about a fictional event's tasks got real, unrelated tasks
+  // back as if they answered it. Each intent must now filter by the named
+  // subject and return the fixed no-data response when nothing matches,
+  // even though the requester does have *other*, unrelated real data.
+  const cases: Array<{ role: keyof typeof SEEDED_ACCOUNTS; query: string }> = [
+    { role: "coordinator", query: "What tasks do I have for the Time Travel Symposium?" },
+    { role: "admin", query: "What's the announcement about the club's new spaceship sponsorship?" },
+    { role: "admin", query: "Am I an admin of the Underwater Basket Weaving Club?" },
+    { role: "member", query: "Tell me about the 'Intergalactic Robotics Gala' event." },
+  ];
+
+  it.each(cases)("returns the fixed no-data response for a fictional subject ($role): $query", async ({ role, query }) => {
+    const account = SEEDED_ACCOUNTS[role];
+    const client = new ApiClient();
+    await login(client, account.email, account.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBeNull();
+    expect(res.body.data.answer).toBe("I don't have that information.");
+  });
+});
