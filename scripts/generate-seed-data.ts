@@ -88,16 +88,16 @@ interface ClubDef {
 }
 
 const CLUB_DEFS: ClubDef[] = [
-  { id: "c1", slug: "codechef", name: "CodeChef IITM BS", tagline: "Competitive programming, weekly contests.", category: "Technical", hue: "122", emoji: "◉", founded: "2021", description: "Weekly cook-offs, algorithm deep-dives, and interview prep circles. Home for anyone who thinks in edge cases.", photo: "/club-banners/codechef.jpg", targetMembers: 27, activity: "very-active" },
-  { id: "c2", slug: "paradox", name: "Paradox - Debate Society", tagline: "Parliamentary debate & MUN circuit.", category: "Literary", hue: "5", emoji: "❋", founded: "2020", description: "British Parliamentary, Asians, and MUN training. Weekly practice rounds. Traveling squad.", photo: "/club-banners/paradox.jpg", targetMembers: 18, activity: "steady" },
-  { id: "c3", slug: "sarga", name: "Sarga - Music Circle", tagline: "Fusion, jams, semester showcases.", category: "Cultural", hue: "260", emoji: "♪", founded: "2019", description: "Instrumentalists, vocalists, producers. Open jam every Friday, big fusion show every semester.", photo: "/club-banners/sarga.jpg", targetMembers: 23, activity: "active" },
-  { id: "c4", slug: "kalakriti", name: "Kalakriti Design Guild", tagline: "Product, UI, illustration critique.", category: "Design", hue: "85", emoji: "◐", founded: "2022", description: "Portfolio reviews, Figma workshops, brand studies. Cross-pollination with product & marketing.", photo: "/club-banners/kalakriti.jpg", targetMembers: 17, activity: "steady" },
-  { id: "c5", slug: "prakriti", name: "Prakriti - Sustainability", tagline: "Campus greening & climate action.", category: "Social", hue: "155", emoji: "❦", founded: "2021", description: "Zero-waste campaigns, tree drives, and climate literacy workshops for local schools.", photo: "/club-banners/prakriti.jpg", targetMembers: 16, activity: "steady" },
-  { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", hue: "45", emoji: "◈", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", photo: "/club-banners/e-cell.jpg", targetMembers: 25, activity: "very-active" },
-  { id: "c7", slug: "quill", name: "Quill - Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", hue: "320", emoji: "✦", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", photo: "/club-banners/quill.jpg", targetMembers: 12, activity: "at-risk" },
-  { id: "c8", slug: "arena", name: "Arena - Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", hue: "0", emoji: "♞", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", photo: "/club-banners/arena.jpg", targetMembers: 18, activity: "steady" },
-  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", targetMembers: 24, activity: "very-active" },
-  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", targetMembers: 15, activity: "steady" },
+  { id: "c1", slug: "codechef", name: "CodeChef IITM BS", tagline: "Competitive programming, weekly contests.", category: "Technical", hue: "122", emoji: "◉", founded: "2021", description: "Weekly cook-offs, algorithm deep-dives, and interview prep circles. Home for anyone who thinks in edge cases.", photo: "/club-banners/codechef.jpg", targetMembers: 55, activity: "very-active" },
+  { id: "c2", slug: "paradox", name: "Paradox - Debate Society", tagline: "Parliamentary debate & MUN circuit.", category: "Literary", hue: "5", emoji: "❋", founded: "2020", description: "British Parliamentary, Asians, and MUN training. Weekly practice rounds. Traveling squad.", photo: "/club-banners/paradox.jpg", targetMembers: 28, activity: "steady" },
+  { id: "c3", slug: "sarga", name: "Sarga - Music Circle", tagline: "Fusion, jams, semester showcases.", category: "Cultural", hue: "260", emoji: "♪", founded: "2019", description: "Instrumentalists, vocalists, producers. Open jam every Friday, big fusion show every semester.", photo: "/club-banners/sarga.jpg", targetMembers: 32, activity: "active" },
+  { id: "c4", slug: "kalakriti", name: "Kalakriti Design Guild", tagline: "Product, UI, illustration critique.", category: "Design", hue: "85", emoji: "◐", founded: "2022", description: "Portfolio reviews, Figma workshops, brand studies. Cross-pollination with product & marketing.", photo: "/club-banners/kalakriti.jpg", targetMembers: 24, activity: "steady" },
+  { id: "c5", slug: "prakriti", name: "Prakriti - Sustainability", tagline: "Campus greening & climate action.", category: "Social", hue: "155", emoji: "❦", founded: "2021", description: "Zero-waste campaigns, tree drives, and climate literacy workshops for local schools.", photo: "/club-banners/prakriti.jpg", targetMembers: 22, activity: "steady" },
+  { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", hue: "45", emoji: "◈", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", photo: "/club-banners/e-cell.jpg", targetMembers: 34, activity: "very-active" },
+  { id: "c7", slug: "quill", name: "Quill - Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", hue: "320", emoji: "✦", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", photo: "/club-banners/quill.jpg", targetMembers: 20, activity: "at-risk" },
+  { id: "c8", slug: "arena", name: "Arena - Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", hue: "0", emoji: "♞", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", photo: "/club-banners/arena.jpg", targetMembers: 24, activity: "steady" },
+  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", targetMembers: 30, activity: "very-active" },
+  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", targetMembers: 22, activity: "steady" },
 ];
 const CLUB_SLUGS = CLUB_DEFS.map((c) => c.slug);
 const clubBySlug = (slug: string) => CLUB_DEFS.find((c) => c.slug === slug)!;
@@ -209,7 +209,7 @@ for (const club of CLUB_DEFS) {
 // "Connector" users deliberately hold multiple clubs (different role each) to
 // demonstrate the multi-role system; the rest hold a single club.
 const totalSlots = [...clubRoleQueues.values()].reduce((s, q) => s + q.length, 0);
-const TARGET_BULK_USERS = 55;
+const TARGET_BULK_USERS = 105;
 let slotsRemaining = totalSlots;
 let usersRemaining = TARGET_BULK_USERS;
 
@@ -545,7 +545,7 @@ const TASK_TITLES = [
   "Set up scoreboard & timer", "Confirm catering headcount", "Load in AV equipment",
 ];
 const taskDefs: TaskDef[] = [];
-const TASK_COUNT = 18;
+const TASK_COUNT = 75;
 const eventPoolForTasks = events.filter((e) => e.status === "upcoming" || e.daysOffset >= -14);
 for (let i = 0; i < TASK_COUNT; i += 1) {
   const event = pick(eventPoolForTasks.length > 0 ? eventPoolForTasks : events);
@@ -624,36 +624,79 @@ const ANNOUNCEMENT_TEMPLATES: Record<string, { title: string; body: string }[]> 
   codechef: [
     { title: "Cook-Off editorial is up", body: "The sqrt-decomp approach for Problem D is cleaner - writeup in the channel." },
     { title: "Interview prep slots open", body: "Six slots left for this week's mock interview circle. First come, first served." },
+    { title: "Div 2 rating sync delayed", body: "Contest platform is re-running the rating sync — expect updated numbers by tomorrow morning." },
+    { title: "New DSA reading group forming", body: "Starting a weekly reading group on segment trees and persistent structures. Sign up in the channel." },
+    { title: "Regionals travel squad announced", body: "Squad list for the regional onsite is up. Travel form due by Friday." },
+    { title: "Editorial writers needed", body: "Looking for two more editorial writers for next month's cook-off. DM if interested." },
   ],
   "e-cell": [
     { title: "Ignite registrations close soon", body: "Seats filling fast. If you're pitching, submit your one-liner before the deadline." },
     { title: "Mentor office hours moved", body: "This week's slots moved to the E-Cell lounge due to a room booking clash." },
+    { title: "Alumni founder AMA next week", body: "Two alumni founders confirmed for a fireside chat. Submit questions in advance." },
+    { title: "Pitch deck templates updated", body: "New deck template in the drive — matches what judges will actually be scoring against." },
+    { title: "Startup weekend sponsor confirmed", body: "A new sponsor came on board for Ignite — prize pool bumped, details soon." },
+    { title: "Founder circle applications open", body: "Applications for the next founder circle cohort are open through the end of the month." },
   ],
   sarga: [
     { title: "Rehearsal schedule update", body: "Amphitheatre is booked Thursday for another event. All acts, please adjust your slot." },
     { title: "New setlist uploaded", body: "Check the drive for this semester's fusion showcase setlist and chord charts." },
+    { title: "New mic set arriving", body: "Two new condenser mics arriving this week — sign-up sheet for the first booking slot is up." },
+    { title: "Vocalists needed for showcase", body: "Still short two vocalists for the fusion showcase closing number. Auditions this Friday." },
+    { title: "Jam night moved to Studio B", body: "This week's open jam moves to Studio B — Amphitheatre is booked for a coordinator meeting." },
   ],
   paradox: [
     { title: "New motion pool uploaded", body: "Fresh motions across social, IR, and economics tracks. Sorted by difficulty." },
+    { title: "MUN delegate prep sessions", body: "Two extra prep sessions added before the inter-college MUN. Bring your position papers." },
+    { title: "Judging panel for Winter Open", body: "Judging panel for Winter Debate Open confirmed — briefing session Wednesday evening." },
+    { title: "Travelling squad for BP nationals", body: "Squad shortlist for the BP nationals travel is up. Confirm availability by this weekend." },
+    { title: "New practice round format", body: "Switching practice rounds to a shorter prep time to match the actual tournament format." },
   ],
   kalakriti: [
     { title: "Portfolio crit sign-ups open", body: "Ten slots, ten minutes each. First-come, first-served in the club channel." },
+    { title: "Figma workshop this weekend", body: "Component libraries and auto-layout — bring a laptop, no prior Figma experience needed." },
+    { title: "Brand study submissions due", body: "This month's brand teardown submissions are due Sunday night." },
+    { title: "Guest critique from a design alum", body: "An alum from a product design team is joining Friday's crit session — bring your best work." },
+    { title: "Illustration jam this Saturday", body: "Casual illustration jam, bring a tablet or paper — theme announced on the day." },
+    { title: "Typography study group forming", body: "Starting a biweekly typography study group — pairing/kerning drills and type crit." },
   ],
   prakriti: [
     { title: "Volunteers needed for teach-in", body: "Looking for four more volunteers for next week's schools teach-in. Transport covered." },
+    { title: "Tree drive rescheduled", body: "Weather pushed the tree drive to next Saturday — same meeting point, same time." },
+    { title: "Zero-waste campaign kickoff", body: "Kickoff meeting for the semester's zero-waste campaign is this Tuesday evening." },
+    { title: "Compost bin maintenance day", body: "Monthly compost bin maintenance — gloves provided, just show up." },
+    { title: "Seed bank donations welcome", body: "Starting a campus seed bank — bring labeled seed packets to the next meeting." },
+    { title: "Climate literacy workshop slots open", body: "Six slots left for facilitators at next week's schools climate literacy workshop." },
   ],
   quill: [
     { title: "Zine submissions closing", body: "Last call for this month's zine. Editing pairs assigned once submissions close." },
+    { title: "Reading night lineup posted", body: "This month's reading night lineup is up — five readers, open mic slots after." },
+    { title: "Workshop round 2 pairings", body: "Second workshop round pairings are posted. Read your partner's draft before Thursday." },
+    { title: "New editor applications open", body: "Looking for a new poetry section editor for next semester's zine." },
+    { title: "Guest poet visiting next month", body: "A published alum poet is doing a reading and Q&A next month — details soon." },
+    { title: "Longform criticism track launching", body: "New track for essay-length criticism pieces starting next zine cycle." },
   ],
   arena: [
     { title: "Blitz night rating reset", body: "Club ratings reset for the new season. First blitz night this Friday." },
+    { title: "Inter-college league fixtures", body: "Fixtures for the inter-college league are posted — check your board number." },
+    { title: "Opening prep clinic this week", body: "Clinic on Sicilian setups this week — bring a board if you have one, extras available." },
+    { title: "New beginner ladder starting", body: "A separate ladder for beginners starts this week — no rating requirement to join." },
+    { title: "Bullet chess night added", body: "Adding a monthly bullet chess night by popular request — first one this Friday." },
+    { title: "Club sets bought for beginners", body: "Ten new chess sets available to borrow for anyone without their own board." },
   ],
   photon: [
     { title: "Robotics lab access hours extended", body: "Lab now open until 10 PM on build-night days. Swipe access updated." },
     { title: "Hackware Showdown team registration open", body: "Teams of up to four. Component kit checkout starts Monday." },
+    { title: "New sensor kits arrived", body: "IMU and ToF sensor kits arrived — check them out from the lab for weekend builds." },
+    { title: "Line-follower workshop this Saturday", body: "Beginner-friendly line-follower build workshop, all parts provided." },
+    { title: "Safety briefing mandatory for solder station", body: "New members must complete the safety briefing before using the solder station." },
   ],
   turf: [
     { title: "Inter-hostel cup fixtures posted", body: "Group stage fixtures are up on the noticeboard and club channel." },
+    { title: "Weekend match rescheduled", body: "Saturday's five-a-side match moved to Sunday morning due to ground maintenance." },
+    { title: "New boots and bibs ordered", body: "New kit arriving next week — sizes were collected at last week's session." },
+    { title: "Fitness drills added to Tuesdays", body: "Added a short fitness drill block before Tuesday practice — optional but recommended." },
+    { title: "Referees needed for group stage", body: "Looking for three volunteer referees for the inter-hostel cup group stage." },
+    { title: "Turf ground resurfacing notice", body: "Ground closed for resurfacing next Monday and Tuesday — practice moves indoors." },
   ],
 };
 const announcementDefs: AnnouncementDef[] = [];
@@ -707,7 +750,7 @@ const ISSUE_TEMPLATES: { category: IssueDef["category"]; title: string }[] = [
   { category: "Access", title: "Coordinator role not reflecting after approval" },
 ];
 const issueDefs: IssueDef[] = [];
-const ISSUE_COUNT = 16;
+const ISSUE_COUNT = 70;
 for (let i = 0; i < ISSUE_COUNT; i += 1) {
   const template = ISSUE_TEMPLATES[i % ISSUE_TEMPLATES.length];
   const club = pick(CLUB_DEFS);

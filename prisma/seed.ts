@@ -307,6 +307,147 @@ async function main() {
     }
   }
 
+  // ---------- personal data for the 5 documented demo accounts ----------
+  // The loop above only gives each team account a bare membership row — real
+  // demo/QA logins need their own tasks, issues, contributions, and
+  // announcements too, not just a seat borrowed from the generic bulk
+  // dataset (which never references these account ids at all).
+  const sargaEvents = await prisma.event.findMany({ where: { clubId: "c3" }, orderBy: { date: "asc" } });
+  const eCellEvents = await prisma.event.findMany({ where: { clubId: "c6" }, orderBy: { date: "asc" } });
+
+  const pardhivTaskDefs = [
+    { title: "Confirm PA system booking", role: "Logistics", status: "todo" as const, priority: "High" as const, dueInDays: 2 },
+    { title: "Brief new volunteers on setup", role: "Coordination", status: "todo" as const, priority: "Med" as const, dueInDays: 4 },
+    { title: "Test mic levels before soundcheck", role: "Tech ops", status: "doing" as const, priority: "Med" as const, dueInDays: 1 },
+    { title: "Post rehearsal recap on Discord", role: "Content", status: "done" as const, priority: "Low" as const, dueInDays: -3 },
+    { title: "Arrange green-room snacks", role: "Hospitality", status: "done" as const, priority: "Low" as const, dueInDays: -10 },
+  ];
+  for (const [index, def] of pardhivTaskDefs.entries()) {
+    const event = sargaEvents[index % Math.max(sargaEvents.length, 1)];
+    if (!event) continue;
+    await prisma.task.create({
+      data: {
+        id: `team-task-pardhiv-${index + 1}`,
+        title: def.title,
+        eventId: event.id,
+        role: def.role,
+        dueAt: fromNow(def.dueInDays),
+        status: def.status,
+        priority: def.priority,
+        assigneeId: "u-pardhiv",
+      },
+    });
+  }
+
+  const purnenduTaskDefs = [
+    { title: "Confirm sponsor booth setup", role: "Logistics", status: "todo" as const, priority: "High" as const, dueInDays: 3 },
+    { title: "Brief judges on scoring rubric", role: "Coordination", status: "todo" as const, priority: "High" as const, dueInDays: 5 },
+    { title: "Finalize mentor slot roster", role: "Coordination", status: "doing" as const, priority: "Med" as const, dueInDays: 2 },
+    { title: "Draft post-event survey", role: "Content", status: "todo" as const, priority: "Low" as const, dueInDays: 8 },
+    { title: "Confirm venue booking with facilities", role: "Logistics", status: "done" as const, priority: "Med" as const, dueInDays: -6 },
+  ];
+  for (const [index, def] of purnenduTaskDefs.entries()) {
+    const event = eCellEvents[index % Math.max(eCellEvents.length, 1)];
+    if (!event) continue;
+    await prisma.task.create({
+      data: {
+        id: `team-task-purnendu-${index + 1}`,
+        title: def.title,
+        eventId: event.id,
+        role: def.role,
+        dueAt: fromNow(def.dueInDays),
+        status: def.status,
+        priority: def.priority,
+        assigneeId: "u-purnendu",
+      },
+    });
+  }
+
+  // A few verified volunteer hours for Pardhiv on past Sarga events.
+  const pastSargaEvents = sargaEvents.filter((e) => e.status === "past");
+  const pardhivContributionDefs = [
+    { role: "Volunteer crew", hoursLogged: 6.5 },
+    { role: "Tech ops", hoursLogged: 4.0 },
+    { role: "Hospitality", hoursLogged: 3.5 },
+  ];
+  for (const [index, def] of pardhivContributionDefs.entries()) {
+    const event = pastSargaEvents[index % Math.max(pastSargaEvents.length, 1)];
+    if (!event) continue;
+    await prisma.contribution.create({
+      data: {
+        id: `team-contribution-pardhiv-${index + 1}`,
+        userId: "u-pardhiv",
+        eventId: event.id,
+        role: def.role,
+        hoursLogged: def.hoursLogged,
+        verifiedAt: ago(10 + index * 15),
+      },
+    });
+  }
+
+  // Yalla (Paradox member) raising real, varied-status issues.
+  const yallaIssueDefs = [
+    { title: "Can't count myself in - button loops", category: "Registration" as const, status: "Open" as const, priority: "Med" as const, daysAgo: 3, assigneeId: undefined as string | undefined },
+    { title: "Waitlist position not updating", category: "Registration" as const, status: "InProgress" as const, priority: "Low" as const, daysAgo: 9, assigneeId: "u-vishal" },
+    { title: "Club page shows outdated tagline", category: "Other" as const, status: "Resolved" as const, priority: "Low" as const, daysAgo: 20, assigneeId: undefined as string | undefined },
+  ];
+  for (const [index, def] of yallaIssueDefs.entries()) {
+    await prisma.issue.create({
+      data: {
+        id: `team-issue-yalla-${index + 1}`,
+        title: def.title,
+        category: def.category,
+        status: def.status,
+        raisedById: "u-yalla",
+        assigneeId: def.assigneeId ?? null,
+        clubId: "c2",
+        priority: def.priority,
+        createdAt: ago(def.daysAgo),
+      },
+    });
+  }
+
+  // Announcements authored by the admin and coordinator team accounts themselves.
+  const vishalAnnouncementDefs = [
+    { title: "Regionals onsite squad meeting Friday", body: "Mandatory meeting for everyone on the regionals travel squad — logistics and jersey sizing.", pinned: true, daysAgo: 2 },
+    { title: "New judging panel for internal contests", body: "Rotating in two new problem-setters this month — expect fresh problem styles.", pinned: false, daysAgo: 8 },
+  ];
+  for (const [index, def] of vishalAnnouncementDefs.entries()) {
+    await prisma.announcement.create({
+      data: {
+        id: `team-announcement-vishal-${index + 1}`,
+        title: def.title,
+        body: def.body,
+        clubId: "c1",
+        authorId: "u-vishal",
+        pinned: def.pinned,
+        audience: "All",
+        priority: "Med",
+        createdAt: ago(def.daysAgo),
+      },
+    });
+  }
+
+  const purnenduAnnouncementDefs = [
+    { title: "Ignite venue change confirmed", body: "Startup weekend moves to the Amphitheatre — same dates, bigger room.", pinned: true, daysAgo: 4 },
+    { title: "Coordinator office hours this week", body: "Drop by the E-Cell lounge Wednesday if you need help with your pitch deck.", pinned: false, daysAgo: 11 },
+  ];
+  for (const [index, def] of purnenduAnnouncementDefs.entries()) {
+    await prisma.announcement.create({
+      data: {
+        id: `team-announcement-purnendu-${index + 1}`,
+        title: def.title,
+        body: def.body,
+        clubId: "c6",
+        authorId: "u-purnendu",
+        pinned: def.pinned,
+        audience: "All",
+        priority: "Med",
+        createdAt: ago(def.daysAgo),
+      },
+    });
+  }
+
   console.log("Seed complete.");
   console.log(`Clubs: ${seedClubs.length} · Members: ${seedMembers.length + teamAccounts.length + seedFaculty.length} · Events: ${seedEvents.length} · Tasks: ${seedTasks.length} · Announcements: ${seedAnnouncements.length} · Issues: ${seedIssues.length}`);
   console.log("Demo login: 23s1000123@ds.study.iitm.ac.in / sangam");
