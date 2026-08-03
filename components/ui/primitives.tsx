@@ -24,8 +24,10 @@ export function GlassCard({
   return (
     <div
       className={cn(
-        "night-panel rounded-2xl p-5 transition duration-200",
-        hover && "hover:-translate-y-0.5 hover:border-secondary/35 hover:bg-surface-2/70",
+        "night-panel rounded-2xl p-5 transition-[box-shadow,background-color,border-color] duration-300 ease-out",
+        // Elevation via shadow instead of a translateY lift — the lift read as an
+        // abrupt "bounce" on hover (#122); shadow + a calm color shift is steadier.
+        hover && "hover:border-secondary/35 hover:bg-surface-2/70 hover:shadow-[0_24px_60px_-32px_oklch(0_0_0/70%)]",
         className,
       )}
     >

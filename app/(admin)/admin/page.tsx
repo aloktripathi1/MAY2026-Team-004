@@ -83,16 +83,16 @@ export default async function AdminDashboard() {
       <AdminPageHeader clubName={club?.name ?? "Your club"} memberCount={totalMembers} />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Link href="/admin/members" className="block transition duration-200 hover:-translate-y-0.5">
+        <Link href="/admin/members" className="block rounded-2xl transition-shadow duration-300 ease-out hover:shadow-[0_24px_60px_-32px_oklch(0_0_0/70%)]">
           <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />
         </Link>
-        <Link href="/admin/approvals" className="block transition duration-200 hover:-translate-y-0.5">
+        <Link href="/admin/approvals" className="block rounded-2xl transition-shadow duration-300 ease-out hover:shadow-[0_24px_60px_-32px_oklch(0_0_0/70%)]">
           <Stat label="Pending approvals" value={pendingMembers.length} delta="Needs review →" />
         </Link>
-        <Link href="#upcoming-events" className="block transition duration-200 hover:-translate-y-0.5">
+        <Link href="#upcoming-events" className="block rounded-2xl transition-shadow duration-300 ease-out hover:shadow-[0_24px_60px_-32px_oklch(0_0_0/70%)]">
           <Stat label="Upcoming events" value={upcomingEventsCount} />
         </Link>
-        <Link href="/admin/issues" className="block transition duration-200 hover:-translate-y-0.5">
+        <Link href="/admin/issues" className="block rounded-2xl transition-shadow duration-300 ease-out hover:shadow-[0_24px_60px_-32px_oklch(0_0_0/70%)]">
           <Stat label="Open issues" value={openIssuesCount} delta={unassignedIssuesCount > 0 ? `${unassignedIssuesCount} unassigned` : undefined} />
         </Link>
       </div>
