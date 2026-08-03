@@ -1895,7 +1895,11 @@ components:
             properties:
               name: { type: string }
               roll: { type: string }
-              email: { type: string, format: email }
+              email:
+                type: string
+                format: email
+                description: Institutional email only. Must end with @ds.study.iitm.ac.in.
+                pattern: "^[^@\\s]+@ds\\.study\\.iitm\\.ac\\.in$"
               role:
                 type: string
                 enum: [Member, Volunteer, Coordinator, Admin]

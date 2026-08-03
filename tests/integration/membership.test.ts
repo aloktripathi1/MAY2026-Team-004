@@ -221,6 +221,37 @@ it("bulk-imports members for the club's own admin", async () => {
   });
 });
 
+it("rejects a non-institutional email in a bulk import row (#120)", async () => {
+  const payload = {
+    clubId: CLUB_IDS.codechef,
+    rows: [{ name: "Off Domain", roll: `23tbaddomain${Date.now()}`, email: "off-domain@gmail.com", role: "Member" }],
+  };
+  const res = await adminClient.post(BULK_IMPORT_PATH, payload);
+  const expected = { status: 400, "error.code": "VALIDATION_ERROR" };
+
+  reportCase("POST /api/members/bulk-import - non-institutional email rejected", payload, expected, res, () => {
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  const created = await prisma.user.findUnique({ where: { email: "off-domain@gmail.com" } });
+  expect(created).toBeNull();
+});
+
+it("rejects a whitespace-only name in a bulk import row (#120)", async () => {
+  const payload = {
+    clubId: CLUB_IDS.codechef,
+    rows: [{ name: "   ", roll: `23tblankname${Date.now()}`, email: `blankname${Date.now()}@ds.study.iitm.ac.in`, role: "Member" }],
+  };
+  const res = await adminClient.post(BULK_IMPORT_PATH, payload);
+  const expected = { status: 400, "error.code": "VALIDATION_ERROR" };
+
+  reportCase("POST /api/members/bulk-import - whitespace-only name rejected", payload, expected, res, () => {
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
 it("handles simultaneous identical bulk imports without server errors", async () => {
   const suffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
   const rows = [0, 1].map((index) => ({

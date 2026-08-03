@@ -3,14 +3,18 @@ import { getMockSession } from "@/backend/auth/mock-session";
 import { bulkImportMembers } from "@/backend/domain/membership";
 import { requireClubAdminAccess } from "@/backend/domain/workflow-rules";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
+import { institutionalEmailSchema } from "@/backend/auth/signup-schema";
 
 /** User Story 1.5 — Bulk Member Import */
 const USER_STORY = "1.5";
 
+// email reuses the same institutional-domain check as real signup — this
+// previously accepted any well-formed email (see #120, same defect as the
+// admin add-member form).
 const rowSchema = z.object({
-  name: z.string().min(1),
-  roll: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().trim().min(1),
+  roll: z.string().trim().min(1),
+  email: institutionalEmailSchema,
   role: z.string().optional(),
 });
 

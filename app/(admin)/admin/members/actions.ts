@@ -5,13 +5,17 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/backend/db/prisma";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { institutionalEmailSchema } from "@/backend/auth/signup-schema";
 
 const ROLES = ["Member", "Volunteer", "Coordinator", "Admin"] as const;
 
+// Reuses the same institutional-domain check as real signup instead of a bare
+// z.string().email() — this form previously accepted any email (e.g. a plain
+// gmail.com address) and whitespace-only names/roll numbers (#120).
 const memberSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  roll: z.string().min(1, "Roll number is required"),
-  email: z.string().email("Enter a valid email"),
+  name: z.string().trim().min(1, "Name is required"),
+  roll: z.string().trim().min(1, "Roll number is required"),
+  email: institutionalEmailSchema,
   role: z.enum(ROLES),
 });
 
