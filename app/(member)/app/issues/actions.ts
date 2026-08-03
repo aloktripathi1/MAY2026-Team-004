@@ -18,6 +18,13 @@ export async function createIssueAction(_prevState: IssueFormState, formData: Fo
   const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
+  // Admin's Issues board is scoped to a club (where: { clubId }), so an
+  // issue raised without one never surfaces there even though it saves
+  // successfully — see #118. Match the member shell's own club context
+  // (app/(member)/app/layout.tsx uses memberships[0] as the primary club).
+  const clubId = session.user.memberships[0]?.clubId;
+  if (!clubId) return { error: "You must be an active member of a club to raise an issue." };
+
   let attachments: string[] = [];
   const attachmentsRaw = formData.get("attachments");
   if (typeof attachmentsRaw === "string" && attachmentsRaw) {
@@ -43,6 +50,7 @@ export async function createIssueAction(_prevState: IssueFormState, formData: Fo
       title: parsed.data.title,
       category: parsed.data.category,
       raisedById: session.user.id,
+      clubId,
       priority: "Low",
       attachments: parsed.data.attachments ?? [],
     },
