@@ -140,6 +140,7 @@ export async function registerForEvent(userId: string, eventId: string) {
               capacity: event.capacity,
               countMeInCount: event._count.countMeIns,
               date: event.date,
+              approval: event.approval,
             }) === "cancel"
               ? "cancelled"
               : "registered";
@@ -239,11 +240,28 @@ export async function setEventApprovalByFaculty(
   isFaculty: boolean,
   eventId: string,
   approval: "approved" | "pending" | "rejected",
+  force = false,
 ) {
   if (!isFaculty) return { ok: false, code: "FORBIDDEN", message: "Faculty only." } as const;
 
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { _count: { select: { countMeIns: true } } },
+  });
   if (!event) return { ok: false, code: "EVENT_NOT_FOUND", message: "Event not found." } as const;
+
+  // Rejecting an already-approved event with registrants silently orphaned
+  // them with no confirmation or notice (#119). Require an explicit `force`
+  // once people are registered, rather than let one click undo approval
+  // out from under them.
+  const registrantCount = event._count.countMeIns;
+  if (event.approval === "approved" && approval === "rejected" && registrantCount > 0 && !force) {
+    return {
+      ok: false,
+      code: "CONFIRMATION_REQUIRED",
+      message: `${registrantCount} ${registrantCount === 1 ? "person is" : "people are"} already registered for this approved event. Resubmit with force to reject it anyway.`,
+    } as const;
+  }
 
   const updated = await prisma.event.update({
     where: { id: eventId },

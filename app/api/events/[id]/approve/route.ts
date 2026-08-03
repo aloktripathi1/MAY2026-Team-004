@@ -8,6 +8,7 @@ const USER_STORY = "2.8";
 
 const bodySchema = z.object({
   approval: z.enum(["approved", "pending", "rejected"]),
+  force: z.boolean().optional(),
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -33,9 +34,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   try {
-    const result = await setEventApprovalByFaculty(session.user.isFaculty, params.id, parsed.data.approval);
+    const result = await setEventApprovalByFaculty(session.user.isFaculty, params.id, parsed.data.approval, parsed.data.force);
     if (!result.ok) {
-      const status = result.code === "FORBIDDEN" ? 403 : 404;
+      const status = result.code === "FORBIDDEN" ? 403 : result.code === "CONFIRMATION_REQUIRED" ? 409 : 404;
       return jsonError(result.code, result.message, { status, userStory: USER_STORY });
     }
     return jsonSuccess({ event: result.event }, { status: 200, userStory: USER_STORY });

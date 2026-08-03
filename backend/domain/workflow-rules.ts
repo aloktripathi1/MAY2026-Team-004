@@ -12,6 +12,7 @@ export type EventCapacitySnapshot = {
   capacity: number;
   countMeInCount: number;
   date?: Date | string;
+  approval: string;
 };
 
 /**
@@ -50,6 +51,12 @@ export function decideJoinRequestAction(existingStatus: string | null | undefine
 export function decideCountMeInAction(hasExistingCountMeIn: boolean, event: EventCapacitySnapshot | null | undefined): "register" | "cancel" {
   if (hasExistingCountMeIn) return "cancel";
   if (!event) throw new Error("Event not found");
+
+  // "notRequired" events never go through faculty review, so they're
+  // registerable from creation; "pending"/"rejected" are not (#119).
+  if (event.approval !== "approved" && event.approval !== "notRequired") {
+    throw new Error("Registration opens once this event is approved.");
+  }
 
   if (isEventPast(event) || event.countMeInCount >= event.capacity) {
     throw new Error("Registration unavailable");

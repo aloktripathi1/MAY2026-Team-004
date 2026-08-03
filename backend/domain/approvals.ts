@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
+import { setEventApprovalByFaculty } from "@/backend/domain/events";
 import {
   normalizeEventApproval,
   normalizeMembershipStatus,
@@ -41,10 +42,14 @@ export async function setEventApprovalAction(eventId: string, approval: "approve
 }
 
 // Institution-wide - faculty aren't club-scoped, so this bypasses the per-club Admin check
-// and requires session.user.isFaculty instead.
-export async function facultySetEventApprovalAction(eventId: string, approval: "approved" | "pending" | "rejected") {
+// and requires session.user.isFaculty instead. Routed through setEventApprovalByFaculty
+// (rather than a raw prisma.update) so the registered-participants guard on
+// approved -> rejected applies here too, not just to the REST endpoint (#119).
+export async function facultySetEventApprovalAction(eventId: string, approval: "approved" | "pending" | "rejected", force = false) {
   await requireFaculty();
-  await prisma.event.update({ where: { id: eventId }, data: { approval: normalizeEventApproval(approval) } });
+  const result = await setEventApprovalByFaculty(true, eventId, approval, force);
+  if (!result.ok) throw new Error(result.message);
+
   revalidatePath("/faculty/approvals");
   revalidatePath("/admin");
   revalidatePath("/admin/approvals");

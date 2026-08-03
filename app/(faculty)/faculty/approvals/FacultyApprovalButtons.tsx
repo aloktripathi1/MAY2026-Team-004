@@ -14,10 +14,21 @@ export function FacultyApprovalButtons({ eventId, layout = "vertical" }: Faculty
   const [choice, setChoice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function decide(approval: "approved" | "rejected", label: string) {
+  function decide(approval: "approved" | "rejected", label: string, force = false) {
     startTransition(async () => {
-      await facultySetEventApprovalAction(eventId, approval);
-      setChoice(label);
+      try {
+        await facultySetEventApprovalAction(eventId, approval, force);
+        setChoice(label);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not update approval.";
+        // Registered-participants guard on approved -> rejected (#119): ask
+        // once, then retry with force instead of silently doing nothing.
+        if (!force && /already registered/.test(message) && window.confirm(`${message}\n\nReject anyway?`)) {
+          decide(approval, label, true);
+        } else if (force || !/already registered/.test(message)) {
+          window.alert(message);
+        }
+      }
     });
   }
 
