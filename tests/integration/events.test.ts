@@ -199,6 +199,9 @@ it("registers then cancels via the same toggle endpoint", async () => {
   expect(created.status).toBe(201);
   const eventId = created.body.data.event.id;
   createdEventIds.push(eventId);
+  // New events default to approval: pending, which now blocks registration (#119).
+  const approved = await facultyClient.post(`${EVENTS_PATH}/${eventId}/approve`, { approval: "approved" });
+  expect(approved.status).toBe(200);
 
   const identity = uniqueIdentity();
   createdEmails.push(identity.email);
@@ -222,6 +225,9 @@ it("lets the coordinator check an attendee in", async () => {
   expect(created.status).toBe(201);
   const eventId = created.body.data.event.id;
   createdEventIds.push(eventId);
+  // New events default to approval: pending, which now blocks registration (#119).
+  const approved = await facultyClient.post(`${EVENTS_PATH}/${eventId}/approve`, { approval: "approved" });
+  expect(approved.status).toBe(200);
 
   const identity = uniqueIdentity();
   createdEmails.push(identity.email);

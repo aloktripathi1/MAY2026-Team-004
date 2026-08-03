@@ -17,11 +17,14 @@ const EVENTS_PATH = "/api/events";
 const createdEmails: string[] = [];
 const createdEventIds: string[] = [];
 let coordinatorClient: ApiClient;
+let facultyClient: ApiClient;
 
 beforeAll(async () => {
   requireApiAvailable(await isApiAvailable());
   coordinatorClient = new ApiClient();
   await login(coordinatorClient, SEEDED_ACCOUNTS.coordinator.email, SEEDED_ACCOUNTS.coordinator.password);
+  facultyClient = new ApiClient();
+  await login(facultyClient, SEEDED_ACCOUNTS.faculty.email, SEEDED_ACCOUNTS.faculty.password);
 });
 
 afterAll(async () => {
@@ -48,6 +51,9 @@ it("lets exactly one of 10 truly simultaneous requests win the last capacity spo
   expect(created.status).toBe(201);
   const eventId = created.body.data.event.id;
   createdEventIds.push(eventId);
+  // New events default to approval: pending, which now blocks registration (#119).
+  const approved = await facultyClient.post(`${EVENTS_PATH}/${eventId}/approve`, { approval: "approved" });
+  expect(approved.status).toBe(200);
 
   const racers: ApiClient[] = [];
   for (let i = 0; i < 10; i += 1) {
