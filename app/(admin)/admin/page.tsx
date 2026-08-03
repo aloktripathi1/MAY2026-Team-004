@@ -83,12 +83,18 @@ export default async function AdminDashboard() {
       <AdminPageHeader clubName={club?.name ?? "Your club"} memberCount={totalMembers} />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />
-        <Link href="/admin/approvals" className="block">
+        <Link href="/admin/members" className="block transition duration-200 hover:-translate-y-0.5">
+          <Stat label="Total members" value={totalMembers.toLocaleString()} delta={newMembersThisMonth > 0 ? `↑ ${newMembersThisMonth} this month` : undefined} />
+        </Link>
+        <Link href="/admin/approvals" className="block transition duration-200 hover:-translate-y-0.5">
           <Stat label="Pending approvals" value={pendingMembers.length} delta="Needs review →" />
         </Link>
-        <Stat label="Upcoming events" value={upcomingEventsCount} />
-        <Stat label="Open issues" value={openIssuesCount} delta={unassignedIssuesCount > 0 ? `${unassignedIssuesCount} unassigned` : undefined} />
+        <Link href="#upcoming-events" className="block transition duration-200 hover:-translate-y-0.5">
+          <Stat label="Upcoming events" value={upcomingEventsCount} />
+        </Link>
+        <Link href="/admin/issues" className="block transition duration-200 hover:-translate-y-0.5">
+          <Stat label="Open issues" value={openIssuesCount} delta={unassignedIssuesCount > 0 ? `${unassignedIssuesCount} unassigned` : undefined} />
+        </Link>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -117,7 +123,7 @@ export default async function AdminDashboard() {
           </GlassCard>
 
           {/* Upcoming */}
-          <div>
+          <div id="upcoming-events" className="scroll-mt-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-mono-label">Upcoming events</h2>
             </div>
