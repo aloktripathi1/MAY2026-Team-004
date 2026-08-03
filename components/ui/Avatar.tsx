@@ -6,7 +6,7 @@ import Image from "next/image";
 interface AvatarProps {
   name: string;
   image?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   showBorder?: boolean;
 }
@@ -15,13 +15,17 @@ const sizeClasses = {
   sm: "h-8 w-8",
   md: "h-10 w-10",
   lg: "h-12 w-12",
+  xl: "h-28 w-28",
 };
 
 const iconSizes = {
   sm: 16,
   md: 20,
   lg: 24,
+  xl: 56,
 };
+
+const imagePixelSizes = { sm: 32, md: 40, lg: 48, xl: 112 };
 
 export function Avatar({ name, image, size = "md", className = "", showBorder = true }: AvatarProps) {
   const sizeClass = sizeClasses[size];
@@ -34,8 +38,8 @@ export function Avatar({ name, image, size = "md", className = "", showBorder = 
         <Image
           src={image}
           alt={name}
-          width={sizeClass === sizeClasses.sm ? 32 : sizeClass === sizeClasses.md ? 40 : 48}
-          height={sizeClass === sizeClasses.sm ? 32 : sizeClass === sizeClasses.md ? 40 : 48}
+          width={imagePixelSizes[size]}
+          height={imagePixelSizes[size]}
           className="h-full w-full object-cover"
         />
       </div>
