@@ -13,6 +13,7 @@ import {
 import { Avatar } from "@/components/ui/Avatar";
 import { APP_ROLE_HOME, type AppRole } from "@/backend/auth/roles";
 import { logoutAction } from "@/app/(public)/login/actions";
+import { AskSangam } from "@/components/shared/AskSangam";
 
 type Role = AppRole;
 
@@ -245,6 +246,8 @@ export function AppShell({
           </AnimatePresence>
         </main>
       </div>
+
+      <AskSangam role={role} />
     </div>
   );
 }

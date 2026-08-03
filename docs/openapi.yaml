@@ -8,8 +8,8 @@ info:
     APIs created (own): listed under paths below.
     APIs integrated (third-party): none in this file yet.
 
-    GenAI APIs: none yet. When added, they will be listed under the GenAI tag
-    and clearly separated from non-GenAI endpoints.
+    GenAI APIs: POST /api/assistant/query (Ask Sangam), listed under the
+    GenAI tag and kept separate from the non-GenAI endpoints above.
 
     User story mapping: each operation includes `x-user-story` matching
     docs/user_stories.md and docs/Sangam_M3_M4_Plan.md.
@@ -37,7 +37,10 @@ tags:
   - name: Mock Auth
     description: Demo stub only. Not part of the real auth REST surface.
   - name: GenAI
-    description: GenAI endpoints (none implemented yet - reserved section)
+    description: |
+      GenAI endpoints, kept separate from the regular CRUD APIs above.
+      Structured retrieval-and-generation over Postgres (classify intent ->
+      scoped Prisma query -> generate grounded answer), not vector RAG.
 
 paths:
   /api/auth/signup:
@@ -1538,6 +1541,98 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
           description: Unexpected server failure while updating the lock.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # --- GenAI APIs ---------------------------------------------------------
+  # Kept separate from the regular CRUD endpoints above. Ask Sangam is
+  # structured retrieval-and-generation over Postgres, not vector RAG: one
+  # Claude call classifies intent + entities (backend/domain/assistant.ts),
+  # a normal Prisma query runs scoped to the caller's own session
+  # (memberships / userId — never another club's or user's data), and a
+  # second Claude call turns the query result into a short natural-language
+  # answer using only that data. If the query finds nothing, the fixed
+  # "I don't have that information." response is returned and the
+  # generation call is skipped entirely, so Claude can never improvise an
+  # answer from empty data. See lib/genai.ts for the shared Claude wrapper.
+  /api/assistant/query:
+    post:
+      tags:
+        - GenAI
+      summary: Ask Sangam — natural-language Q&A grounded in live app data
+      description: |
+        Answers a plain-English question about the caller's own events,
+        tasks, announcements, or club memberships. Every answer is grounded
+        in a real database record for the authenticated session — never a
+        model guess and never another user's or club's data.
+
+        Issue #116 - Ask Sangam: natural-language Q&A assistant grounded in
+        live app data.
+      operationId: assistantQuery
+      x-user-story: "Ask Sangam"
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  example: "When's my next event?"
+      responses:
+        "200":
+          description: Answer generated (or the fixed no-data response if nothing matched).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      answer:
+                        type: string
+                        example: Your next event is "Winter Debate Open" on Wed, Aug 5 at 8:00 PM, Amphitheatre (Paradox - Debate Society).
+                      sourceType:
+                        type: string
+                        nullable: true
+                        enum: [event, task, announcement, membership, null]
+                      sourceLabel:
+                        type: string
+                        nullable: true
+                      sourceHref:
+                        type: string
+                        nullable: true
+                  userStory: { type: string, example: "Ask Sangam" }
+        "400":
+          description: Missing or invalid query.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: |
+            Unexpected server failure, including Claude API errors or
+            timeouts during classification or generation — the caller always
+            gets a graceful fallback message via the 200 response's `answer`
+            field for those cases, not a raw provider error; this 500 is
+            reserved for failures outside that path (e.g. the database
+            itself being unreachable).
           content:
             application/json:
               schema:
