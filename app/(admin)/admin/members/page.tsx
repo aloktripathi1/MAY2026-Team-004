@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requirePageMembership } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
+import { parseInterests } from "@/lib/interests";
 import { MembersDirectory } from "./MembersDirectory";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default async function MembersPage() {
     role: m.role,
     status: m.status,
     joined: m.joinedAt.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+    interests: parseInterests(m.user.interests),
   }));
 
   return <MembersDirectory members={rows} />;
