@@ -98,6 +98,7 @@ model User {
   contributions          Contribution[]
   announcementsAuthored  Announcement[]
   countMeIns             CountMeIn[]
+  feedback               Feedback[]
 }
 
 model Club {
@@ -190,6 +191,16 @@ model Announcement {
 
   club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  rating    Int?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Issue {

@@ -8,7 +8,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, ListChecks,
-  Shield, Menu, X, LogOut, Ticket, Activity, User, SquareKanban, HandHelping, ShieldCheck, GraduationCap,
+  Shield, Menu, X, LogOut, Ticket, Activity, User, SquareKanban, HandHelping, ShieldCheck, GraduationCap, Star,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { APP_ROLE_HOME, type AppRole } from "@/backend/auth/roles";
@@ -22,6 +22,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
     { label: "Events", to: "/app/events", icon: CalendarDays },
     { label: "Browse clubs", to: "/app/clubs", icon: Compass },
     { label: "My issues", to: "/app/issues", icon: MessageSquareWarning },
+    { label: "Feedback", to: "/app/feedback", icon: Star },
     { label: "Profile", to: "/app/profile", icon: UserRound },
   ],
   coordinator: [
