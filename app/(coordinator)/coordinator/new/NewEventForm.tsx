@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
+import { ImagePlus, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { createEventAction, type NewEventState } from "./actions";
 
@@ -14,6 +15,8 @@ function SubmitButton() {
 
 export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
   const [tags, setTags] = useState<string[]>([]);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [state, formAction] = useFormState<NewEventState, FormData>(createEventAction, {});
 
   useEffect(() => {
@@ -22,14 +25,67 @@ export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
     }
   }, [state, onSuccess]);
 
+  useEffect(() => {
+    return () => {
+      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+    };
+  }, [bannerPreview]);
+
   function toggleTag(t: string) {
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
+
+  function handleBannerChange(file: File | null) {
+    setBannerPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
+
+  function clearBanner() {
+    if (bannerInputRef.current) bannerInputRef.current.value = "";
+    handleBannerChange(null);
   }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <Field label="Title" name="title" placeholder="Cook-Off #43" />
       <Field label="Description" name="description" placeholder="What's it about? Who should show up?" area />
+      <div>
+        <div className="text-mono-label mb-2">Banner image</div>
+        {bannerPreview ? (
+          <div className="group relative h-32 w-full overflow-hidden rounded-xl border border-white/[0.12]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={bannerPreview} alt="" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={clearBanner}
+              aria-label="Remove banner"
+              className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => bannerInputRef.current?.click()}
+            className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.16] bg-white/[0.02] text-muted-foreground transition hover:border-secondary/45 hover:bg-white/[0.04] hover:text-secondary"
+          >
+            <ImagePlus className="h-5 w-5" />
+            <span className="text-xs">Click to upload a banner (optional)</span>
+          </button>
+        )}
+        <input
+          ref={bannerInputRef}
+          type="file"
+          name="banner"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="sr-only"
+          onChange={(e) => handleBannerChange(e.target.files?.[0] ?? null)}
+        />
+        <div className="mt-1.5 text-xs text-muted-foreground/70">PNG, JPEG, WEBP, or GIF. Up to 5MB. Falls back to a gradient cover if skipped.</div>
+      </div>
       <div className="grid gap-5 md:grid-cols-2">
         <Field label="Date" name="date" type="date" />
         <Field label="Time" name="time" type="time" />

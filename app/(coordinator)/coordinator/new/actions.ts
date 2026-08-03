@@ -7,6 +7,7 @@ import { prisma } from "@/backend/db/prisma";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { parseTagInput, buildEventSlug } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
+import { uploadEventBanner } from "@/backend/storage/event-banner";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -44,6 +45,14 @@ export async function createEventAction(_prevState: NewEventState, formData: For
   const tags = parseTagInput(parsed.data.tags);
   const slug = buildEventSlug(title);
 
+  let photo: string | undefined;
+  const bannerFile = formData.get("banner");
+  if (bannerFile instanceof File && bannerFile.size > 0) {
+    const uploaded = await uploadEventBanner(bannerFile);
+    if (!uploaded.ok) return { error: uploaded.error };
+    photo = uploaded.url;
+  }
+
   await prisma.event.create({
     data: {
       slug,
@@ -55,6 +64,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
       capacity,
       clubId: membership.clubId,
       cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 60%,#f97316 100%)",
+      photo,
       tags: serializeEventTags(tags),
       status: "upcoming",
       approval: "pending",
