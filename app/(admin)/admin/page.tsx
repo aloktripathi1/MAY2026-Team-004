@@ -98,7 +98,7 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* Attendance chart */}
           <GlassCard className="p-6">
             <div className="mb-6 flex items-end justify-between">
@@ -145,7 +145,7 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <GlassCard>
             <div className="mb-4 flex items-center justify-between">
               <div className="text-mono-label">Approval queue</div>

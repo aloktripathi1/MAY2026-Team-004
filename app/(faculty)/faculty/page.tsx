@@ -40,7 +40,7 @@ export default async function FacultyHome() {
         <Stat label="Compliance" value={`${compliance}%`} />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div>
+        <div className="min-w-0">
           <div className="text-mono-label mb-3">Clubs under mentorship</div>
           <div className="space-y-2">
             {clubs.map(c => (
@@ -60,8 +60,8 @@ export default async function FacultyHome() {
             ))}
           </div>
         </div>
-        <div>
-          <div className="mb-3 flex items-center justify-between">
+        <div className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <div className="text-mono-label">Recent event outcomes</div>
             <Link href="/faculty/approvals" className="text-xs text-secondary hover:underline">Review approvals →</Link>
           </div>

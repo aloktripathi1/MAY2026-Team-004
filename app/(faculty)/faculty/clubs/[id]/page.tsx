@@ -81,7 +81,7 @@ export default async function FacultyClubDetail({ params }: { params: { id: stri
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <div>
             <div className="mb-4 text-mono-label">Upcoming events</div>
             <div className="night-panel divide-y divide-hairline rounded-2xl">
@@ -123,7 +123,7 @@ export default async function FacultyClubDetail({ params }: { params: { id: stri
           </div>
         </div>
 
-        <GlassCard>
+        <GlassCard className="min-w-0">
           <div className="mb-4 text-mono-label">Recent activity</div>
           <div className="space-y-3">
             {activity.length === 0 && <div className="text-sm text-muted-foreground">No recent activity.</div>}
