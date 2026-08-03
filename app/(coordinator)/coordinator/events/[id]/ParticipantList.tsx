@@ -43,7 +43,7 @@ export function ParticipantList({ eventSlug, rows }: { eventSlug: string; rows: 
           <Download className="h-4 w-4" /> Export list
         </Btn>
       </div>
-      <div className="grid grid-cols-[1fr_120px_100px_110px] gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid-cols-[2fr_140px_120px_130px]">
+      <div className="hidden grid-cols-[2fr_140px_120px_130px] gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid">
         <div>Participant</div>
         <div>Roll</div>
         <div>Status</div>
@@ -52,22 +52,43 @@ export function ParticipantList({ eventSlug, rows }: { eventSlug: string; rows: 
       <div className="divide-y divide-hairline">
         {rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No registrations yet.</div>}
         {rows.map((r) => (
-          <div key={r.countMeInId} className="grid grid-cols-[1fr_120px_100px_110px] items-center gap-4 px-6 py-4 md:grid-cols-[2fr_140px_120px_130px]">
-            <div className="flex min-w-0 items-center gap-3">
-              <Avatar name={r.name} image={r.image} size="sm" />
-              <div className="truncate text-sm font-medium">{r.name}</div>
+          <div key={r.countMeInId}>
+            <div className="p-4 md:hidden">
+              <div className="flex items-center gap-3">
+                <Avatar name={r.name} image={r.image} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{r.name}</div>
+                  <div className="text-mono-label !normal-case !tracking-normal text-xs">{r.roll}</div>
+                </div>
+                <StatusPill tone="green">Confirmed</StatusPill>
+              </div>
+              <Btn
+                size="sm"
+                variant={r.checkedIn ? "primary" : "outline"}
+                disabled={pending}
+                onClick={() => toggle(r.countMeInId)}
+                className="mt-3 w-full"
+              >
+                {r.checkedIn ? <><Check className="h-3.5 w-3.5" /> Checked in</> : "Check in"}
+              </Btn>
             </div>
-            <div className="text-mono-label !normal-case !tracking-normal text-xs">{r.roll}</div>
-            <StatusPill tone="green">Confirmed</StatusPill>
-            <Btn
-              size="sm"
-              variant={r.checkedIn ? "primary" : "outline"}
-              disabled={pending}
-              onClick={() => toggle(r.countMeInId)}
-              className="w-fit"
-            >
-              {r.checkedIn ? <><Check className="h-3.5 w-3.5" /> Checked in</> : "Check in"}
-            </Btn>
+            <div className="hidden grid-cols-[2fr_140px_120px_130px] items-center gap-4 px-6 py-4 md:grid">
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar name={r.name} image={r.image} size="sm" />
+                <div className="truncate text-sm font-medium">{r.name}</div>
+              </div>
+              <div className="text-mono-label !normal-case !tracking-normal text-xs">{r.roll}</div>
+              <StatusPill tone="green">Confirmed</StatusPill>
+              <Btn
+                size="sm"
+                variant={r.checkedIn ? "primary" : "outline"}
+                disabled={pending}
+                onClick={() => toggle(r.countMeInId)}
+                className="w-fit"
+              >
+                {r.checkedIn ? <><Check className="h-3.5 w-3.5" /> Checked in</> : "Check in"}
+              </Btn>
+            </div>
           </div>
         ))}
       </div>

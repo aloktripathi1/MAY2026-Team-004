@@ -32,11 +32,17 @@ export function FacultyApprovalButtons({ eventId, layout = "vertical" }: Faculty
     });
   }
 
-  const containerClass = layout === "horizontal" ? "flex gap-2" : "flex flex-col items-end gap-2";
+  // Full-width, equal-width side-by-side on mobile (a right-aligned vertical
+  // stack read as floating/misaligned once the parent grid collapses to a
+  // single column on narrow screens); md+ restores the original layout.
+  const containerClass =
+    layout === "horizontal"
+      ? "grid grid-cols-2 gap-2 md:flex"
+      : "grid grid-cols-2 gap-2 md:flex md:flex-col md:items-end";
 
   return (
     <div className={containerClass}>
-      <Btn size="sm" disabled={Boolean(choice) || pending} onClick={() => decide("approved", "Approved")}>
+      <Btn size="sm" className="w-full md:w-auto" disabled={Boolean(choice) || pending} onClick={() => decide("approved", "Approved")}>
         <Check className="h-4 w-4" /> {choice ?? "Approve"}
       </Btn>
       <Btn
@@ -44,7 +50,7 @@ export function FacultyApprovalButtons({ eventId, layout = "vertical" }: Faculty
         variant="outline"
         disabled={Boolean(choice) || pending}
         onClick={() => decide("rejected", "Rejected")}
-        className={choice === "Rejected" ? "border-destructive/45 bg-destructive/[0.14] text-destructive" : ""}
+        className={`w-full md:w-auto ${choice === "Rejected" ? "border-destructive/45 bg-destructive/[0.14] text-destructive" : ""}`}
       >
         <X className="h-4 w-4" /> {choice === "Rejected" ? choice : "Reject"}
       </Btn>

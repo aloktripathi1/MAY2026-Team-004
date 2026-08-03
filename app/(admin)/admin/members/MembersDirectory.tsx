@@ -48,27 +48,37 @@ export function MembersDirectory({ members }: { members: MemberRow[] }) {
       </div>
 
       <div className="night-panel overflow-hidden rounded-2xl">
-        <div className="grid grid-cols-[1fr_120px_110px] gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid-cols-[2fr_120px_120px_100px_110px]">
+        {/* Fixed-column table only fits desktop widths — 5 fields into 3
+            mobile tracks pushed names down to one letter and wrapped Status
+            onto its own misaligned row. Mobile gets a real card row instead. */}
+        <div className="hidden grid-cols-[2fr_120px_120px_100px_110px] gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid">
           <div>Member</div>
           <div>Roll</div>
           <div>Role</div>
-          <div className="hidden md:block">Joined</div>
+          <div>Joined</div>
           <div>Status</div>
         </div>
         <div className="divide-y divide-hairline">
           {filtered.map(m => (
-            <div key={m.id} className="grid grid-cols-[1fr_120px_110px] items-center gap-4 px-6 py-4 transition hover:bg-white/[0.04] md:grid-cols-[2fr_120px_120px_100px_110px]">
-              <div className="flex min-w-0 items-center gap-3">
+            <div key={m.id}>
+              <div className="flex items-center gap-3 p-4 transition hover:bg-white/[0.04] md:hidden">
                 <Avatar name={m.name} image={m.image} size="sm" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{m.name}</div>
-                  <div className="text-xs text-muted-foreground md:hidden">Joined {m.joined}</div>
+                  <div className="truncate text-xs text-muted-foreground">{m.roll} · {m.role} · Joined {m.joined}</div>
                 </div>
+                <StatusPill tone={m.status === "Active" ? "green" : m.status === "Pending" ? "amber" : "slate"}>{m.status}</StatusPill>
               </div>
-              <div className="text-mono-label !normal-case !tracking-normal text-xs">{m.roll}</div>
-              <div className="text-xs">{m.role}</div>
-              <div className="hidden text-xs text-muted-foreground md:block">{m.joined}</div>
-              <StatusPill tone={m.status === "Active" ? "green" : m.status === "Pending" ? "amber" : "slate"}>{m.status}</StatusPill>
+              <div className="hidden grid-cols-[2fr_120px_120px_100px_110px] items-center gap-4 px-6 py-4 transition hover:bg-white/[0.04] md:grid">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar name={m.name} image={m.image} size="sm" />
+                  <div className="min-w-0 truncate text-sm font-medium">{m.name}</div>
+                </div>
+                <div className="text-mono-label !normal-case !tracking-normal text-xs">{m.roll}</div>
+                <div className="text-xs">{m.role}</div>
+                <div className="text-xs text-muted-foreground">{m.joined}</div>
+                <StatusPill tone={m.status === "Active" ? "green" : m.status === "Pending" ? "amber" : "slate"}>{m.status}</StatusPill>
+              </div>
             </div>
           ))}
         </div>

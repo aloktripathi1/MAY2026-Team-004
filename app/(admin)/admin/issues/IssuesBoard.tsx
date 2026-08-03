@@ -137,7 +137,11 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
       </div>
 
       <div className="night-panel overflow-x-auto rounded-2xl">
-        <div className="grid min-w-[760px] grid-cols-[24px_2fr_110px_90px_140px_110px] items-center gap-4 border-b border-hairline px-6 py-3 text-mono-label">
+        {/* 6 fixed-px columns forced a 760px min-width table on every
+            screen — usable only via horizontal scroll on mobile, with a
+            bulk-select checkbox stranded off-screen. Mobile gets a real
+            stacked card instead; md+ keeps the original table. */}
+        <div className="hidden grid-cols-[24px_2fr_110px_90px_140px_110px] items-center gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid md:min-w-[760px]">
           <input
             type="checkbox"
             checked={filtered.length > 0 && selected.size === filtered.length}
@@ -151,53 +155,102 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
           <div>Assignee</div>
           <div>Status</div>
         </div>
-        <div className="min-w-[760px] divide-y divide-hairline">
+        <div className="divide-y divide-hairline md:min-w-[760px]">
           {filtered.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No issues in this view.</div>}
           {filtered.map((issue) => (
-            <div key={issue.id} className="grid grid-cols-[24px_2fr_110px_90px_140px_110px] items-center gap-4 px-6 py-4 transition hover:bg-white/[0.04]">
-              <input
-                type="checkbox"
-                checked={selected.has(issue.id)}
-                onChange={() => toggle(issue.id)}
-                className="accent-primary"
-                aria-label={`Select ${issue.title}`}
-              />
-              <div className="flex min-w-0 items-center gap-3">
-                <Avatar name={issue.raisedBy} image={issue.raisedByImage} size="sm" />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{issue.title}</div>
-                  <div className="text-xs text-muted-foreground">#{issue.ticket} · {issue.raisedBy} · {issue.timeAgo}</div>
+            <div key={issue.id}>
+              <div className="p-4 transition hover:bg-white/[0.04] md:hidden">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(issue.id)}
+                    onChange={() => toggle(issue.id)}
+                    className="mt-1 accent-primary"
+                    aria-label={`Select ${issue.title}`}
+                  />
+                  <Avatar name={issue.raisedBy} image={issue.raisedByImage} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{issue.title}</div>
+                    <div className="truncate text-xs text-muted-foreground">#{issue.ticket} · {issue.raisedBy} · {issue.timeAgo}</div>
+                  </div>
+                  <StatusPill tone={statusTone(issue.status)}>{statusLabel(issue.status)}</StatusPill>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2 pl-9">
+                  <span className="rounded-md border border-white/10 bg-white/[0.035] px-2 py-1 text-[10px] text-muted-foreground">{issue.category}</span>
+                  <div className="relative w-fit">
+                    <select
+                      value={issue.priority}
+                      onChange={(e) => updatePriority(issue.id, e.target.value)}
+                      disabled={pending}
+                      className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Med">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                  <div className="relative w-fit">
+                    <select
+                      value={issue.assigneeId ?? ""}
+                      onChange={(e) => quickAssign(issue.id, e.target.value)}
+                      disabled={pending}
+                      className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+                    >
+                      <option value="">Unassigned</option>
+                      {assignable.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </div>
               </div>
-              <div className="text-xs">{issue.category}</div>
-              <div className="relative w-fit">
-                <select
-                  value={issue.priority}
-                  onChange={(e) => updatePriority(issue.id, e.target.value)}
-                  disabled={pending}
-                  className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
-                >
-                  <option value="Low">Low</option>
-                  <option value="Med">Medium</option>
-                  <option value="High">High</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              <div className="hidden grid-cols-[24px_2fr_110px_90px_140px_110px] items-center gap-4 px-6 py-4 transition hover:bg-white/[0.04] md:grid">
+                <input
+                  type="checkbox"
+                  checked={selected.has(issue.id)}
+                  onChange={() => toggle(issue.id)}
+                  className="accent-primary"
+                  aria-label={`Select ${issue.title}`}
+                />
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar name={issue.raisedBy} image={issue.raisedByImage} size="sm" />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{issue.title}</div>
+                    <div className="text-xs text-muted-foreground">#{issue.ticket} · {issue.raisedBy} · {issue.timeAgo}</div>
+                  </div>
+                </div>
+                <div className="text-xs">{issue.category}</div>
+                <div className="relative w-fit">
+                  <select
+                    value={issue.priority}
+                    onChange={(e) => updatePriority(issue.id, e.target.value)}
+                    disabled={pending}
+                    className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Med">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                </div>
+                <div className="relative w-fit">
+                  <select
+                    value={issue.assigneeId ?? ""}
+                    onChange={(e) => quickAssign(issue.id, e.target.value)}
+                    disabled={pending}
+                    className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+                  >
+                    <option value="">Unassigned</option>
+                    {assignable.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                </div>
+                <StatusPill tone={statusTone(issue.status)}>{statusLabel(issue.status)}</StatusPill>
               </div>
-              <div className="relative w-fit">
-                <select
-                  value={issue.assigneeId ?? ""}
-                  onChange={(e) => quickAssign(issue.id, e.target.value)}
-                  disabled={pending}
-                  className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
-                >
-                  <option value="">Unassigned</option>
-                  {assignable.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-              </div>
-              <StatusPill tone={statusTone(issue.status)}>{statusLabel(issue.status)}</StatusPill>
             </div>
           ))}
         </div>
