@@ -27,7 +27,8 @@ export function DiscoverClubsSection({ clubs }: { clubs: FilterableClub[] }) {
 
   return (
     <>
-      <div className="mb-2 flex flex-wrap gap-1.5">
+      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">Category</div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {CATEGORIES.map((c) => (
           <button
             key={c}
@@ -42,6 +43,7 @@ export function DiscoverClubsSection({ clubs }: { clubs: FilterableClub[] }) {
           </button>
         ))}
       </div>
+      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">Interest</div>
       <div className="mb-4 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by interest">
         {INTEREST_OPTIONS.map((tag) => {
           const isOn = interest === tag;
