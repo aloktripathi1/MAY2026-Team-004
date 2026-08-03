@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { requirePageSession } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { parseInterests } from "@/lib/interests";
+import { INTEREST_CATEGORY_MAP } from "@/lib/club-interests";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
-import { JoinRequestButton } from "./JoinRequestButton";
+import { ClubDiscoveryCard, type DiscoverClub } from "./ClubDiscoveryCard";
+import { DiscoverClubsSection } from "./DiscoverClubsSection";
 
 export const metadata: Metadata = {
   title: "My clubs · Sangam",
@@ -80,69 +82,24 @@ export default async function AppClubs() {
       )}
       <div className="mt-10">
         <div className="text-mono-label mb-3">Discover more</div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {remainingDiscover.map(c => (
-            <ClubDiscoveryCard
-              key={c.id}
-              club={c}
-              initialRequested={pendingClubIds.has(c.id)}
-            />
-          ))}
-        </div>
+        <DiscoverClubsSection
+          clubs={remainingDiscover.map((c) => ({
+            ...c,
+            pendingRequested: pendingClubIds.has(c.id),
+          }))}
+        />
       </div>
     </>
   );
 }
 
-type DiscoverClub = Awaited<ReturnType<typeof prisma.club.findMany>>[number];
-
-const interestCategoryMap: Record<string, string[]> = {
-  technical: ["technical"],
-  cultural: ["cultural"],
-  sports: ["sports"],
-  design: ["design"],
-  debate: ["literary"],
-  entrepreneurship: ["entrepreneurship"],
-  sustainability: ["social"],
-  writing: ["literary"],
-};
-
-function recommendationScore(club: DiscoverClub, interests: string[]) {
+function recommendationScore(club: DiscoverClub & { description: string }, interests: string[]) {
   const haystack = `${club.name} ${club.category} ${club.tagline} ${club.description}`.toLowerCase();
   return interests.reduce((score, interest) => {
     const normalized = interest.toLowerCase();
-    const categories = interestCategoryMap[normalized] ?? [normalized];
+    const categories = INTEREST_CATEGORY_MAP[normalized] ?? [normalized];
     const categoryMatch = categories.some((category) => club.category.toLowerCase() === category);
     const textMatch = categories.some((category) => haystack.includes(category)) || haystack.includes(normalized);
     return score + (categoryMatch ? 3 : 0) + (textMatch ? 1 : 0);
   }, 0);
-}
-
-function ClubDiscoveryCard({
-  club: c,
-  recommended = false,
-  initialRequested = false,
-}: {
-  club: DiscoverClub;
-  recommended?: boolean;
-  initialRequested?: boolean;
-}) {
-  return (
-    <GlassCard className="overflow-hidden">
-      <div className="relative -m-5 mb-4 h-28" style={{ background: c.banner }}>
-        {c.photo && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.photo} alt="" className="h-full w-full object-cover" loading="lazy" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-        <div className="absolute inset-x-4 bottom-3 flex items-end justify-between">
-          <div className="text-2xl" style={{ color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
-          <StatusPill tone={recommended ? "amber" : c.active ? "lime" : "slate"}>{recommended ? "Match" : c.active ? "Active" : "Quiet"}</StatusPill>
-        </div>
-      </div>
-      <div className="text-sm font-medium text-white">{c.name}</div>
-      <div className="mt-1 text-xs text-muted-foreground">{c.tagline}</div>
-      <JoinRequestButton clubId={c.id} initialRequested={initialRequested} />
-    </GlassCard>
-  );
 }
