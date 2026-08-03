@@ -2,6 +2,7 @@
 
 import { User as UserIcon } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface AvatarProps {
   name: string;
@@ -34,7 +35,7 @@ export function Avatar({ name, image, size = "md", className = "", showBorder = 
 
   if (image) {
     return (
-      <div className={`${sizeClass} shrink-0 rounded-lg overflow-hidden ${borderClass} ${className}`}>
+      <div className={cn(sizeClass, "shrink-0 rounded-lg overflow-hidden", borderClass, className)}>
         <Image
           src={image}
           alt={name}
@@ -47,7 +48,7 @@ export function Avatar({ name, image, size = "md", className = "", showBorder = 
   }
 
   return (
-    <div className={`${sizeClass} shrink-0 rounded-lg ${borderClass} flex items-center justify-center text-white ${className}`}>
+    <div className={cn(sizeClass, "shrink-0 rounded-lg flex items-center justify-center text-white", borderClass, className)}>
       <UserIcon size={iconSize} className="text-muted-foreground" />
     </div>
   );

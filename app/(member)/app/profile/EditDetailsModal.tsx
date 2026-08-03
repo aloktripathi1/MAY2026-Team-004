@@ -7,6 +7,7 @@ import { Btn } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { INTEREST_OPTIONS } from "@/lib/interests";
+import { useSuppressedFormError } from "@/components/hooks/useSuppressedFormError";
 import { updateProfileAction, type ProfileFormState } from "./actions";
 
 function readImageFile(file: File): Promise<string> {
@@ -51,6 +52,7 @@ export function EditDetailsModal({
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [state, formAction] = useFormState<ProfileFormState, FormData>(updateProfileAction, {});
+  const { visibleError, resetForSession, clearSuppression } = useSuppressedFormError(state.error);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -58,8 +60,17 @@ export function EditDetailsModal({
       setSelected(interests);
       setImageDraft(image);
       setImageError(null);
+      resetForSession();
     }
+    // resetForSession is stable (useState setter identity never changes) — omitting it
+    // from deps avoids re-running this effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, interests, image]);
+
+  function handleFormAction(formData: FormData) {
+    clearSuppression();
+    return formAction(formData);
+  }
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -96,7 +107,7 @@ export function EditDetailsModal({
         Edit details
       </Btn>
       <Modal open={open} onClose={() => setOpen(false)} title="Edit details">
-        <form ref={formRef} action={formAction}>
+        <form ref={formRef} action={handleFormAction}>
           <div className="mb-5">
             <div className="text-mono-label mb-1.5">Profile picture</div>
             <div className="flex items-center gap-4">
@@ -109,7 +120,7 @@ export function EditDetailsModal({
                     className="h-20 w-20 rounded-2xl border border-secondary/25 object-cover"
                   />
                 ) : (
-                  <Avatar name={name} size="lg" className="border-secondary/25 border-[3px]" />
+                  <Avatar name={name} size="xl" className="h-20 w-20 border-secondary/25 border-[3px]" />
                 )}
                 {imageDraft && (
                   <button
@@ -190,10 +201,15 @@ export function EditDetailsModal({
             {selected.map((interest) => (
               <input key={interest} type="hidden" name="interests" value={interest} />
             ))}
+            {selected.length === 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Choose at least one interest to save — that's why the button below is disabled.
+              </p>
+            )}
           </div>
 
-          {state.error && (
-            <p className="mt-3 text-xs text-destructive">{state.error}</p>
+          {visibleError && (
+            <p className="mt-3 text-xs text-destructive">{visibleError}</p>
           )}
 
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

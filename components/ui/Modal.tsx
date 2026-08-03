@@ -40,7 +40,7 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className={`night-panel relative flex max-h-[calc(100vh-2rem)] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl p-6 shadow-[0_42px_140px_-60px_oklch(0_0_0/90%)] sm:p-7`}
+            className={`night-panel relative flex max-h-[calc(100vh-2rem)] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl p-6 text-left shadow-[0_42px_140px_-60px_oklch(0_0_0/90%)] sm:p-7`}
           >
             <div className="mb-5 flex shrink-0 items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-white">{title}</h2>

@@ -12,6 +12,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
+    "test:components": "jest --config jest.components.config.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "db:up": "docker compose up -d",
@@ -41,6 +42,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcrypt": "^5.0.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.16.5",
@@ -51,6 +55,7 @@
     "eslint-config-next": "14.2.35",
     "eslint-config-prettier": "^10.1.1",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "postcss": "^8.4.49",
     "prettier": "^3.7.3",
     "prisma": "^5.22.0",
