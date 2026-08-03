@@ -105,3 +105,24 @@ it("scopes an admin's announcement question to their own club's announcements", 
   expect(res.status).toBe(200);
   expect(res.body.data.sourceType).toBe("announcement");
 });
+
+describe("questions unrelated to any app data", () => {
+  // The classifier used to be forced to pick one of the 4 real intents even
+  // for questions with nothing to do with the app, so it would still run a
+  // real (irrelevant) query and generate a technically-grounded-but-off-topic
+  // answer. It must now recognize these as unrelated before ever querying.
+  const offTopicQuestions = [
+    "What is the capital of France?",
+    "Tell me a joke.",
+    "What's the weather like today?",
+  ];
+
+  it.each(offTopicQuestions)("returns the fixed no-data response for: %s", async (query) => {
+    const client = new ApiClient();
+    await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBeNull();
+    expect(res.body.data.answer).toBe("I don't have that information.");
+  });
+});

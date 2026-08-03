@@ -30,7 +30,7 @@ const FALLBACK_ANSWER: AssistantAnswer = {
 };
 
 const classificationSchema = z.object({
-  intent: z.enum(["event_lookup", "task_lookup", "announcement_lookup", "membership_status"]),
+  intent: z.enum(["event_lookup", "task_lookup", "announcement_lookup", "membership_status", "unrelated"]),
   entities: z
     .object({
       eventName: z.string().nullable().optional(),
@@ -40,24 +40,24 @@ const classificationSchema = z.object({
 
 type Classification = z.infer<typeof classificationSchema>;
 
-const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A assistant embedded in a student clubs platform.
+const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A assistant embedded in a student clubs platform. It can only answer questions about the requesting user's own events, tasks, announcements, or club memberships — nothing else.
 
 Classify the user's question into exactly one intent:
 - "event_lookup": questions about events, schedules, "next event", a specific event by name, registration/capacity status.
 - "task_lookup": questions about the user's own assigned tasks, to-dos, or volunteer shifts.
 - "announcement_lookup": questions about club announcements, news, or updates.
 - "membership_status": questions about the user's own club memberships, roles, or membership status.
+- "unrelated": the question is NOT about any of the above — general knowledge, small talk, greetings, unrelated topics, or anything this app has no data for. Use this whenever the question doesn't genuinely fit one of the four categories above. Do not force a fit just because a keyword loosely overlaps.
 
 If the question names a specific event or club, extract it as entities.eventName. Otherwise omit it.
-If the question doesn't clearly fit one of these, pick the closest match — never invent a fifth intent.
 Return ONLY the structured JSON output. No prose, no markdown, no explanation.`;
 
 const GENERATE_SYSTEM_PROMPT = `You are "Ask Sangam", answering a user's question using ONLY the JSON data provided below.
 
 Rules:
 - Use only the facts present in the provided data. Never add names, dates, numbers, or details that aren't in it.
-- If the data doesn't actually answer the question, say so plainly instead of guessing.
-- Keep the answer short: one or two sentences, natural and conversational, no markdown formatting.`;
+- If the data doesn't actually answer the question — including if the data is simply unrelated to what was asked — respond with exactly this sentence and nothing else: "I don't have that information." Do not soften it, explain why, or add anything else.
+- Otherwise keep the answer short: one or two sentences, natural and conversational, no markdown formatting.`;
 
 function scopedClubIds(user: AssistantSessionUser): string[] {
   return user.memberships.map((m) => m.clubId);
@@ -74,6 +74,23 @@ async function classify(question: string): Promise<Classification> {
 async function generate(question: string, data: unknown): Promise<string> {
   const prompt = `User question: "${question}"\n\nData:\n${JSON.stringify(data, null, 2)}`;
   return textCompletion({ system: GENERATE_SYSTEM_PROMPT, prompt, maxTokens: 300 });
+}
+
+/**
+ * Wraps a generate() call with its source metadata — but if Claude decides
+ * on reflection that the retrieved data doesn't actually address the
+ * question (its only allowed way to say so is the fixed no-data sentence),
+ * the source tag is dropped too so the UI never shows an EVENT/TASK/etc.
+ * badge next to an "I don't have that information" answer.
+ */
+async function generateAnswer(
+  question: string,
+  data: unknown,
+  source: { sourceType: AssistantSourceType; sourceLabel?: string; sourceHref: string },
+): Promise<AssistantAnswer> {
+  const answer = await generate(question, data);
+  if (answer === NO_DATA_ANSWER.answer) return NO_DATA_ANSWER;
+  return { answer, ...source };
 }
 
 async function handleEventLookup(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
@@ -116,14 +133,13 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
     status: e.status,
   }));
 
-  return {
-    answer: await generate(entities.eventName ?? "next event", data),
+  return generateAnswer(entities.eventName ?? "next event", data, {
     sourceType: "event",
     sourceLabel: events[0].title,
     sourceHref: user.memberships.some((m) => m.role === "Coordinator" && m.clubId === events[0].clubId)
       ? `/coordinator/events/${events[0].slug}`
       : `/app/events/${events[0].slug}`,
-  };
+  });
 }
 
 async function handleTaskLookup(user: AssistantSessionUser): Promise<AssistantAnswer> {
@@ -145,12 +161,11 @@ async function handleTaskLookup(user: AssistantSessionUser): Promise<AssistantAn
     priority: t.priority,
   }));
 
-  return {
-    answer: await generate("my tasks", data),
+  return generateAnswer("my tasks", data, {
     sourceType: "task",
     sourceLabel: tasks[0].title,
     sourceHref: user.isFaculty ? "/faculty" : user.memberships.some((m) => m.role === "Coordinator") ? "/coordinator" : "/volunteer",
-  };
+  });
 }
 
 async function handleAnnouncementLookup(user: AssistantSessionUser): Promise<AssistantAnswer> {
@@ -171,12 +186,11 @@ async function handleAnnouncementLookup(user: AssistantSessionUser): Promise<Ass
     pinned: a.pinned,
   }));
 
-  return {
-    answer: await generate("latest announcements", data),
+  return generateAnswer("latest announcements", data, {
     sourceType: "announcement",
     sourceLabel: announcements[0].title,
     sourceHref: user.isFaculty ? "/faculty" : "/app",
-  };
+  });
 }
 
 async function handleMembershipStatus(user: AssistantSessionUser): Promise<AssistantAnswer> {
@@ -192,12 +206,11 @@ async function handleMembershipStatus(user: AssistantSessionUser): Promise<Assis
     ? { isFaculty: true, memberships: memberships.map((m) => ({ club: m.club.name, role: m.role, status: m.status })) }
     : { memberships: memberships.map((m) => ({ club: m.club.name, role: m.role, status: m.status })) };
 
-  return {
-    answer: await generate("my membership status", data),
+  return generateAnswer("my membership status", data, {
     sourceType: "membership",
     sourceLabel: memberships[0]?.club.name,
     sourceHref: "/app/profile",
-  };
+  });
 }
 
 export async function answerAssistantQuery(user: AssistantSessionUser, question: string): Promise<AssistantAnswer> {
@@ -219,6 +232,8 @@ export async function answerAssistantQuery(user: AssistantSessionUser, question:
         return await handleAnnouncementLookup(user);
       case "membership_status":
         return await handleMembershipStatus(user);
+      case "unrelated":
+        return NO_DATA_ANSWER;
     }
   } catch (error) {
     if (error instanceof GenAiError) {
