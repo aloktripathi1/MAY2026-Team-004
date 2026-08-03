@@ -21,6 +21,7 @@ import {
 import { clubs, faqs, metrics, type Event } from "@/lib/seed-data";
 
 export type LandingEvent = Event & { attendeeCount: number };
+export type LandingViewer = { name: string; home: string } | null;
 
 const navLinks = [
   { label: "Modules", href: "#modules", desc: "Membership, events, work and visibility", icon: LayoutDashboard },
@@ -28,10 +29,10 @@ const navLinks = [
   { label: "Live", href: "#live", desc: "Counts, activity and current events", icon: Radio },
 ];
 
-export default function Landing({ events }: { events: LandingEvent[] }) {
+export default function Landing({ events, viewer }: { events: LandingEvent[]; viewer: LandingViewer }) {
   return (
     <main className="sangam-night min-h-screen overflow-hidden bg-background text-foreground">
-      <MarketingNav />
+      <MarketingNav viewer={viewer} />
       <Hero />
       <LiveActivity />
       <Modules />
@@ -44,7 +45,7 @@ export default function Landing({ events }: { events: LandingEvent[] }) {
   );
 }
 
-function MarketingNav() {
+function MarketingNav({ viewer }: { viewer: LandingViewer }) {
   const [scrolled, setScrolled] = useState(false);
   const [productOpen, setProductOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -145,12 +146,20 @@ function MarketingNav() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link href="/login" className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white sm:inline-flex">
-              Sign in
-            </Link>
-            <Link href="/signup" className="gold-cta hidden h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-secondary-foreground sm:inline-flex">
-              Join <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
+            {viewer ? (
+              <Link href={viewer.home} className="gold-cta hidden h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-secondary-foreground sm:inline-flex">
+                <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.06] hover:text-white sm:inline-flex">
+                  Sign in
+                </Link>
+                <Link href="/signup" className="gold-cta hidden h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-secondary-foreground sm:inline-flex">
+                  Join <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </>
+            )}
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
@@ -201,12 +210,20 @@ function MarketingNav() {
               ))}
             </div>
             <div className="absolute inset-x-5 bottom-6 grid gap-3">
-              <Link href="/signup" onClick={() => setMobileOpen(false)} className="gold-cta flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-secondary-foreground">
-                Join Sangam <ArrowUpRight className="h-4 w-4" />
-              </Link>
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/[0.12] text-sm font-medium text-white">
-                Sign in
-              </Link>
+              {viewer ? (
+                <Link href={viewer.home} onClick={() => setMobileOpen(false)} className="gold-cta flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-secondary-foreground">
+                  <LayoutDashboard className="h-4 w-4" /> Go to dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link href="/signup" onClick={() => setMobileOpen(false)} className="gold-cta flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-secondary-foreground">
+                    Join Sangam <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                  <Link href="/login" onClick={() => setMobileOpen(false)} className="flex h-12 items-center justify-center rounded-xl border border-white/[0.12] text-sm font-medium text-white">
+                    Sign in
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
