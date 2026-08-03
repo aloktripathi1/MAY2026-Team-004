@@ -44,17 +44,19 @@ export default async function FacultyHome() {
           <div className="text-mono-label mb-3">Clubs under mentorship</div>
           <div className="space-y-2">
             {clubs.map(c => (
-              <GlassCard key={c.id} className="flex items-center gap-3 p-4">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg"
-                     style={{ background: `oklch(0.72 0.18 ${c.hue} / 15%)`, color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{c.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {c.events[0] ? `Last event ${formatEventDate(c.events[0].date)}` : "No events yet"} · {c._count.memberships} {pluralize(c._count.memberships, "member")}
+              <Link key={c.id} href={`/faculty/clubs/${c.id}`}>
+                <GlassCard className="flex items-center gap-3 p-4">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg"
+                       style={{ background: `oklch(0.72 0.18 ${c.hue} / 15%)`, color: `oklch(0.9 0.2 ${c.hue})` }}>{c.emoji}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{c.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {c.events[0] ? `Last event ${formatEventDate(c.events[0].date)}` : "No events yet"} · {c._count.memberships} {pluralize(c._count.memberships, "member")}
+                    </div>
                   </div>
-                </div>
-                <StatusPill tone={c.active ? "green" : "amber"}>{c.active ? "Healthy" : "Quiet"}</StatusPill>
-              </GlassCard>
+                  <StatusPill tone={c.active ? "green" : "amber"}>{c.active ? "Healthy" : "Quiet"}</StatusPill>
+                </GlassCard>
+              </Link>
             ))}
           </div>
         </div>
