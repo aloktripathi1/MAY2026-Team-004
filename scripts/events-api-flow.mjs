@@ -1,17 +1,45 @@
 /**
  * End-to-end Events API flow across roles.
  * Run: node scripts/events-api-flow.mjs  (from repo root, with npm run dev up)
+ *
+ * Requires demo account credentials via env vars (see .env.example):
+ *   DEMO_ADMIN_EMAIL / DEMO_ADMIN_PASSWORD
+ *   DEMO_COORDINATOR_EMAIL / DEMO_COORDINATOR_PASSWORD
+ *   DEMO_FACULTY_EMAIL / DEMO_FACULTY_PASSWORD
+ *   DEMO_MEMBER_EMAIL / DEMO_MEMBER_PASSWORD
  */
 import { PrismaClient } from "@prisma/client";
 
 const BASE = (process.env.SANGAM_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const prisma = new PrismaClient();
 
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var ${name}`);
+  return value;
+}
+
 const ACCOUNTS = {
-  admin: { email: "23f2005593@ds.study.iitm.ac.in", password: "Vishal@2026", label: "Vishal (Admin/c1)" },
-  coordinator: { email: "22f2000147@ds.study.iitm.ac.in", password: "Purnendu@2026", label: "Purnendu (Coordinator/c6)" },
-  faculty: { email: "23f3003225@ds.study.iitm.ac.in", password: "Alok@2026", label: "Alok (Faculty)" },
-  member: { email: "23f3003728@ds.study.iitm.ac.in", password: "Ashish@2026", label: "Ashish (Member/c2)" },
+  admin: {
+    email: requireEnv("DEMO_ADMIN_EMAIL"),
+    password: requireEnv("DEMO_ADMIN_PASSWORD"),
+    label: "Admin/c1",
+  },
+  coordinator: {
+    email: requireEnv("DEMO_COORDINATOR_EMAIL"),
+    password: requireEnv("DEMO_COORDINATOR_PASSWORD"),
+    label: "Coordinator/c6",
+  },
+  faculty: {
+    email: requireEnv("DEMO_FACULTY_EMAIL"),
+    password: requireEnv("DEMO_FACULTY_PASSWORD"),
+    label: "Faculty",
+  },
+  member: {
+    email: requireEnv("DEMO_MEMBER_EMAIL"),
+    password: requireEnv("DEMO_MEMBER_PASSWORD"),
+    label: "Member/c2",
+  },
 };
 
 class Client {
