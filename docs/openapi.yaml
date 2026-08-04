@@ -24,8 +24,12 @@ info:
     name: MAY2026-Team-004
 
 servers:
+  - url: /
+    description: Same origin (local /api-docs or deployed /api-docs)
   - url: http://localhost:3000
-    description: Local development (use /api-docs for Try it out)
+    description: Local absolute URL (curl, external tools)
+  - url: https://try-sangam.vercel.app
+    description: Production absolute URL (curl, external tools)
 
 tags:
   - name: Auth
