@@ -16,3 +16,4 @@ venv/
 *.pyc
 .vercel
 .env*
+tmp-*.js
