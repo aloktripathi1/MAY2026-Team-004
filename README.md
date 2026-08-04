@@ -2,34 +2,97 @@
   <img src="public/banner.png" alt="Sangam" width="100%" />
 </p>
 
-A community and society management platform. Single source of truth for membership, events, venues, equipment, tasks, and communication, replacing WhatsApp groups, Google Forms, and spreadsheets.
+Sangam is a community and society management platform: a single source of truth for membership, events, venues, equipment, tasks, and communication, built to replace the WhatsApp groups, Google Forms, and spreadsheets clubs typically end up patching together.
 
-**Live demo:** [try-sangam.vercel.app](https://try-sangam.vercel.app). See [Demo accounts](#demo-accounts) below to sign in.
+**Live demo:** [try-sangam.vercel.app](https://try-sangam.vercel.app). See [Demo accounts](#demo-accounts) to sign in.
+
+---
+
+## Contents
+
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Team](#team-dhurandhar-may2026-team-004)
+- [Getting started](#getting-started)
+- [Demo accounts](#demo-accounts)
+- [Roles and access](#roles-and-access)
+- [API docs](#api-docs-openapi--swagger)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Data model](#data-model)
+- [Deployment](#deployment)
+- [License](#license)
+
+---
+
+## Features
+
+- **Role-based dashboards**: separate, purpose-built views for Admin, Coordinator, Volunteer, Member, and Faculty, each showing only what that role needs to act on.
+- **Membership management**: join requests, bulk CSV member import, per-club roles instead of one global permission level.
+- **Events lifecycle**: creation, faculty approval, registration ("Count Me In") with race-safe capacity enforcement, check-in, and registration locking.
+- **Issue tracking**: members raise issues with screenshot attachments; admins triage, filter, and assign them individually or in bulk.
+- **Announcements**: audience-targeted broadcasts instead of blanket messages.
+- **Transparency & metrics**: admin-facing club health and activity reporting.
+- **Ask Sangam**: an in-app assistant (`POST /api/assistant/query`) for natural-language questions about club data.
+- **Signed session auth**: custom httpOnly-cookie sessions with server-side role checks on every protected route, no client-trusted state.
 
 ---
 
 ## Tech stack
 
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- **Database**: PostgreSQL via Prisma. Local dev runs against Docker Postgres; production runs on Neon, provisioned through the Vercel Postgres integration. `prisma/schema.prisma` is the active schema; `schema.sqlite.prisma` and `schema.postgres.prisma` are earlier drafts kept for reference only, not wired to anything.
-- **Auth**: a custom, signed httpOnly-cookie session (`backend/auth/session-cookies.ts`), not NextAuth. Real signup and login go through `app/api/auth/{signup,login,me}` and `backend/auth/*`. The NextAuth-shaped route at `app/api/auth/[...nextauth]/route.ts` is an unrelated stub kept for URL-shape compatibility; it plays no part in authentication.
+**Frontend**
+- [Next.js 14](https://nextjs.org/) (App Router)
+- [React 18](https://react.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Motion](https://motion.dev/) for animation
+- [Lucide](https://lucide.dev/) for icons
+
+**Backend & data**
+- [Prisma](https://www.prisma.io/) as ORM
+- [PostgreSQL](https://www.postgresql.org/), hosted on [Neon](https://neon.tech/) (serverless Postgres), provisioned through the Vercel Postgres integration
+- [Zod](https://zod.dev/) for schema validation
+- [bcrypt](https://www.npmjs.com/package/bcrypt) for password hashing
+- [Vercel Blob](https://vercel.com/storage/blob) for file storage
+
+**Auth**
+- A custom, signed httpOnly-cookie session (`backend/auth/session-cookies.ts`), not NextAuth. Real signup and login go through `app/api/auth/{signup,login,me}` and `backend/auth/*`. The NextAuth-shaped route at `app/api/auth/[...nextauth]/route.ts` is an unrelated stub kept for URL-shape compatibility; it plays no part in authentication.
+
+**AI**
+- [Anthropic Claude API](https://www.anthropic.com/api) powers Ask Sangam, the in-app assistant
+
+**Testing**
+- [Jest](https://jestjs.io/) with [Testing Library](https://testing-library.com/) for unit, component, and live-HTTP integration suites (see [Testing](#testing))
+
+**Deployment**
+- [Vercel](https://vercel.com/), built from `main` (see [Deployment](#deployment))
+
+---
+
+## Team, Dhurandhar (MAY2026-Team-004)
+
+| Name | Project role |
+|---|---|
+| Alok Kumar Tripathi | Team Lead, Backend |
+| Vishal Singh Baraiya | Product Manager |
+| Pardhiv Nukasani | Frontend |
+| Purnendu Shukla | Backend, Code Review |
+| Yalla Ashish Chandra Reddy | Testing |
 
 ---
 
 ## Getting started
 
-Requires Docker (for local Postgres) and Node 22.6+.
+Requires Node 22.6+ and Docker.
 
 ```bash
 git clone <repo-url>
 cd sangam
 npm install
 cp .env.example .env
-npm run db:up      # starts Docker Postgres
-npm run db:push     # applies the Prisma schema
-npm run db:seed     # loads clubs, events, and the demo accounts below
+npm run db:up      # Postgres
+npm run db:push    # applies the Prisma schema
+npm run db:seed    # loads clubs, events, and the demo accounts below
 npm run dev
 ```
 
@@ -41,9 +104,10 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | Postgres connection string. Points at Docker Postgres locally, Neon in production. |
+| `DATABASE_URL` | Postgres connection string, local or Neon. |
 | `AUTH_SECRET` | Signs the session cookie. Required in production; the app refuses to start signing sessions without it. Falls back to a fixed insecure value in development. Generate one with `openssl rand -hex 32`. |
 | `ALLOW_DEMO_SESSION` | Optional, development only. Enables the login page's role-preview shortcut, a privileged session with no sign-in required. Never set this in production; protected routes fall back to it only when it's explicitly on. |
+| `ANTHROPIC_API_KEY` | Powers Ask Sangam (`POST /api/assistant/query`) via `lib/genai.ts`. Get a key at [console.anthropic.com](https://console.anthropic.com/). |
 
 ---
 
@@ -119,7 +183,7 @@ You can paste or load `docs/openapi.yaml` into [editor.swagger.io](https://edito
 
 ## Testing
 
-Everything runs on Jest. Two suites, split because they need different things to run:
+Everything runs on Jest. Three suites, split because they need different things to run:
 
 ### Unit tests
 
@@ -127,6 +191,14 @@ Pure logic in `lib/` and `backend/*` (formatters, auth-role helpers, workflow ru
 
 ```bash
 npm test
+```
+
+### Component tests
+
+React components under `tests/components/`, run with `jsdom` via Testing Library. No server or database needed.
+
+```bash
+npm run test:components
 ```
 
 ### Integration tests (live HTTP)
@@ -222,11 +294,12 @@ lib/                      frontend-facing helpers, safe to import from client co
   utils.ts                 cn() class-name helper
 
 prisma/
-  schema.prisma            active schema (schema.postgres.prisma / .sqlite.prisma: reference only)
+  schema.prisma            active schema
   migrations/, seed.ts
 
 tests/
   unit/          Jest unit tests, mirrors the lib/ and backend/ source tree
+  components/    Jest + Testing Library component tests (jsdom)
   integration/   Jest integration tests, live HTTP against app/api/ (needs a running app + database)
 ```
 
@@ -246,25 +319,6 @@ To point production at a fresh database: `npx prisma db push --schema=prisma/sch
 
 ---
 
-## Known gaps vs. original plan
-
-- Volunteer has a task list and an events view, but no dedicated FAQ view yet (member and volunteer roles have no FAQ page; FAQ content only exists on the public landing page).
-- Venue and Equipment booking isn't implemented as a feature. The `Venue`/`Equipment` models and seed data exist, but no page or Server Action reads or writes them. `Event.venue` is a plain free-text field, unrelated to the `Venue` model.
-- Image uploads (issue attachments, profile avatars) may still use data URLs in places; prefer real file storage before production scale.
-- No CI pipeline yet (no `.github/workflows`): typecheck, lint, and both test suites currently run locally, not automatically on every PR.
-
----
-
-## Team, Dhurandhar (MAY2026-Team-004)
-
-| Name | Project role |
-|---|---|
-| Alok Kumar Tripathi | Team Lead, Backend |
-| Vishal Singh Baraiya | Product Manager |
-| Pardhiv Nukasani | Frontend |
-| Purnendu Shukla | Backend, Code Review |
-| Yalla Ashish Chandra Reddy | Testing |
-
 ## License
 
-Academic project. IITM BS Software Engineering, May 2026 term.
+This project is licensed under the [MIT License](LICENSE).
