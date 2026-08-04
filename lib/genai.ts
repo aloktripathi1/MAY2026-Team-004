@@ -53,6 +53,11 @@ export async function structuredCompletion<Schema extends z.ZodType>(options: {
 }): Promise<z.infer<Schema>> {
   const { system, prompt, schema, maxTokens = 1024, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
 
+  if (process.env.ASK_SANGAM_TRACE) {
+    console.log("\n[TRACE structuredCompletion] === SYSTEM PROMPT ===\n" + system);
+    console.log("[TRACE structuredCompletion] === USER PROMPT ===\n" + prompt);
+  }
+
   try {
     const message = await getClient().messages.parse(
       {
@@ -64,6 +69,12 @@ export async function structuredCompletion<Schema extends z.ZodType>(options: {
       },
       { timeout: timeoutMs },
     );
+
+    if (process.env.ASK_SANGAM_TRACE) {
+      const rawText = message.content.find((b) => b.type === "text")?.text ?? "<no text block>";
+      console.log("[TRACE structuredCompletion] === RAW RESPONSE (pre-parse) ===\n" + rawText);
+      console.log("[TRACE structuredCompletion] === PARSED OUTPUT ===\n" + JSON.stringify(message.parsed_output, null, 2));
+    }
 
     if (!message.parsed_output) {
       throw new GenAiError("Claude returned no parsable structured output.");
@@ -83,6 +94,11 @@ export async function textCompletion(options: {
 }): Promise<string> {
   const { system, prompt, maxTokens = 512, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
 
+  if (process.env.ASK_SANGAM_TRACE) {
+    console.log("\n[TRACE textCompletion] === SYSTEM PROMPT ===\n" + system);
+    console.log("[TRACE textCompletion] === USER PROMPT (incl. data sent) ===\n" + prompt);
+  }
+
   try {
     const message = await getClient().messages.create(
       {
@@ -99,6 +115,11 @@ export async function textCompletion(options: {
     if (!textBlock || textBlock.type !== "text") {
       throw new GenAiError("Claude returned no text output.");
     }
+
+    if (process.env.ASK_SANGAM_TRACE) {
+      console.log("[TRACE textCompletion] === FINAL ANSWER ===\n" + textBlock.text.trim());
+    }
+
     return textBlock.text.trim();
   } catch (error) {
     throw toGenAiError(error);

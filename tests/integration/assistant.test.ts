@@ -152,3 +152,73 @@ describe("named-but-nonexistent subjects within a real intent", () => {
     expect(res.body.data.answer).toBe("I don't have that information.");
   });
 });
+
+describe("question-type differentiation (count, date-range, past, generic 'my X')", () => {
+  // These handlers used to discard the real question text entirely and pass
+  // a hardcoded placeholder ("next event", "my tasks", ...) to the
+  // generation step instead — so a count question, a past-events question,
+  // and a plain "next event" question all produced the identical answer,
+  // because the model generating the final text never actually saw what was
+  // asked. Traced and fixed in backend/domain/assistant.ts; these lock in
+  // that each question type now gets a genuinely different, correct answer.
+
+  it("answers a 'how many' question with the real count, not the length of the capped sample", async () => {
+    const member = await prisma.user.findUnique({ where: { email: SEEDED_ACCOUNTS.member.email } });
+    const membership = await prisma.membership.findFirst({ where: { userId: member!.id } });
+    const realCount = await prisma.event.count({ where: { clubId: membership!.clubId, date: { gte: new Date() } } });
+    if (realCount === 0) return; // nothing upcoming right now — nothing to assert
+
+    const client = new ApiClient();
+    await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query: "How many upcoming events does my club have?" } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBe("event");
+    expect(res.body.data.answer).toMatch(new RegExp(`\\b${realCount}\\b`));
+  });
+
+  it("answers a past-events question with actually-past events, not upcoming ones", async () => {
+    const pastEvent = await prisma.event.findFirst({ where: { clubId: CLUB_IDS.paradox, date: { lt: new Date() } }, orderBy: { date: "desc" } });
+    if (!pastEvent) return;
+
+    const client = new ApiClient();
+    await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query: "What past events has my club run?" } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBe("event");
+    expect(res.body.data.answer.toLowerCase()).toContain(pastEvent.title.toLowerCase());
+  });
+
+  it("still finds a named event by name even when it has already happened, instead of claiming no info", async () => {
+    const pastNamedEvent = await prisma.event.findFirst({ where: { clubId: CLUB_IDS.paradox, date: { lt: new Date() } } });
+    if (!pastNamedEvent) return;
+
+    const client = new ApiClient();
+    await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query: `Is "${pastNamedEvent.title}" still open for registration?` } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBe("event");
+  });
+
+  it("resolves a generic 'my next event' reference in a task question instead of returning no-data", async () => {
+    const volunteer = await prisma.user.findUnique({ where: { email: SEEDED_ACCOUNTS.volunteer.email } });
+    const openTask = await prisma.task.findFirst({ where: { assigneeId: volunteer!.id, status: { not: "done" } } });
+    if (!openTask) return;
+
+    const client = new ApiClient();
+    await login(client, SEEDED_ACCOUNTS.volunteer.email, SEEDED_ACCOUNTS.volunteer.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query: "What tasks am I assigned to for my next event?" } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBe("task");
+  });
+
+  it("finds a member's own club's announcements even when other clubs' pinned institution-wide notices exist", async () => {
+    const ownAnnouncement = await prisma.announcement.findFirst({ where: { clubId: CLUB_IDS.paradox } });
+    if (!ownAnnouncement) return;
+
+    const client = new ApiClient();
+    await login(client, SEEDED_ACCOUNTS.member.email, SEEDED_ACCOUNTS.member.password);
+    const res = await client.request("POST", QUERY_PATH, { json: { query: "Any news from my club?" } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sourceType).toBe("announcement");
+  });
+});

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
 import { formatEventDate, formatTaskDue } from "@/lib/format";
@@ -39,6 +40,13 @@ const classificationSchema = z.object({
       // announcements). Omitted for generic questions like "what's on my
       // task list" that don't name anything specific.
       subject: z.string().nullable().optional(),
+      // Only meaningful for event_lookup: whether the question is asking
+      // about events that already happened vs. ones coming up. Defaults to
+      // "upcoming" behavior when omitted.
+      timeframe: z.enum(["upcoming", "past"]).nullable().optional(),
+      // True for "how many ..." style questions, so the handler runs a real
+      // count aggregate instead of just describing a capped sample list.
+      wantsCount: z.boolean().nullable().optional(),
     })
     .default({}),
 });
@@ -54,13 +62,19 @@ Classify the user's question into exactly one intent:
 - "membership_status": questions about the user's own club memberships, roles, or membership status.
 - "unrelated": the question is NOT about any of the above — general knowledge, small talk, greetings, unrelated topics, or anything this app has no data for. Use this whenever the question doesn't genuinely fit one of the four categories above. Do not force a fit just because a keyword loosely overlaps.
 
-If the question names a specific event, club, or topic (e.g. "tasks for the Winter Fest", "announcement about the hackathon", "am I a member of Paradox"), extract it as entities.subject. Omit it for generic questions ("what's on my task list", "what are the latest announcements").
+Entity extraction (all optional, applies across intents where relevant):
+- subject: a specific, real proper-noun event, club, or topic the question names (e.g. "tasks for the Winter Fest", "announcement about the hackathon", "am I a member of Paradox"). Do NOT extract generic self-referencing phrases like "my next event", "my club", "this event", or "current tasks" as a subject — those aren't names of anything, they're just how the person refers to their own stuff. Omit subject entirely for those and for generic questions ("what's on my task list").
+- timeframe: for event_lookup only — "past" if the question asks about events that already happened ("what events did we run", "past events"), "upcoming" if it asks about what's coming up. Omit if ambiguous or not about events.
+- wantsCount: true if the question is asking "how many" of something rather than asking for details about specific ones.
+
 Return ONLY the structured JSON output. No prose, no markdown, no explanation.`;
 
 const GENERATE_SYSTEM_PROMPT = `You are "Ask Sangam", answering a user's question using ONLY the JSON data provided below.
 
 Rules:
 - Use only the facts present in the provided data. Never add names, dates, numbers, or details that aren't in it.
+- If the data has a "totalCount" field, that is the authoritative count — always state that exact number for "how many" questions. The accompanying list (events/tasks/announcements) may be a truncated sample of just the first few, NOT the full set, so never count its length as the answer.
+- If the question refers to something generically by the user's own relationship to it ("my next event", "my club", "my current tasks") rather than a specific name, and the data spans multiple different events/clubs, use any date/status fields present to resolve which one it means (e.g. "next event" = the one with the soonest date) — this is not the same as the data being unrelated to the question.
 - If the data doesn't actually answer the question — including if the data is simply unrelated to what was asked — respond with exactly this sentence and nothing else: "I don't have that information." Do not soften it, explain why, or add anything else.
 - Otherwise keep the answer short: one or two sentences, natural and conversational, no markdown formatting.`;
 
@@ -69,14 +83,28 @@ function scopedClubIds(user: AssistantSessionUser): string[] {
 }
 
 async function classify(question: string): Promise<Classification> {
-  return structuredCompletion({
+  const result = await structuredCompletion({
     system: CLASSIFY_SYSTEM_PROMPT,
     prompt: question,
     schema: classificationSchema,
   });
+  if (process.env.ASK_SANGAM_TRACE) {
+    console.log("[TRACE assistant] === QUESTION ===\n" + question);
+    console.log("[TRACE assistant] === CLASSIFIED INTENT/ENTITIES ===\n" + JSON.stringify(result, null, 2));
+  }
+  return result;
+}
+
+function trace(label: string, value: unknown) {
+  if (!process.env.ASK_SANGAM_TRACE) return;
+  console.log(`[TRACE assistant] === ${label} ===\n` + JSON.stringify(value, null, 2));
 }
 
 async function generate(question: string, data: unknown): Promise<string> {
+  // `question` must always be the requester's actual original text here —
+  // never a synthesized label — otherwise the model has no way to know
+  // what was actually asked (e.g. a count vs. a date range vs. "who
+  // organizes this") and just narrates the data generically.
   const prompt = `User question: "${question}"\n\nData:\n${JSON.stringify(data, null, 2)}`;
   return textCompletion({ system: GENERATE_SYSTEM_PROMPT, prompt, maxTokens: 300 });
 }
@@ -98,7 +126,11 @@ async function generateAnswer(
   return { answer, ...source };
 }
 
-async function handleEventLookup(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
+async function handleEventLookup(
+  user: AssistantSessionUser,
+  question: string,
+  entities: Classification["entities"],
+): Promise<AssistantAnswer> {
   const clubIds = scopedClubIds(user);
   // Non-faculty users only ever see events for clubs they actually belong to
   // — a Member of one club can never pull another club's event data through
@@ -107,27 +139,48 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
   // club-scoped here either.
   if (!user.isFaculty && clubIds.length === 0) return NO_DATA_ANSWER;
 
+  const wantsPast = entities.timeframe === "past";
   const scopeFilter = clubIds.length > 0 ? { clubId: { in: clubIds } } : {};
   const nameFilter = entities.subject
     ? {
-        status: { not: "past" as const },
         OR: [
           { title: { contains: entities.subject, mode: "insensitive" as const } },
           { club: { name: { contains: entities.subject, mode: "insensitive" as const } } },
         ],
       }
-    : { date: { gte: new Date() } };
+    : {};
 
-  const events = await prisma.event.findMany({
-    where: { AND: [scopeFilter, nameFilter] },
-    include: { club: true },
-    orderBy: { date: "asc" },
-    take: 3,
-  });
+  async function queryEvents(timeFilter: Prisma.EventWhereInput, sortDirection: "asc" | "desc") {
+    const where: Prisma.EventWhereInput = { AND: [scopeFilter, timeFilter, nameFilter] };
+    trace("EVENT PRISMA WHERE", where);
+    const [rows, totalCount] = await Promise.all([
+      prisma.event.findMany({ where, include: { club: true }, orderBy: { date: sortDirection }, take: 3 }),
+      entities.wantsCount ? prisma.event.count({ where }) : Promise.resolve(null),
+    ]);
+    trace(
+      "EVENT RAW QUERY RESULT",
+      rows.map((e) => ({ id: e.id, title: e.title, date: e.date, status: e.status, clubId: e.clubId })),
+    );
+    if (totalCount !== null) trace("EVENT COUNT AGGREGATE", { totalCount });
+    return { rows, totalCount };
+  }
+
+  let { rows: events, totalCount } = wantsPast
+    ? await queryEvents({ date: { lt: new Date() } }, "desc")
+    : await queryEvents({ date: { gte: new Date() } }, "asc");
+
+  // A named subject ("Winter Debate Open") should still be found even if it
+  // already happened (or hasn't started yet) — a directional search coming
+  // up empty isn't proof the event doesn't exist, just that it isn't in the
+  // direction assumed. Retry unbounded once before giving up, so the
+  // assistant can honestly say "that already happened" instead of "no info".
+  if (events.length === 0 && entities.subject) {
+    ({ rows: events, totalCount } = await queryEvents({}, "desc"));
+  }
 
   if (events.length === 0) return NO_DATA_ANSWER;
 
-  const data = events.map((e) => ({
+  const eventList = events.map((e) => ({
     title: e.title,
     club: e.club.name,
     date: formatEventDate(e.date),
@@ -137,8 +190,9 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
     going: e.going,
     status: e.status,
   }));
+  const data = totalCount !== null ? { totalCount, sampleOfTheseEvents: eventList } : { events: eventList };
 
-  return generateAnswer(entities.subject ?? "next event", data, {
+  return generateAnswer(question, data, {
     sourceType: "event",
     sourceLabel: events[0].title,
     sourceHref: user.memberships.some((m) => m.role === "Coordinator" && m.clubId === events[0].clubId)
@@ -147,7 +201,11 @@ async function handleEventLookup(user: AssistantSessionUser, entities: Classific
   });
 }
 
-async function handleTaskLookup(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
+async function handleTaskLookup(
+  user: AssistantSessionUser,
+  question: string,
+  entities: Classification["entities"],
+): Promise<AssistantAnswer> {
   // Scoped to the requester's own assigned tasks only.
   const subjectFilter = entities.subject
     ? {
@@ -160,33 +218,54 @@ async function handleTaskLookup(user: AssistantSessionUser, entities: Classifica
       }
     : {};
 
-  const tasks = await prisma.task.findMany({
-    where: { assigneeId: user.id, status: { not: "done" }, ...subjectFilter },
-    include: { event: true },
-    orderBy: [{ dueAt: "asc" }],
-    take: 3,
-  });
+  const taskQueryWhere: Prisma.TaskWhereInput = { assigneeId: user.id, status: { not: "done" }, ...subjectFilter };
+  trace("TASK PRISMA WHERE", taskQueryWhere);
+
+  const [tasks, totalCount] = await Promise.all([
+    prisma.task.findMany({
+      where: taskQueryWhere,
+      include: { event: true },
+      orderBy: [{ dueAt: "asc" }],
+      take: 3,
+    }),
+    entities.wantsCount ? prisma.task.count({ where: taskQueryWhere }) : Promise.resolve(null),
+  ]);
+
+  trace(
+    "TASK RAW QUERY RESULT",
+    tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, dueAt: t.dueAt, eventTitle: t.event.title })),
+  );
+  if (totalCount !== null) trace("TASK COUNT AGGREGATE", { totalCount });
 
   // A named subject that matches nothing is a hard "no" — never fall back
   // to the requester's unrelated real tasks just because they have some.
   if (tasks.length === 0) return NO_DATA_ANSWER;
 
-  const data = tasks.map((t) => ({
+  const taskList = tasks.map((t) => ({
     title: t.title,
     event: t.event.title,
+    // Lets the model resolve "my next event" generically when a single
+    // requester's tasks span several different events — without each
+    // event's own date, it can't tell which one is chronologically next.
+    eventDate: formatEventDate(t.event.date),
     dueAt: formatTaskDue(t.dueAt),
     status: t.status,
     priority: t.priority,
   }));
+  const data = totalCount !== null ? { totalCount, sampleOfTheseTasks: taskList } : { tasks: taskList };
 
-  return generateAnswer(entities.subject ?? "my tasks", data, {
+  return generateAnswer(question, data, {
     sourceType: "task",
     sourceLabel: tasks[0].title,
     sourceHref: user.isFaculty ? "/faculty" : user.memberships.some((m) => m.role === "Coordinator") ? "/coordinator" : "/volunteer",
   });
 }
 
-async function handleAnnouncementLookup(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
+async function handleAnnouncementLookup(
+  user: AssistantSessionUser,
+  question: string,
+  entities: Classification["entities"],
+): Promise<AssistantAnswer> {
   const clubIds = scopedClubIds(user);
   const scopeFilter = clubIds.length > 0 ? { OR: [{ clubId: { in: clubIds } }, { audience: "All" as const }] } : { audience: "All" as const };
   const subjectFilter = entities.subject
@@ -199,37 +278,92 @@ async function handleAnnouncementLookup(user: AssistantSessionUser, entities: Cl
       }
     : {};
 
-  const announcements = await prisma.announcement.findMany({
-    where: { AND: [scopeFilter, subjectFilter] },
-    include: { club: true },
-    orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
-    take: 3,
-  });
+  const announcementQueryWhere: Prisma.AnnouncementWhereInput = { AND: [scopeFilter, subjectFilter] };
+  trace("ANNOUNCEMENT PRISMA WHERE", announcementQueryWhere);
+
+  let announcements;
+  if (!entities.subject && clubIds.length > 0) {
+    // Generic "my club" questions: a global pinned-then-recent sort can let
+    // other clubs' pinned institution-wide notices crowd the requester's own
+    // (possibly unpinned) club announcements out of the capped sample
+    // entirely, making the assistant wrongly claim it has no info about
+    // their own club. Fetch the requester's own club first, then top up with
+    // institution-wide ones only if there's room left.
+    const ownAnnouncements = await prisma.announcement.findMany({
+      where: { AND: [{ clubId: { in: clubIds } }, subjectFilter] },
+      include: { club: true },
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+      take: 3,
+    });
+    const institutionWide =
+      ownAnnouncements.length < 3
+        ? await prisma.announcement.findMany({
+            where: { AND: [{ audience: "All" }, subjectFilter] },
+            include: { club: true },
+            orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+            take: 3 - ownAnnouncements.length,
+          })
+        : [];
+    announcements = [...ownAnnouncements, ...institutionWide];
+  } else {
+    announcements = await prisma.announcement.findMany({
+      where: announcementQueryWhere,
+      include: { club: true },
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+      take: 3,
+    });
+  }
+  const totalCount = entities.wantsCount ? await prisma.announcement.count({ where: announcementQueryWhere }) : null;
+
+  trace(
+    "ANNOUNCEMENT RAW QUERY RESULT",
+    announcements.map((a) => ({ id: a.id, title: a.title, clubId: a.clubId, pinned: a.pinned, createdAt: a.createdAt })),
+  );
+  if (totalCount !== null) trace("ANNOUNCEMENT COUNT AGGREGATE", { totalCount });
 
   // A named topic that matches nothing is a hard "no" — never fall back to
   // generic latest announcements just because some exist.
   if (announcements.length === 0) return NO_DATA_ANSWER;
 
-  const data = announcements.map((a) => ({
+  // "audience: All" announcements are intentionally interleaved from clubs
+  // the requester isn't in (institution-wide notices) — without an explicit
+  // flag, the generation model has no way to tell that apart from a scoping
+  // bug and was misreading "my club" questions as unanswered when the data
+  // legitimately mixed in another club's institution-wide announcement.
+  const announcementList = announcements.map((a) => ({
     title: a.title,
     club: a.club.name,
+    scope: clubIds.includes(a.clubId) ? "your club" : "institution-wide, visible to every club",
     body: a.body,
     pinned: a.pinned,
   }));
+  const data = totalCount !== null ? { totalCount, sampleOfTheseAnnouncements: announcementList } : { announcements: announcementList };
 
-  return generateAnswer(entities.subject ?? "latest announcements", data, {
+  return generateAnswer(question, data, {
     sourceType: "announcement",
     sourceLabel: announcements[0].title,
     sourceHref: user.isFaculty ? "/faculty" : "/app",
   });
 }
 
-async function handleMembershipStatus(user: AssistantSessionUser, entities: Classification["entities"]): Promise<AssistantAnswer> {
+async function handleMembershipStatus(
+  user: AssistantSessionUser,
+  question: string,
+  entities: Classification["entities"],
+): Promise<AssistantAnswer> {
   // Always scoped to the requester's own userId — never another user's memberships.
+  const membershipQueryWhere: Prisma.MembershipWhereInput = { userId: user.id };
+  trace("MEMBERSHIP PRISMA WHERE", membershipQueryWhere);
+
   const allMemberships = await prisma.membership.findMany({
-    where: { userId: user.id },
+    where: membershipQueryWhere,
     include: { club: true },
   });
+
+  trace(
+    "MEMBERSHIP RAW QUERY RESULT",
+    allMemberships.map((m) => ({ id: m.id, club: m.club.name, role: m.role, status: m.status })),
+  );
 
   // A specific club named that the user isn't actually in is a hard "no" —
   // never fall back to listing their real, unrelated memberships instead.
@@ -237,13 +371,15 @@ async function handleMembershipStatus(user: AssistantSessionUser, entities: Clas
     ? allMemberships.filter((m) => m.club.name.toLowerCase().includes(entities.subject!.toLowerCase()))
     : allMemberships;
 
+  trace("MEMBERSHIP AFTER SUBJECT FILTER", memberships.map((m) => m.club.name));
+
   if (memberships.length === 0 && !(user.isFaculty && !entities.subject)) return NO_DATA_ANSWER;
 
   const data = user.isFaculty
     ? { isFaculty: true, memberships: memberships.map((m) => ({ club: m.club.name, role: m.role, status: m.status })) }
     : { memberships: memberships.map((m) => ({ club: m.club.name, role: m.role, status: m.status })) };
 
-  return generateAnswer(entities.subject ?? "my membership status", data, {
+  return generateAnswer(question, data, {
     sourceType: "membership",
     sourceLabel: memberships[0]?.club.name,
     sourceHref: "/app/profile",
@@ -262,13 +398,13 @@ export async function answerAssistantQuery(user: AssistantSessionUser, question:
   try {
     switch (classification.intent) {
       case "event_lookup":
-        return await handleEventLookup(user, classification.entities);
+        return await handleEventLookup(user, question, classification.entities);
       case "task_lookup":
-        return await handleTaskLookup(user, classification.entities);
+        return await handleTaskLookup(user, question, classification.entities);
       case "announcement_lookup":
-        return await handleAnnouncementLookup(user, classification.entities);
+        return await handleAnnouncementLookup(user, question, classification.entities);
       case "membership_status":
-        return await handleMembershipStatus(user, classification.entities);
+        return await handleMembershipStatus(user, question, classification.entities);
       case "unrelated":
         return NO_DATA_ANSWER;
     }
