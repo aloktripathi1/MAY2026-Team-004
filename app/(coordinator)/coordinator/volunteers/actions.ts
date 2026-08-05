@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
-import { prisma } from "@/backend/db/prisma";
+import { assignTask } from "@/backend/domain/tasks";
 
 const assignTaskSchema = z.object({
   title: z.string().min(1, "Task title is required"),
@@ -36,15 +36,15 @@ export async function assignTaskAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await prisma.task.create({
-    data: {
+  await assignTask(
+    { id: session.user.id, memberships: session.user.memberships },
+    {
       title: parsed.data.title,
       role: parsed.data.role,
       eventId: parsed.data.eventId,
       assigneeId: parsed.data.assigneeId,
-      status: "todo",
     },
-  });
+  );
 
   revalidatePath("/coordinator/volunteers");
   return { ok: true };

@@ -8,8 +8,9 @@ info:
     APIs created (own): listed under paths below.
     APIs integrated (third-party): none in this file yet.
 
-    GenAI APIs: POST /api/assistant/query (Ask Sangam), listed under the
-    GenAI tag and kept separate from the non-GenAI endpoints above.
+    GenAI APIs: POST /api/assistant/query (Ask Sangam Q&A + task proposals),
+    POST /api/assistant/confirm (accept/reject proposed task actions), listed
+    under the GenAI tag and kept separate from the non-GenAI endpoints above.
 
     User story mapping: each operation includes `x-user-story` matching
     docs/user_stories.md and docs/Sangam_M3_M4_Plan.md.
@@ -45,6 +46,7 @@ tags:
       GenAI endpoints, kept separate from the regular CRUD APIs above.
       Structured retrieval-and-generation over Postgres (classify intent ->
       scoped Prisma query -> generate grounded answer), not vector RAG.
+      Task mutations use an in-process tool agent with user Accept/Reject.
 
 paths:
   /api/auth/signup:
@@ -1560,7 +1562,9 @@ paths:
   # answer using only that data. If the query finds nothing, the fixed
   # "I don't have that information." response is returned and the
   # generation call is skipped entirely, so Claude can never improvise an
-  # answer from empty data. See lib/genai.ts for the shared Claude wrapper.
+  # answer from empty data. Task mutations use a dual path: classify as
+  # task_action, then an in-process tool agent proposes writes that the
+  # user must Accept via POST /api/assistant/confirm. See lib/genai.ts.
   /api/assistant/query:
     post:
       tags:
@@ -1571,6 +1575,10 @@ paths:
         tasks, announcements, or club memberships. Every answer is grounded
         in a real database record for the authenticated session — never a
         model guess and never another user's or club's data.
+
+        When the user asks to change a task (status update or assign), the
+        response may include `proposedAction` with a signed token. No write
+        is applied until POST /api/assistant/confirm with decision=accept.
 
         Issue #116 - Ask Sangam: natural-language Q&A assistant grounded in
         live app data.
@@ -1616,6 +1624,18 @@ paths:
                       sourceHref:
                         type: string
                         nullable: true
+                      proposedAction:
+                        type: object
+                        nullable: true
+                        description: Present when a task write needs user confirmation.
+                        properties:
+                          toolName: { type: string, example: update_task_status }
+                          summary: { type: string, example: Mark task "Poster design" as done. }
+                          argsPreview:
+                            type: object
+                            additionalProperties: { type: string }
+                          token: { type: string, description: Signed pending-action token }
+                          status: { type: string, enum: [pending] }
                   userStory: { type: string, example: "Ask Sangam" }
         "400":
           description: Missing or invalid query.
@@ -1637,6 +1657,66 @@ paths:
             field for those cases, not a raw provider error; this 500 is
             reserved for failures outside that path (e.g. the database
             itself being unreachable).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/assistant/confirm:
+    post:
+      tags:
+        - GenAI
+      summary: Accept or reject a proposed Ask Sangam task action
+      description: |
+        Confirms or cancels a pending write proposed by POST /api/assistant/query
+        (task_action path). Accept runs the domain mutation with the session
+        actor; reject returns a fixed refusal and invalidates the token.
+      operationId: assistantConfirm
+      x-user-story: "Ask Sangam"
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, token]
+              properties:
+                decision:
+                  type: string
+                  enum: [accept, reject]
+                token:
+                  type: string
+                  description: Signed token from proposedAction.token
+      responses:
+        "200":
+          description: Action accepted (DB updated) or rejected.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      answer: { type: string }
+                      sourceType:
+                        type: string
+                        nullable: true
+                        enum: [event, task, announcement, membership, null]
+                      sourceLabel: { type: string, nullable: true }
+                      sourceHref: { type: string, nullable: true }
+                  userStory: { type: string, example: "Ask Sangam" }
+        "400":
+          description: Invalid/expired/consumed token or action failed authz/validation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
           content:
             application/json:
               schema:

@@ -1,24 +1,12 @@
 import { z } from "zod/v4";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
-import type { SessionMembership } from "@/backend/auth/session-cookies";
+import { runTaskToolAgent } from "@/backend/assistant/agent/run-task-agent";
 import { formatEventDate, formatTaskDue } from "@/lib/format";
 import { GenAiError, structuredCompletion, textCompletion } from "@/lib/genai";
+import type { AssistantAnswer, AssistantSessionUser, AssistantSourceType } from "@/backend/domain/assistant-types";
 
-export type AssistantSourceType = "event" | "task" | "announcement" | "membership";
-
-export type AssistantAnswer = {
-  answer: string;
-  sourceType: AssistantSourceType | null;
-  sourceLabel?: string;
-  sourceHref?: string;
-};
-
-export type AssistantSessionUser = {
-  id: string;
-  isFaculty: boolean;
-  memberships: SessionMembership[];
-};
+export type { AssistantAnswer, AssistantSessionUser, AssistantSourceType };
 
 const NO_DATA_ANSWER: AssistantAnswer = {
   answer: "I don't have that information.",
@@ -31,7 +19,14 @@ const FALLBACK_ANSWER: AssistantAnswer = {
 };
 
 const classificationSchema = z.object({
-  intent: z.enum(["event_lookup", "task_lookup", "announcement_lookup", "membership_status", "unrelated"]),
+  intent: z.enum([
+    "event_lookup",
+    "task_lookup",
+    "task_action",
+    "announcement_lookup",
+    "membership_status",
+    "unrelated",
+  ]),
   entities: z
     .object({
       // A specific event, club, or topic the question names — applies across
@@ -53,14 +48,15 @@ const classificationSchema = z.object({
 
 type Classification = z.infer<typeof classificationSchema>;
 
-const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A assistant embedded in a student clubs platform. It can only answer questions about the requesting user's own events, tasks, announcements, or club memberships — nothing else.
+const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A assistant embedded in a student clubs platform. It can answer questions about the requesting user's own events, tasks, announcements, or club memberships, and can propose task mutations (status updates / assigns) via a separate tool path.
 
 Classify the user's question into exactly one intent:
 - "event_lookup": questions about events, schedules, "next event", a specific event by name, registration/capacity status.
-- "task_lookup": questions about the user's own assigned tasks, to-dos, or volunteer shifts.
+- "task_lookup": READ-ONLY questions about the user's own assigned tasks, to-dos, or volunteer shifts ("what's on my task list", "what tasks do I have", "is my poster task still open"). Do NOT use this when the user wants to change something.
+- "task_action": the user wants to CHANGE a task — mark/set status (todo/doing/done), complete a task, assign a task to someone, or create an assignment. Examples: "mark my poster task as done", "set the check-in task to doing", "assign setup duty to Riya for Winter Fest".
 - "announcement_lookup": questions about club announcements, news, or updates.
 - "membership_status": questions about the user's own club memberships, roles, or membership status.
-- "unrelated": the question is NOT about any of the above — general knowledge, small talk, greetings, unrelated topics, or anything this app has no data for. Use this whenever the question doesn't genuinely fit one of the four categories above. Do not force a fit just because a keyword loosely overlaps.
+- "unrelated": the question is NOT about any of the above — general knowledge, small talk, greetings, unrelated topics, or anything this app has no data for. Use this whenever the question doesn't genuinely fit one of the categories above. Do not force a fit just because a keyword loosely overlaps.
 
 Entity extraction (all optional, applies across intents where relevant):
 - subject: a specific, real proper-noun event, club, or topic the question names (e.g. "tasks for the Winter Fest", "announcement about the hackathon", "am I a member of Paradox"). Do NOT extract generic self-referencing phrases like "my next event", "my club", "this event", or "current tasks" as a subject — those aren't names of anything, they're just how the person refers to their own stuff. Omit subject entirely for those and for generic questions ("what's on my task list").
@@ -401,6 +397,8 @@ export async function answerAssistantQuery(user: AssistantSessionUser, question:
         return await handleEventLookup(user, question, classification.entities);
       case "task_lookup":
         return await handleTaskLookup(user, question, classification.entities);
+      case "task_action":
+        return await runTaskToolAgent(user, question);
       case "announcement_lookup":
         return await handleAnnouncementLookup(user, question, classification.entities);
       case "membership_status":
