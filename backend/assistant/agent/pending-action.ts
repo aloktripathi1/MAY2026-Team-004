@@ -19,6 +19,8 @@ export type PendingActionPayload = {
   userId: string;
   toolName: string;
   args: Record<string, unknown>;
+  /** Shell the proposal was made from, so Accept executes with the same scope. */
+  role?: string;
   exp: number;
 };
 
@@ -36,7 +38,8 @@ function decodePayload(encoded: string): PendingActionPayload | null {
       typeof parsed.exp !== "number" ||
       typeof parsed.args !== "object" ||
       parsed.args === null ||
-      Array.isArray(parsed.args)
+      Array.isArray(parsed.args) ||
+      (parsed.role !== undefined && typeof parsed.role !== "string")
     ) {
       return null;
     }

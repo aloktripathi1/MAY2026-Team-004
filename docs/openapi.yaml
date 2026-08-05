@@ -1599,6 +1599,13 @@ paths:
                   minLength: 1
                   maxLength: 500
                   example: "When's my next event?"
+                role:
+                  type: string
+                  enum: [member, coordinator, admin, volunteer, faculty]
+                  description: |
+                    Dashboard the question was asked from. Task tools are scoped
+                    to it, so a coordinator asking from the member app gets member
+                    capabilities. Ignored unless the session actually holds the role.
       responses:
         "200":
           description: Answer generated (or the fixed no-data response if nothing matched).

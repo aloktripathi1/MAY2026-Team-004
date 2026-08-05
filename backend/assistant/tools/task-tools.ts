@@ -21,6 +21,14 @@ function revalidateTaskSurfaces() {
   revalidatePath("/app");
 }
 
+// Plain Members never work the task board — task tools are for people who
+// actually own or manage task execution.
+const TASK_CAPABLE_ROLES = new Set(["Volunteer", "Coordinator", "Admin"]);
+
+function canWorkTasks(actor: ToolActor): boolean {
+  return actor.memberships.some((m) => TASK_CAPABLE_ROLES.has(m.role));
+}
+
 function canAssignTasks(actor: ToolActor): boolean {
   return actor.memberships.some((m) => m.role === "Coordinator" || m.role === "Admin");
 }
@@ -33,6 +41,7 @@ export const listMyTasksTool: AssistantTool<z.infer<typeof listMyTasksSchema>> =
     "List the authenticated user's open assigned tasks (not done). Use this to resolve which task the user means before proposing a status update.",
   risk: "read",
   requiresConfirmation: false,
+  isAvailable: canWorkTasks,
   inputSchema: listMyTasksSchema,
   anthropicInputSchema: {
     type: "object",
@@ -92,6 +101,7 @@ export const updateTaskStatusTool: AssistantTool<z.infer<typeof updateTaskStatus
     "Update the status of a task the user can manage (their own assignment, or any task in a club they coordinate). Status must be todo, doing, or done. Always resolve the taskId via list_my_tasks first when the user names a task by title.",
   risk: "write",
   requiresConfirmation: true,
+  isAvailable: canWorkTasks,
   inputSchema: updateTaskStatusSchema,
   anthropicInputSchema: {
     type: "object",

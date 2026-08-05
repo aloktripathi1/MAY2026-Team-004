@@ -33,6 +33,24 @@ export function homePathForUser(user: {
   return "/app";
 }
 
+const APP_ROLE_TO_CLUB_ROLE: Record<Exclude<AppRole, "faculty">, string> = {
+  member: "Member",
+  coordinator: "Coordinator",
+  admin: "Admin",
+  volunteer: "Volunteer",
+};
+
+/**
+ * Memberships that back a specific shell. A coordinator browsing the member
+ * app is acting as a member there, so capabilities scoped by this function
+ * don't leak across shells.
+ */
+export function membershipsForAppRole<T extends { role: string }>(memberships: T[], role: AppRole): T[] {
+  if (role === "faculty") return [];
+  const clubRole = APP_ROLE_TO_CLUB_ROLE[role];
+  return memberships.filter((m) => m.role === clubRole);
+}
+
 /** Roles the user can open in the shell switcher (multi-club / multi-role safe). */
 export function accessibleAppRoles(user: {
   isFaculty?: boolean;

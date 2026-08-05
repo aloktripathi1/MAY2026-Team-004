@@ -33,7 +33,7 @@ const EXAMPLE_QUESTIONS: Record<AppRole, string[]> = {
   member: [
     "When's my next event?",
     "What are the latest announcements?",
-    "What tasks am I assigned?",
+    "Which clubs am I a member of?",
   ],
   coordinator: [
     "What's on my task list?",
@@ -115,7 +115,7 @@ export function AskSangam({ role }: { role: AppRole }) {
       const res = await fetch("/api/assistant/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text }),
+        body: JSON.stringify({ query: text, role }),
       });
       const body = await res.json();
 

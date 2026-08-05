@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getMockSession } from "@/backend/auth/mock-session";
+import { membershipsForAppRole, type AppRole } from "@/backend/auth/roles";
 import { verifyPendingAction } from "@/backend/assistant/agent/pending-action";
 import { executeTool } from "@/backend/assistant/tools/registry";
 import type { AssistantAnswer } from "@/backend/domain/assistant-types";
@@ -63,11 +64,17 @@ export async function POST(request: Request) {
     return jsonSuccess(result, { status: 200, userStory: USER_STORY });
   }
 
+  // Re-apply the shell scope the proposal was signed with, so accepting can
+  // never execute with wider capabilities than the user was offered.
+  const scopedRole = verified.payload.role as AppRole | undefined;
+
   try {
     const executed = await executeTool(verified.payload.toolName, {
       id: session.user.id,
-      isFaculty: session.user.isFaculty,
-      memberships: session.user.memberships,
+      isFaculty: scopedRole ? scopedRole === "faculty" && session.user.isFaculty : session.user.isFaculty,
+      memberships: scopedRole
+        ? membershipsForAppRole(session.user.memberships, scopedRole)
+        : session.user.memberships,
     }, verified.payload.args);
 
     verifyPendingAction(token, { expectedUserId: session.user.id, consume: true });

@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { membershipsForAppRole, type AppRole } from "@/backend/auth/roles";
 import type { AssistantAnswer, AssistantSessionUser } from "@/backend/domain/assistant-types";
 import { enrichUpdateTaskSummary } from "@/backend/assistant/tools/task-tools";
 import { executeTool, getTool, previewToolCall, toAnthropicTools } from "@/backend/assistant/tools/registry";
@@ -19,11 +20,16 @@ Rules:
 - Do not claim a write already happened — the user must Accept a proposal in the UI before anything is saved.
 - If you cannot complete the request with the available tools, say so briefly in plain text.`;
 
-function toToolActor(user: AssistantSessionUser): ToolActor {
+/**
+ * Builds the actor for tool calls. When the caller reports which shell they're
+ * in, only that shell's memberships count — so a coordinator asking from the
+ * member app gets member capabilities, not coordinator ones.
+ */
+export function toToolActor(user: AssistantSessionUser, activeRole?: AppRole): ToolActor {
   return {
     id: user.id,
-    isFaculty: user.isFaculty,
-    memberships: user.memberships,
+    isFaculty: activeRole ? activeRole === "faculty" && user.isFaculty : user.isFaculty,
+    memberships: activeRole ? membershipsForAppRole(user.memberships, activeRole) : user.memberships,
   };
 }
 
@@ -58,6 +64,7 @@ async function buildWriteProposal(
   actor: ToolActor,
   toolName: string,
   rawArgs: unknown,
+  activeRole?: AppRole,
 ): Promise<AssistantAnswer> {
   const preview = previewToolCall(toolName, actor, rawArgs);
   let summary = preview.summary;
@@ -66,10 +73,13 @@ async function buildWriteProposal(
     summary = await enrichUpdateTaskSummary(args);
   }
 
+  // The role travels inside the signed token so Accept runs with the same
+  // scope the proposal was built under.
   const token = signPendingAction({
     userId: actor.id,
     toolName,
     args: preview.args as Record<string, unknown>,
+    ...(activeRole ? { role: activeRole } : {}),
   });
 
   return {
@@ -97,13 +107,14 @@ async function buildWriteProposal(
 export async function runTaskToolAgent(
   user: AssistantSessionUser,
   question: string,
+  activeRole?: AppRole,
 ): Promise<AssistantAnswer> {
-  const actor = toToolActor(user);
+  const actor = toToolActor(user, activeRole);
   const tools = toAnthropicTools(actor);
 
   if (tools.length === 0) {
     return {
-      answer: "I don't have any task tools available for your role.",
+      answer: "Task changes are only available to volunteers and coordinators, so I can't do that for you.",
       sourceType: null,
     };
   }
@@ -132,7 +143,7 @@ export async function runTaskToolAgent(
       for (const use of toolUses) {
         const registered = getTool(use.name);
         if (registered?.requiresConfirmation) {
-          return buildWriteProposal(actor, use.name, use.input);
+          return buildWriteProposal(actor, use.name, use.input, activeRole);
         }
       }
 

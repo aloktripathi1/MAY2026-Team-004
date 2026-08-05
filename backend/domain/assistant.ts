@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
 import { runTaskToolAgent } from "@/backend/assistant/agent/run-task-agent";
+import type { AppRole } from "@/backend/auth/roles";
 import { formatEventDate, formatTaskDue } from "@/lib/format";
 import { GenAiError, structuredCompletion, textCompletion } from "@/lib/genai";
 import type { AssistantAnswer, AssistantSessionUser, AssistantSourceType } from "@/backend/domain/assistant-types";
@@ -382,7 +383,11 @@ async function handleMembershipStatus(
   });
 }
 
-export async function answerAssistantQuery(user: AssistantSessionUser, question: string): Promise<AssistantAnswer> {
+export async function answerAssistantQuery(
+  user: AssistantSessionUser,
+  question: string,
+  options?: { activeRole?: AppRole },
+): Promise<AssistantAnswer> {
   let classification: Classification;
   try {
     classification = await classify(question);
@@ -398,7 +403,7 @@ export async function answerAssistantQuery(user: AssistantSessionUser, question:
       case "task_lookup":
         return await handleTaskLookup(user, question, classification.entities);
       case "task_action":
-        return await runTaskToolAgent(user, question);
+        return await runTaskToolAgent(user, question, options?.activeRole);
       case "announcement_lookup":
         return await handleAnnouncementLookup(user, question, classification.entities);
       case "membership_status":

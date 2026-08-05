@@ -11,6 +11,7 @@ import {
   toolsForActor,
 } from "@/backend/assistant/tools/registry";
 import type { ToolActor } from "@/backend/assistant/tools/types";
+import { toToolActor } from "@/backend/assistant/agent/run-task-agent";
 
 const volunteerActor: ToolActor = {
   id: "user-volunteer",
@@ -22,6 +23,20 @@ const volunteerActor: ToolActor = {
       clubName: "Paradox",
       role: "Volunteer",
       personaName: "Volunteer",
+    },
+  ],
+};
+
+const memberActor: ToolActor = {
+  id: "user-member",
+  isFaculty: false,
+  memberships: [
+    {
+      clubId: "c2",
+      clubSlug: "paradox",
+      clubName: "Paradox",
+      role: "Member",
+      personaName: "Member",
     },
   ],
 };
@@ -59,6 +74,24 @@ describe("assistant tool registry", () => {
     expect(volunteerNames).not.toContain("assign_task");
 
     expect(coordinatorNames).toContain("assign_task");
+  });
+
+  it("offers no task tools to a plain member", () => {
+    expect(toolsForActor(memberActor)).toEqual([]);
+    expect(toAnthropicTools(memberActor)).toEqual([]);
+  });
+
+  it("blocks a plain member from previewing a task status change", () => {
+    expect(() =>
+      previewToolCall("update_task_status", memberActor, { taskId: "task_123", status: "done" }),
+    ).toThrow(/not available/i);
+  });
+
+  it("gives a coordinator no task tools while they're in the member shell", () => {
+    const sessionUser = { id: coordinatorActor.id, isFaculty: false, memberships: coordinatorActor.memberships };
+
+    expect(toolsForActor(toToolActor(sessionUser, "coordinator")).map((t) => t.name)).toContain("assign_task");
+    expect(toolsForActor(toToolActor(sessionUser, "member"))).toEqual([]);
   });
 
   it("maps available tools to Anthropic tool definitions", () => {
