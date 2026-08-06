@@ -96,8 +96,8 @@ const CLUB_DEFS: ClubDef[] = [
   { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", hue: "45", emoji: "◈", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", photo: "/club-banners/e-cell.jpg", targetMembers: 34, activity: "very-active" },
   { id: "c7", slug: "quill", name: "Quill - Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", hue: "320", emoji: "✦", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", photo: "/club-banners/quill.jpg", targetMembers: 20, activity: "at-risk" },
   { id: "c8", slug: "arena", name: "Arena - Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", hue: "0", emoji: "♞", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", photo: "/club-banners/arena.jpg", targetMembers: 24, activity: "steady" },
-  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", targetMembers: 30, activity: "very-active" },
-  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", targetMembers: 22, activity: "steady" },
+  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", photo: "/club-banners/photon.jpg", targetMembers: 30, activity: "very-active" },
+  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", photo: "/club-banners/turf.jpg", targetMembers: 22, activity: "steady" },
 ];
 const CLUB_SLUGS = CLUB_DEFS.map((c) => c.slug);
 const clubBySlug = (slug: string) => CLUB_DEFS.find((c) => c.slug === slug)!;
@@ -462,8 +462,12 @@ for (const club of CLUB_DEFS) {
       status,
       going,
       capacity,
-      cover: CURATED_PHOTOS[template.title] ? COVERS[club.slug] : eventGradient(club.hue, randInt(20, 90)),
-      photo: CURATED_PHOTOS[template.title],
+      // Flagship templates get their own bespoke photo; every other event
+      // falls back to its club's own banner photo rather than staying
+      // photo-less — a bare gradient card reads as broken/unfinished next
+      // to cards that do have a real image (#131).
+      cover: COVERS[club.slug],
+      photo: CURATED_PHOTOS[template.title] ?? club.photo,
       tags: template.tags,
       description: template.description,
       approval,
