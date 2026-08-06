@@ -18,6 +18,7 @@ Sangam is a community and society management platform: a single source of truth 
 - [Roles and access](#roles-and-access)
 - [API docs](#api-docs-openapi--swagger)
 - [Testing](#testing)
+- [Email notifications](#email-notifications)
 - [Project structure](#project-structure)
 - [Data model](#data-model)
 - [Deployment](#deployment)
@@ -32,6 +33,7 @@ Sangam is a community and society management platform: a single source of truth 
 - **Events lifecycle**: creation, faculty approval, registration ("Count Me In") with race-safe capacity enforcement, check-in, and registration locking.
 - **Issue tracking**: members raise issues with screenshot attachments; admins triage, filter, and assign them individually or in bulk.
 - **Announcements**: audience-targeted broadcasts instead of blanket messages.
+- **Email notifications**: transactional and activity email through [Resend](https://resend.com/) — signup verification, membership and approval decisions, registration confirmations, schedule changes, task assignments, and daily reminder/digest sweeps — with per-category opt-outs and one-click unsubscribe. See [Email notifications](#email-notifications).
 - **Transparency & metrics**: admin-facing club health and activity reporting.
 - **Ask Sangam**: an in-app assistant (`POST /api/assistant/query`) for natural-language questions about club data.
 - **Signed session auth**: custom httpOnly-cookie sessions with server-side role checks on every protected route, no client-trusted state.
@@ -108,6 +110,13 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 | `AUTH_SECRET` | Signs the session cookie. Required in production; the app refuses to start signing sessions without it. Falls back to a fixed insecure value in development. Generate one with `openssl rand -hex 32`. |
 | `ALLOW_DEMO_SESSION` | Optional, development only. Enables the login page's role-preview shortcut, a privileged session with no sign-in required. Never set this in production; protected routes fall back to it only when it's explicitly on. |
 | `ANTHROPIC_API_KEY` | Powers Ask Sangam (`POST /api/assistant/query`) via `lib/genai.ts`. Get a key at [console.anthropic.com](https://console.anthropic.com/). |
+| `RESEND_API_KEY` | Powers email notifications via `backend/email/`. Get a key at [resend.com/api-keys](https://resend.com/api-keys). |
+| `EMAIL_ENABLED` | Master switch for real delivery. Unset or `false` puts the mailer in dry-run. Real sends need this **and** `RESEND_API_KEY`. |
+| `EMAIL_FROM` | Sender identity — `Sangam <no-reply@sangam-club.com>` once the domain is verified. Defaults to Resend's `onboarding@resend.dev` test sender. |
+| `EMAIL_REPLY_TO` | Optional `Reply-To`. Omit to let replies bounce. |
+| `EMAIL_ALLOWLIST` | Comma-separated addresses or domains that may receive real mail. Anything else is skipped and logged. Empty means no restriction. |
+| `APP_URL` | Absolute origin used to build links inside emails. `NEXTAUTH_URL` is for auth callbacks; this is what recipients click. |
+| `CRON_SECRET` | Bearer token for the scheduled-email routes under `/api/cron/email/*`. Without it those routes refuse every request. |
 
 ---
 
@@ -218,7 +227,17 @@ npm run test:integration
 
 Optional env var: `SANGAM_BASE_URL` (defaults to `http://localhost:3000`).
 
+Leave `ALLOW_DEMO_SESSION` unset when running this suite — it asserts that anonymous requests are
+refused rather than handed the privileged demo persona, so switching the shortcut on fails those
+cases by design.
+
 Role-scoped endpoints (coordinator, admin, faculty) authenticate as the matching seeded team account from [Demo accounts](#demo-accounts) rather than relying on the `ALLOW_DEMO_SESSION` shortcut, so the suite exercises the same session and authorization path a real user would hit. It also covers the concurrency fix behind event registration (ten genuinely simultaneous requests for one capacity slot, asserting exactly one winner) and the security-relevant paths: anonymous access to every protected route and API, a forged session cookie, cross-role authorization, and 404s for missing dynamic pages.
+
+Email is covered in both suites. `tests/unit/backend/email/` renders every template (escaping,
+plain-text twin, category) and checks the token, config and audience logic; `tests/integration/email.test.ts`
+drives the real send path against the database in dry-run — idempotency, preference opt-outs,
+transactional mail ignoring opt-outs, the sweeps, verification single-use, unsubscribe
+GET-vs-POST, and cron auth. Nothing is delivered: see [Dry-run is the default](#dry-run-is-the-default).
 
 Written test-case docs, in the course-required format, live under `docs/test-cases/`.
 
@@ -231,6 +250,191 @@ curl -s -X POST http://localhost:3000/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"Ananya Rao","email":"23s1000999@ds.study.iitm.ac.in","rollNumber":"23s1000999","password":"SecurePass1"}'
 ```
+
+---
+
+## Email notifications
+
+All outbound email lives in [`backend/email/`](backend/email). Domain code never talks to the
+provider: it calls a named function like `notifyMembershipApplied(userId, clubId)`, and that
+layer decides who hears about it, renders the template, and hands one `sendEmail()` call the
+result. Notifications are **best-effort by design** — a membership approval still stands if the
+mail provider is down.
+
+### Provider
+
+[Resend](https://resend.com/), chosen over SES and Postmark because the app is a Vercel-hosted
+Next.js project: one SDK, no IAM or sandbox-exit process, and DKIM handled from the dashboard.
+Vercel and Neon cannot send mail themselves, so an external provider was required either way.
+
+### Dry-run is the default
+
+Sending needs **both** `EMAIL_ENABLED=true` and `RESEND_API_KEY`. With either missing every send
+is decided, logged to the console and recorded in `EmailLog` with status `dryRun` — but nothing
+leaves the app. The seeded accounts are real IITM addresses, so local development and the test
+suite deliberately never deliver.
+
+`EMAIL_ALLOWLIST` is the second guard: while no domain is verified, it restricts real delivery to
+listed addresses or domains. It applies to real sends only — dry-run still shows what *would*
+have gone out.
+
+To check a real send once `RESEND_API_KEY` is in place:
+
+```bash
+npx tsx scripts/send-test-email.ts you@example.com registrationConfirmation
+```
+
+It prints the resolved sender, mode and result, and delivers nothing while `EMAIL_ENABLED` is off.
+
+### What triggers what
+
+| Email | Trigger | Category |
+|---|---|---|
+| Signup verification | account created (`createUserAccount`) | *transactional — no opt-out* |
+| Membership request received | member applies to a club | `membership` |
+| Membership request awaiting approval | member applies → club admins | `membership` |
+| Membership approved / rejected | admin decides on the request | `membership` |
+| Welcome | first membership anywhere goes Active | `membership` |
+| Role changed | admin adds a member above `Member` | `membership` |
+| Admin handover (both sides) | `transferAdminAction` | `membership` |
+| New club event | coordinator creates an event | `events` |
+| Event awaiting approval | event created → faculty | `events` |
+| Event approved / not approved | faculty or admin decides | `events` |
+| Registration confirmed | member counts themselves in | `events` |
+| **Schedule change** | date, time or venue moved → registrants | `events` |
+| Event cancelled | approved event with registrants is rejected | `events` |
+| Task assigned | coordinator assigns a volunteer task | `tasks` |
+| New announcement | **High** priority only, posted | `announcements` |
+| Issue received | member raises an issue | `issues` |
+| Issue status changed / resolved | admin moves the status | `issues` |
+
+Schedule-change mail only goes out when a registrant would actually rearrange their day —
+`diffScheduleFields` compares date, time and venue, so a reworded description mails nobody.
+
+### Scheduled email
+
+Five daily sweeps, wired in [`vercel.json`](vercel.json) and served by
+`/api/cron/email/{sweep}`:
+
+| Sweep | What it does |
+|---|---|
+| `event-reminders` | "Your event is tomorrow", to everyone registered |
+| `task-due-reminders` | Open tasks due tomorrow |
+| `task-overdue` | Daily nudge for slipped tasks, giving up after 14 days |
+| `registration-closing-soon` | Members not yet registered for a nearly-full or imminent event |
+| `announcement-digest` | One email covering the day's Low/Med announcements per person |
+
+Two properties make them safe to run repeatedly, which matters because Vercel Cron retries:
+dedupe keys name the **target** (`eventReminder:<eventId>:<userId>`), never the run; and windows
+are calendar days, so a sweep that fires late still covers the same rows.
+
+The routes authenticate with `Authorization: Bearer $CRON_SECRET` — Vercel sends this
+automatically. **Without `CRON_SECRET` set they refuse every request**, since an open URL here
+would let anyone mail a club's members. Run one by hand with:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/email/event-reminders"
+```
+
+Add `?at=2026-09-17T09:00:00Z` to drive the windows without waiting for the clock.
+
+### Preferences and unsubscribe
+
+`User.notificationPrefs` gained five email flags (`emailAnnouncements`, `emailEvents`,
+`emailTasks`, `emailMembership`, `emailIssues`) alongside the three existing in-app feed flags,
+which never expressed "don't mail me". They're toggled from **Profile → Notification
+preferences**, default on, and rows written before this change read as opted in.
+
+Every non-transactional email carries a signed opt-out link and the `List-Unsubscribe` /
+`List-Unsubscribe-Post` headers Gmail and Yahoo expect. `GET /api/email/unsubscribe` shows a
+confirmation; `POST` performs it — deliberately split, because mail clients pre-fetch links and a
+GET that unsubscribed would opt people out of mail they still want.
+
+`pinnedAnnouncementsOnly` is honoured too: someone with it on only gets announcement email for
+pinned posts.
+
+### Idempotency and audit
+
+Every attempt writes an `EmailLog` row. `dedupeKey` is unique, so the claim doubles as the
+idempotency lock — a repeated key returns `duplicate` and mails nothing. On a genuine send
+failure the key is released (mangled to `failed:<id>:<key>`) so a retry can try again while the
+failed row survives for audit. `sendEmail` also passes the dedupe key to Resend as an
+`Idempotency-Key`, so an abandoned-but-succeeding request can't become a second delivery.
+
+### Going live on a real domain
+
+The sending domain is **sangam-club.com** (registrar and DNS: Hostinger). Until it's verified,
+`EMAIL_FROM` uses Resend's `onboarding@resend.dev`, which **only delivers to the address that owns
+the Resend account** — enough to prove the flows, not enough for real recipients.
+
+**1. Add the domain in Resend.** [resend.com/domains](https://resend.com/domains) → **Add Domain**
+→ `sangam-club.com`. Pick the region closest to your users; it decides the MX hostname in the next
+step and can't be changed afterwards. Resend then shows the exact records to create.
+
+**2. Add the records in Hostinger.** hPanel → **Domains** → sangam-club.com → **DNS / Nameservers**
+→ *DNS Records*. Expect three from Resend, roughly:
+
+| Type | Name | Value |
+|---|---|---|
+| `TXT` | `resend._domainkey` | the DKIM public key (`p=…`), a long single string |
+| `TXT` | `send` | `v=spf1 include:amazonses.com ~all` |
+| `MX` | `send` | `feedback-smtp.<region>.amazonses.com`, priority `10` |
+
+Copy the values from the dashboard rather than the table above — the DKIM key and the region in the
+MX host are generated per domain.
+
+SPF and MX land on the `send.` subdomain even though mail is *from* the root domain: that's the
+Return-Path Resend uses for bounce handling, and it does not stop `no-reply@sangam-club.com`
+working as the visible sender.
+
+> **Hostinger gotcha:** its editor appends the domain automatically. Enter `resend._domainkey` and
+> `send`, **not** `resend._domainkey.sangam-club.com` — the latter becomes
+> `resend._domainkey.sangam-club.com.sangam-club.com` and never verifies. Leave TTL at the default.
+
+**3. Wait for verification.** Hostinger usually propagates in minutes; Resend rechecks on its own,
+and **Verify DNS Records** forces it. All records must read *Verified*. Check from a terminal with:
+
+```bash
+dig +short TXT resend._domainkey.sangam-club.com && dig +short TXT send.sangam-club.com && dig +short MX send.sangam-club.com
+```
+
+**4. Optional but recommended — DMARC.** Once SPF and DKIM verify, add one more `TXT` record,
+name `_dmarc`, value `v=DMARC1; p=none; rua=mailto:you@sangam-club.com`. Start at `p=none` so
+nothing is rejected while you watch the reports.
+
+**5. Flip the app over.** In the Vercel project's environment variables:
+
+| Variable | Value |
+|---|---|
+| `RESEND_API_KEY` | a fresh key from [resend.com/api-keys](https://resend.com/api-keys) |
+| `EMAIL_FROM` | `Sangam <no-reply@sangam-club.com>` |
+| `APP_URL` | `https://try-sangam.vercel.app` — the app still serves from Vercel |
+| `EMAIL_ALLOWLIST` | keep it pinned to your own address for a first live round |
+| `EMAIL_ENABLED` | `true` |
+| `CRON_SECRET` | `openssl rand -hex 32`, or the sweeps stay dark |
+
+**6. Prove it, then open up.** With the allowlist still pinned, trigger one real flow and confirm
+delivery. Only then clear `EMAIL_ALLOWLIST` to let mail reach actual members — that variable is the
+single thing standing between a bug and 45 students' inboxes.
+
+```bash
+npx tsx scripts/send-test-email.ts you@sangam-club.com registrationConfirmation
+```
+
+### Not yet wired
+
+Two items from the issue's email list have no trigger in the app yet, and the gap is a missing
+*feature*, not a missing email:
+
+- **"New reply on your issue"** — `Issue` has no comment or reply model, so there is nothing to
+  notify about. `notifyIssueReply` and its template are written and tested, ready for the moment
+  issue threads exist.
+- **AI handover brief** — `notifyHandoverBrief` is ready, but the brief generator itself is a
+  GenAI feature tracked separately (see the `add/gen-ai` branch); wiring it here would collide.
+
+**Bulk CSV member import sends nothing.** At the 500-row limit, mailing every imported member
+inline would hold the Server Action open for minutes and trip Resend's rate limit. Roster imports
+need a background job before they can notify.
 
 ---
 
@@ -284,6 +488,17 @@ backend/                  server-only code, never imported by client components
                               isEventPast, etc.)
     approvals.ts, countMeIn.ts, tasks.ts, events.ts, membership.ts   Server Actions and
                               domain logic shared across more than one route
+  email/                    all outbound email, see Email notifications below
+    client.ts                sendEmail() — the only place mail leaves the app: preference
+                              enforcement, allowlist, dry-run, idempotency claim, audit row
+    notifications.ts         one function per thing that happens (notifyMembershipApplied,
+                              notifyEventScheduleChange, …); what domain code calls
+    scheduled.ts             the cron sweeps: reminders, overdue nudges, announcement digest
+    templates.ts             one pure function per email; data in, subject/html/text out
+    render.ts                the shared HTML shell, escaping, and plain-text twin
+    recipients.ts            who gets a given email (audience → roles, registrants, faculty)
+    routes.ts                every in-app URL an email links to
+    config.ts, unsubscribe.ts   env resolution; signed one-click opt-out links
 
 lib/                      frontend-facing helpers, safe to import from client components
   seed-data.ts             static content not modeled as a DB table (landing-page copy, etc.)
@@ -309,6 +524,12 @@ tests/
 
 Role is per-club, not global, as described in [Roles and access](#roles-and-access). Venues and Equipment are separate models, not a merged "Resource" type. The shape is shared exactly by `prisma/schema.prisma` and the live Postgres database via `backend/db/prisma.ts`.
 
+`EmailLog` and `EmailVerificationToken` support [Email notifications](#email-notifications):
+`EmailLog.dedupeKey` is unique and doubles as the idempotency lock for the cron sweeps, and only
+the SHA-256 hash of each verification token is stored, so a database leak can't be replayed as a
+valid link. `User.emailVerified` records the fact of verification; it is deliberately **not** a
+login gate, since that would lock out every account created before this feature.
+
 ---
 
 ## Deployment
@@ -316,6 +537,11 @@ Role is per-club, not global, as described in [Roles and access](#roles-and-acce
 Production runs on Vercel, built from `main`. The database is Neon Postgres, connected through the Vercel Postgres integration, which manages `DATABASE_URL` automatically. `AUTH_SECRET` is set directly in the Vercel project's environment variables. `ALLOW_DEMO_SESSION` is intentionally left unset in production, so the role-preview shortcut never activates there.
 
 To point production at a fresh database: `npx prisma db push --schema=prisma/schema.prisma` against the new `DATABASE_URL`, then `npx tsx prisma/seed.ts` to load clubs, events, and the demo accounts.
+
+**Email.** `EMAIL_ENABLED` is left unset until a sender domain is verified, so production runs in
+dry-run and sends nothing. `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL` and `CRON_SECRET` go in the
+same Vercel environment variables as `AUTH_SECRET`; the daily sweeps in `vercel.json` are inert
+without `CRON_SECRET`. Full steps in [Going live on a real domain](#going-live-on-a-real-domain).
 
 ---
 

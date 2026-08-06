@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/cron/email/event-reminders", "schedule": "30 3 * * *" },
+    { "path": "/api/cron/email/task-due-reminders", "schedule": "35 3 * * *" },
+    { "path": "/api/cron/email/task-overdue", "schedule": "40 3 * * *" },
+    { "path": "/api/cron/email/registration-closing-soon", "schedule": "45 3 * * *" },
+    { "path": "/api/cron/email/announcement-digest", "schedule": "30 12 * * *" }
+  ]
+}

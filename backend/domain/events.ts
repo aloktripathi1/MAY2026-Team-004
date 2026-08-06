@@ -8,6 +8,14 @@ import {
   parseTagInput,
 } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
+import {
+  notifyEventApprovalDecision,
+  notifyEventCancelled,
+  notifyEventCreated,
+  notifyEventScheduleChange,
+  notifyRegistrationConfirmed,
+  type EventChange,
+} from "@/backend/email/notifications";
 
 export function requireCoordinatorForClub(memberships: SessionMembership[], clubId: string) {
   const allowed = memberships.some(
@@ -53,6 +61,9 @@ export async function createEvent(memberships: SessionMembership[], clubId: stri
       approval: "pending",
     },
   });
+
+  await notifyEventCreated(event.id);
+
   return { ok: true, event } as const;
 }
 
@@ -74,6 +85,34 @@ export async function getEventById(id: string) {
   });
   if (!event) return { ok: false, code: "EVENT_NOT_FOUND", message: "Event not found." } as const;
   return { ok: true, event } as const;
+}
+
+type ScheduleFields = { date: Date; time: string; venue: string };
+
+/**
+ * The fields a registrant would rearrange their day around. Title and
+ * description edits are not a schedule change and must not trigger the
+ * "this event moved" email — that's the whole point of diffing rather than
+ * mailing on every update.
+ *
+ * Exported so the coordinator's edit form (which writes through Prisma
+ * directly) produces the same emails as the REST path.
+ */
+export function diffScheduleFields(before: ScheduleFields, after: ScheduleFields): EventChange[] {
+  const changes: EventChange[] = [];
+
+  if (before.date.getTime() !== after.date.getTime()) {
+    const format = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    changes.push({ label: "Date", from: format(before.date), to: format(after.date) });
+  }
+  if (before.time !== after.time) {
+    changes.push({ label: "Time", from: before.time, to: after.time });
+  }
+  if (before.venue !== after.venue) {
+    changes.push({ label: "Venue", from: before.venue, to: after.venue });
+  }
+
+  return changes;
 }
 
 export async function updateEvent(
@@ -102,6 +141,10 @@ export async function updateEvent(
       ...(input.tags !== undefined ? { tags: serializeEventTags(parseTagInput(input.tags)) } : {}),
     },
   });
+
+  const changes = diffScheduleFields(event, updated);
+  if (changes.length > 0) await notifyEventScheduleChange(eventId, changes);
+
   return { ok: true, event: updated } as const;
 }
 
@@ -112,7 +155,7 @@ export async function updateEvent(
 // normal "capacity reached" response instead of a 500.
 export async function registerForEvent(userId: string, eventId: string) {
   try {
-    return await prisma.$transaction(
+    const result = await prisma.$transaction(
       async (tx) => {
         const event = await tx.event.findUnique({
           where: { id: eventId },
@@ -161,6 +204,15 @@ export async function registerForEvent(userId: string, eventId: string) {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    // Mailed after the transaction commits, never inside it: a slow provider
+    // would hold a Serializable transaction open and cause the very
+    // serialization failures this isolation level exists to surface.
+    if (result.ok && result.action === "registered") {
+      await notifyRegistrationConfirmed(userId, eventId);
+    }
+
+    return result;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") {
       return {
@@ -263,10 +315,26 @@ export async function setEventApprovalByFaculty(
     } as const;
   }
 
+  const normalized = normalizeEventApproval(approval);
   const updated = await prisma.event.update({
     where: { id: eventId },
-    data: { approval: normalizeEventApproval(approval) },
+    data: { approval: normalized },
   });
+
+  if (event.approval !== normalized) {
+    // A move back to `pending` is not a decision anyone needs mailing about.
+    if (normalized !== "pending") {
+      await notifyEventApprovalDecision(eventId, normalized === "approved");
+    }
+    // Pulling approval from an event people already hold spots for is, from a
+    // registrant's point of view, a cancellation — this is the transition the
+    // `force` guard above exists to make deliberate (#119), so it's also the
+    // one that owes them an email.
+    if (event.approval === "approved" && normalized === "rejected" && registrantCount > 0) {
+      await notifyEventCancelled(eventId, "The event lost its faculty approval.");
+    }
+  }
+
   return { ok: true, event: updated } as const;
 }
 

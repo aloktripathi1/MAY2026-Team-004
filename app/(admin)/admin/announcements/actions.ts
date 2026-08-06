@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { notifyAnnouncement } from "@/backend/email/notifications";
 
 const schema = z.object({
   title: z.string().min(1, "Headline is required"),
@@ -32,7 +33,7 @@ export async function createAnnouncementAction(_prevState: AnnouncementFormState
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  await prisma.announcement.create({
+  const announcement = await prisma.announcement.create({
     data: {
       title: parsed.data.title,
       body: parsed.data.body,
@@ -43,6 +44,10 @@ export async function createAnnouncementAction(_prevState: AnnouncementFormState
       authorId: session.user.id,
     },
   });
+
+  // High priority mails the audience now; Low and Med are picked up by the
+  // daily digest sweep instead, so a busy club doesn't flood inboxes.
+  await notifyAnnouncement(announcement.id);
 
   revalidatePath("/admin/announcements");
   revalidatePath("/admin");

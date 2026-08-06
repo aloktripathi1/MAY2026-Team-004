@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
+import { notifyAdminHandover } from "@/backend/email/notifications";
 
 export type TransferState = { error?: string; ok?: boolean };
 
@@ -45,6 +46,10 @@ export async function transferAdminAction(_prevState: TransferState, formData: F
     prisma.membership.update({ where: { id: currentAdminMembership.id }, data: { role: "Coordinator" } }),
     prisma.membership.update({ where: { id: successor.id }, data: { role: "Admin" } }),
   ]);
+
+  // Both sides get a confirmation — the incoming admin because their
+  // permissions just changed, the outgoing one as a record that it happened.
+  await notifyAdminHandover(currentMembership.clubId, session.user.id, successor.userId);
 
   revalidatePath("/admin");
   revalidatePath("/admin/handover");

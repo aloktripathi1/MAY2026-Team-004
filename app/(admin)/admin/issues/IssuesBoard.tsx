@@ -5,7 +5,13 @@ import { ChevronDown, Users } from "lucide-react";
 import { StatusPill, Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
 import { Avatar } from "@/components/ui/Avatar";
-import { assignIssuesAction, updateIssuePriorityAction } from "./actions";
+import { assignIssuesAction, updateIssuePriorityAction, updateIssueStatusAction } from "./actions";
+
+const STATUS_OPTIONS = [
+  { value: "Open", label: "Open" },
+  { value: "InProgress", label: "In review" },
+  { value: "Resolved", label: "Resolved" },
+];
 
 export type IssueRow = {
   id: string;
@@ -91,6 +97,33 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
     });
   }
 
+  function updateStatus(issueId: string, status: string) {
+    setError(null);
+    startTransition(async () => {
+      const res = await updateIssueStatusAction(issueId, status);
+      if (res.error) setError(res.error);
+    });
+  }
+
+  function statusSelect(issue: IssueRow) {
+    return (
+      <div className="relative w-fit">
+        <select
+          value={issue.status}
+          onChange={(e) => updateStatus(issue.id, e.target.value)}
+          disabled={pending}
+          aria-label={`Status for ${issue.title}`}
+          className="w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-2 pr-6 text-xs text-white outline-none transition focus:border-secondary/55"
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+      </div>
+    );
+  }
+
   function bulkAssign(assigneeId: string) {
     setError(null);
     startTransition(async () => {
@@ -135,6 +168,8 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
           <Users className="h-4 w-4" /> Bulk assign{selected.size > 0 ? ` (${selected.size})` : ""}
         </Btn>
       </div>
+
+      {error && !bulkOpen && <p className="mb-3 text-xs text-destructive">{error}</p>}
 
       <div className="night-panel overflow-x-auto rounded-2xl">
         {/* 6 fixed-px columns forced a 760px min-width table on every
@@ -204,6 +239,7 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                   </div>
+                  {statusSelect(issue)}
                 </div>
               </div>
               <div className="hidden grid-cols-[24px_2fr_110px_90px_140px_110px] items-center gap-4 px-6 py-4 transition hover:bg-white/[0.04] md:grid">
@@ -249,7 +285,7 @@ export function IssuesBoard({ issues, assignable }: { issues: IssueRow[]; assign
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                 </div>
-                <StatusPill tone={statusTone(issue.status)}>{statusLabel(issue.status)}</StatusPill>
+                {statusSelect(issue)}
               </div>
             </div>
           ))}
