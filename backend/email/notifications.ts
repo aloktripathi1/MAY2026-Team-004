@@ -45,7 +45,16 @@ function dedupeKey(...parts: (string | number)[]): string {
 async function run(inputs: SendEmailInput[]): Promise<NotifySummary> {
   if (inputs.length === 0) return { ...EMPTY };
   try {
-    return summarize(await sendEmails(inputs));
+    const summary = summarize(await sendEmails(inputs));
+    // One line per fan-out, so "did that announcement actually go out?" is
+    // answerable from the logs without reconstructing it from EmailLog rows
+    // (skips write none — see the note in client.ts).
+    const counts = Object.entries(summary)
+      .filter(([, count]) => count > 0)
+      .map(([status, count]) => `${status}=${count}`)
+      .join(" ");
+    console.log(`[email] ${inputs[0].template} × ${inputs.length} → ${counts}`);
+    return summary;
   } catch (error) {
     console.error("[email] fan-out failed", error);
     return { ...EMPTY, failed: inputs.length };
