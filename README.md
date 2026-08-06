@@ -117,6 +117,7 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 | `EMAIL_ALLOWLIST` | Comma-separated addresses or domains that may receive real mail. Anything else is skipped and logged. Empty means no restriction. |
 | `APP_URL` | Absolute origin used to build links inside emails. `NEXTAUTH_URL` is for auth callbacks; this is what recipients click. |
 | `CRON_SECRET` | Bearer token for the scheduled-email routes under `/api/cron/email/*`. Without it those routes refuse every request. |
+| `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. Off by default — see [Requiring verified email](#requiring-verified-email) before enabling. |
 
 ---
 
@@ -337,6 +338,29 @@ curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/ema
 ```
 
 Add `?at=2026-09-17T09:00:00Z` to drive the windows without waiting for the clock.
+
+### Requiring verified email
+
+By default a new account is signed straight in and `User.emailVerified` is only
+a record, not a gate. Set `REQUIRE_EMAIL_VERIFICATION=true` to enforce it:
+
+- signup no longer returns a session; it redirects to `/login?verify=sent`
+- `POST /api/auth/login` answers **403 `EMAIL_UNVERIFIED`** until confirmed
+  (deliberately distinct from `INVALID_CREDENTIALS` — the password *was* right,
+  and a generic message would send people to reset a password that works)
+- the login form offers "Send me a new verification link", backed by
+  `POST /api/auth/resend-verification`
+
+⚠️ **Do not enable this while `EMAIL_ALLOWLIST` is set.** A student who signs up
+from an address outside the allowlist never receives a link, and would have no
+way to sign in — the gate would lock out exactly the people it's meant to
+onboard. Enable it in the same change that clears the allowlist.
+
+Accounts that predate the feature are backfilled as verified by migration
+`20260806160000_backfill_email_verified`, and `prisma/seed.ts` stamps the seeded
+demo accounts, so enabling the gate never strands an existing login. The
+resend endpoint answers identically for known and unknown addresses so it can't
+be used to enumerate accounts.
 
 ### Preferences and unsubscribe
 

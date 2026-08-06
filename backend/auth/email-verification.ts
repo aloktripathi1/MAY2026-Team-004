@@ -15,6 +15,25 @@ import { notifyEmailVerification } from "@/backend/email/notifications";
 
 export const VERIFICATION_TTL_HOURS = 24;
 
+/**
+ * Whether an unverified account is refused sign-in.
+ *
+ * Off by default, and that default is deliberate rather than lazy: the gate is
+ * only safe once verification email genuinely reaches new signups. While
+ * `EMAIL_ALLOWLIST` is pinned during rollout, a student who signs up never
+ * receives a link, so switching this on would lock every new account out of the
+ * app with no way back in. Turn it on in the same change that clears the
+ * allowlist — see "Requiring verified email" in the README.
+ *
+ * Accounts that predate verification are backfilled as verified by migration
+ * 20260806..._backfill_email_verified, and prisma/seed.ts stamps the seeded
+ * accounts, so enabling this never strands an existing login.
+ */
+export function requiresEmailVerification(): boolean {
+  const flag = process.env.REQUIRE_EMAIL_VERIFICATION?.trim().toLowerCase();
+  return flag === "true" || flag === "1";
+}
+
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }

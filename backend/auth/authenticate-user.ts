@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { prisma } from "@/backend/db/prisma";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
+import { requiresEmailVerification } from "@/backend/auth/email-verification";
 
 /**
  * Precomputed bcrypt hash used when no user/password exists so compare timing
@@ -23,8 +24,13 @@ export type AuthenticateResult =
   | { ok: true; user: AuthenticatedUser }
   | {
       ok: false;
-      /** Specific codes for the form UI; API maps all to INVALID_CREDENTIALS. */
-      code: "USER_NOT_FOUND" | "NO_PASSWORD" | "BAD_PASSWORD";
+      /**
+       * Specific codes for the form UI; the API maps the credential ones to a
+       * single INVALID_CREDENTIALS so it can't be used to enumerate accounts.
+       * EMAIL_UNVERIFIED is the exception and is safe to surface: the caller
+       * already proved they know the password.
+       */
+      code: "USER_NOT_FOUND" | "NO_PASSWORD" | "BAD_PASSWORD" | "EMAIL_UNVERIFIED";
       message: string;
     };
 
@@ -66,6 +72,16 @@ export async function authenticateUser(email: string, password: string): Promise
       ok: false,
       code: "BAD_PASSWORD",
       message: "The email and password do not match.",
+    };
+  }
+
+  // Checked only after the password, so an unverified-account response can't
+  // be used to discover which emails have accounts.
+  if (requiresEmailVerification() && !user.emailVerified) {
+    return {
+      ok: false,
+      code: "EMAIL_UNVERIFIED",
+      message: "Confirm your email address before signing in. Check your inbox for the link we sent.",
     };
   }
 
