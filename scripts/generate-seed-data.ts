@@ -96,8 +96,8 @@ const CLUB_DEFS: ClubDef[] = [
   { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", hue: "45", emoji: "◈", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", photo: "/club-banners/e-cell.jpg", targetMembers: 34, activity: "very-active" },
   { id: "c7", slug: "quill", name: "Quill - Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", hue: "320", emoji: "✦", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", photo: "/club-banners/quill.jpg", targetMembers: 20, activity: "at-risk" },
   { id: "c8", slug: "arena", name: "Arena - Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", hue: "0", emoji: "♞", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", photo: "/club-banners/arena.jpg", targetMembers: 24, activity: "steady" },
-  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", targetMembers: 30, activity: "very-active" },
-  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", targetMembers: 22, activity: "steady" },
+  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", photo: "/club-banners/photon.jpg", targetMembers: 30, activity: "very-active" },
+  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", photo: "/club-banners/turf.jpg", targetMembers: 22, activity: "steady" },
 ];
 const CLUB_SLUGS = CLUB_DEFS.map((c) => c.slug);
 const clubBySlug = (slug: string) => CLUB_DEFS.find((c) => c.slug === slug)!;
@@ -356,6 +356,32 @@ const CURATED_PHOTOS: Record<string, string> = {
   "Open Jam Friday": "/club-events/sarga-open-jam.png",
 };
 
+// Per-club photo pools, cycled round-robin as each club's events are
+// generated. A flagship template (CURATED_PHOTOS) always wins when it
+// applies; everything else rotates through its club's pool instead of
+// collapsing onto a single repeated banner image — three events from the
+// same club sitting next to each other (the homepage's "current signal"
+// picks the first 3 upcoming events in array order, which are often all
+// from one club) used to render the identical photo three times (#131).
+const CLUB_PHOTO_POOLS: Record<string, string[]> = {
+  codechef: ["/club-banners/codechef.jpg", "/club-events/cook-off-42.png", "/club-events/hacktoberfest.jpg"],
+  paradox: ["/club-banners/paradox.jpg", "/club-events/bp-open-round.png", "/club-events/cat-mun-conference.jpg"],
+  sarga: [
+    "/club-banners/sarga.jpg",
+    "/club-events/fusion-night-vi.png",
+    "/club-events/sarga-open-jam.png",
+    "/club-events/cat-music-performance.jpg",
+    "/club-events/cat-music-studio.jpg",
+  ],
+  kalakriti: ["/club-banners/kalakriti.jpg", "/club-events/portfolio-crit.png"],
+  prakriti: ["/club-banners/prakriti.jpg", "/club-events/climate-teach-in.png"],
+  "e-cell": ["/club-banners/e-cell.jpg", "/club-events/ignite-2026.png"],
+  quill: ["/club-banners/quill.jpg"],
+  arena: ["/club-banners/arena.jpg", "/club-events/chess-blitz-x.png", "/club-events/cat-chess-tournament.jpg"],
+  photon: ["/club-banners/photon.jpg", "/club-events/cat-robotics-team.jpg", "/club-events/cat-electronics-workshop.jpg"],
+  turf: ["/club-banners/turf.jpg", "/club-events/cat-football-match.jpg"],
+};
+
 type ApprovalDisplay = "approved" | "pending" | "not-required" | "rejected";
 interface EventDef {
   id: string;
@@ -398,6 +424,8 @@ let eventSeq = 1;
 
 for (const club of CLUB_DEFS) {
   const templates = [...EVENT_TEMPLATES[club.slug]];
+  const photoPool = CLUB_PHOTO_POOLS[club.slug] ?? [club.photo!];
+  let photoPoolIndex = 0;
   const pastCount = randInt(4, 6);
   const upcomingCount = randInt(2, 4);
 
@@ -462,8 +490,13 @@ for (const club of CLUB_DEFS) {
       status,
       going,
       capacity,
-      cover: CURATED_PHOTOS[template.title] ? COVERS[club.slug] : eventGradient(club.hue, randInt(20, 90)),
-      photo: CURATED_PHOTOS[template.title],
+      // Flagship templates get their own bespoke photo; every other event
+      // cycles through its club's photo pool round-robin rather than
+      // collapsing onto one repeated image — a bare gradient (or the same
+      // photo three times in a row) reads as broken next to cards that
+      // have real, varied images (#131).
+      cover: COVERS[club.slug],
+      photo: CURATED_PHOTOS[template.title] ?? photoPool[photoPoolIndex++ % photoPool.length],
       tags: template.tags,
       description: template.description,
       approval,
