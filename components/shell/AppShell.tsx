@@ -9,6 +9,7 @@ import {
   LayoutDashboard, CalendarDays, Users2, MessageSquareWarning, Compass, UserRound,
   Megaphone, ClipboardCheck, LineChart, ScrollText, KeyRound, ListChecks,
   Shield, Menu, X, LogOut, Ticket, Activity, User, SquareKanban, HandHelping, ShieldCheck, GraduationCap,
+  Sparkles,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { APP_ROLE_HOME, type AppRole } from "@/backend/auth/roles";
@@ -47,6 +48,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   faculty: [
     { label: "Oversight", to: "/faculty", icon: Shield },
     { label: "Approvals", to: "/faculty/approvals", icon: ClipboardCheck },
+    { label: "Club proposals", to: "/faculty/club-requests", icon: Sparkles },
     { label: "Club Activity", to: "/faculty/club-activity", icon: Activity },
   ],
 };

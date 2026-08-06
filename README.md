@@ -15,6 +15,7 @@ Sangam is a community and society management platform: a single source of truth 
 - [Team](#team-dhurandhar-may2026-team-004)
 - [Getting started](#getting-started)
 - [Demo accounts](#demo-accounts)
+- [Roles and provisioning](#roles-and-provisioning)
 - [Roles and access](#roles-and-access)
 - [API docs](#api-docs-openapi--swagger)
 - [Testing](#testing)
@@ -142,6 +143,64 @@ Log in with any of these at [try-sangam.vercel.app/login](https://try-sangam.ver
 | Yalla Ashish Chandra Reddy | Member | 23f3003728@ds.study.iitm.ac.in | Ashish@2026 |
 
 Roll numbers match the email's local part (e.g. `23f3003225`). Club roles: CodeChef (Admin), E-Cell (Coordinator), Sarga (Volunteer), Paradox (Member).
+
+---
+
+## Roles and provisioning
+
+Roles are **per-club** (`Membership.role`) except faculty, which is
+institution-wide (`User.isFaculty`). Signup produces a plain account with no
+club, so every elevated role has to be granted by someone:
+
+| Role | Granted by |
+|---|---|
+| Member / Volunteer / Coordinator of a club | that club's **Admin**, from `/admin/members` |
+| **Club Admin** | faculty approving the club proposal (first admin), or the outgoing admin via `/admin/handover` |
+| **Faculty** | another faculty member at `/faculty/club-requests`, or `scripts/bootstrap-faculty.ts` for the first one |
+
+### The first faculty account
+
+Faculty approve events for every club and appoint other faculty, so it is
+deliberately **not reachable from the web** — no signup option, nothing to trick.
+The first one is granted from the command line, which requires database access:
+
+```bash
+npx tsx scripts/bootstrap-faculty.ts you@ds.study.iitm.ac.in
+```
+
+The account must already exist, so sign up in the app first. `--list` shows who
+currently has faculty. Against production, pull that database's URL first:
+
+```bash
+npx vercel env pull .env.production.local --environment=production
+```
+
+```bash
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production.local | cut -d= -f2- | tr -d '"')" npx tsx scripts/bootstrap-faculty.ts you@ds.study.iitm.ac.in
+```
+
+After that, faculty appoint each other in the app. Revoking is guarded: you
+can't remove your own access, and you can't remove the last faculty account —
+either would leave the institution with no reviewer and no way to appoint one
+short of another bootstrap run.
+
+### New clubs
+
+Students propose clubs from **My clubs → Propose a club**; faculty review them at
+**/faculty/club-requests**. Approving creates the `Club` **and** the proposer's
+Admin membership in one transaction — a club with no admin is precisely the dead
+end this flow exists to remove, and would be unfixable through the UI.
+
+The proposer's presentation fields are derived rather than asked for: the slug is
+generated from the name (suffixed if taken), and the hue and banner gradient come
+from a hash of the name, matching the seeded clubs. A proposal is refused if the
+club already exists, if an identical one is already pending, or if the student
+already has three open. Both decisions email the proposer, and rejections can
+carry a short reason.
+
+Before this existed, `Club` rows and the first Admin of a club could only come
+from `prisma/seed.ts`, and `isFaculty` was never written outside it — so a freshly
+deployed database had clubs nobody could administer and no way to appoint anyone.
 
 ---
 
@@ -476,7 +535,8 @@ app/
   (coordinator)/coordinator/  dashboard (+ New Event popup), all-events history, event
                     dashboard (registration, check-in, edit details), volunteers
   (volunteer)/volunteer/      task list with inline status updates, events (Count Me In)
-  (faculty)/faculty/          oversight dashboard, event approvals, club activity
+  (faculty)/faculty/          oversight dashboard, event approvals, club activity, club
+                    proposals (+ faculty access management)
   api/auth/[...nextauth]/     unrelated stub, see Tech stack above
   api/openapi/                serves docs/openapi.yaml
   (public)/api-docs/          local Swagger UI (Try it out)
@@ -512,6 +572,9 @@ backend/                  server-only code, never imported by client components
                               isEventPast, etc.)
     approvals.ts, countMeIn.ts, tasks.ts, events.ts, membership.ts   Server Actions and
                               domain logic shared across more than one route
+    club-requests.ts         student club proposals; approval creates the Club and its
+                              first Admin together (see Roles and provisioning)
+    faculty.ts               grant/revoke institution-wide faculty access
   email/                    all outbound email, see Email notifications below
     client.ts                sendEmail() — the only place mail leaves the app: preference
                               enforcement, allowlist, dry-run, idempotency claim, audit row

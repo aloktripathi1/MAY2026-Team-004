@@ -696,3 +696,111 @@ export async function notifyIssueReply(data: {
 }
 
 export type { Recipient };
+
+// --- Provisioning ------------------------------------------------------------
+
+/** A student proposed a club: confirm to them, put it in front of faculty. */
+export async function notifyClubRequestSubmitted(requestId: string): Promise<NotifySummary> {
+  const request = await prisma.clubRequest.findUnique({
+    where: { id: requestId },
+    include: { requestedBy: { select: { id: true, name: true, email: true, notificationPrefs: true } } },
+  });
+  if (!request) return { ...EMPTY };
+
+  const faculty = await facultyRecipients();
+  const { requestedBy } = request;
+
+  return run([
+    {
+      to: requestedBy.email,
+      userId: requestedBy.id,
+      prefsJson: requestedBy.notificationPrefs,
+      template: "clubRequestSubmitted",
+      rendered: templates.clubRequestSubmitted({
+        name: requestedBy.name,
+        clubName: request.name,
+        requestsUrl: emailLinks.clubs(),
+        manageUrl: manageUrlFor(requestedBy.id, "membership"),
+      }),
+      dedupeKey: dedupeKey("clubRequestSubmitted", requestId),
+    },
+    ...excludeUser(faculty, requestedBy.id).map((reviewer) => ({
+      to: reviewer.email,
+      userId: reviewer.userId,
+      prefsJson: reviewer.prefsJson,
+      template: "clubRequestAwaitingReview" as const,
+      rendered: templates.clubRequestAwaitingReview({
+        facultyName: reviewer.name,
+        clubName: request.name,
+        requesterName: requestedBy.name,
+        requesterEmail: requestedBy.email,
+        category: request.category,
+        tagline: request.tagline,
+        reviewUrl: emailLinks.facultyClubRequests(),
+        manageUrl: manageUrlFor(reviewer.userId, "membership"),
+      }),
+      dedupeKey: dedupeKey("clubRequestAwaiting", requestId, reviewer.userId),
+    })),
+  ]);
+}
+
+/** Faculty decided on a club proposal. */
+export async function notifyClubRequestDecision(requestId: string): Promise<SendResult> {
+  const request = await prisma.clubRequest.findUnique({
+    where: { id: requestId },
+    include: { requestedBy: { select: { id: true, name: true, email: true, notificationPrefs: true } } },
+  });
+  if (!request || request.status === "Pending") {
+    return { status: "skipped", reason: "no decision to report" };
+  }
+
+  const { requestedBy } = request;
+  const manageUrl = manageUrlFor(requestedBy.id, "membership");
+  const approved = request.status === "Approved";
+
+  return runOne({
+    to: requestedBy.email,
+    userId: requestedBy.id,
+    prefsJson: requestedBy.notificationPrefs,
+    template: approved ? "clubRequestApproved" : "clubRequestRejected",
+    rendered: approved
+      ? templates.clubRequestApproved({
+          name: requestedBy.name,
+          clubName: request.name,
+          adminUrl: emailLinks.adminDashboard(),
+          manageUrl,
+        })
+      : templates.clubRequestRejected({
+          name: requestedBy.name,
+          clubName: request.name,
+          note: request.reviewNote ?? undefined,
+          clubsUrl: emailLinks.clubs(),
+          manageUrl,
+        }),
+    // Keyed on the outcome, so each distinct decision notifies once.
+    dedupeKey: dedupeKey("clubRequestDecision", requestId, request.status),
+  });
+}
+
+/**
+ * Someone was given faculty access. Worth an email because it silently changes
+ * what the app expects of them: events now wait on their queue.
+ */
+export async function notifyFacultyAccessGranted(userId: string, grantedByName: string): Promise<SendResult> {
+  const recipient = await userRecipient(userId);
+  if (!recipient) return { status: "skipped", reason: "no recipient" };
+
+  return runOne({
+    to: recipient.email,
+    userId: recipient.userId,
+    prefsJson: recipient.prefsJson,
+    template: "facultyAccessGranted",
+    rendered: templates.facultyAccessGranted({
+      name: recipient.name,
+      grantedByName,
+      facultyUrl: emailLinks.facultyDashboard(),
+      manageUrl: manageUrlFor(recipient.userId, "membership"),
+    }),
+    dedupeKey: dedupeKey("facultyGranted", userId, minuteBucket()),
+  });
+}

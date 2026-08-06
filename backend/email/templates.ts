@@ -49,7 +49,13 @@ export type TemplateName =
   // Admin
   | "handoverConfirmation"
   | "roleChanged"
-  | "handoverBrief";
+  | "handoverBrief"
+  // Provisioning
+  | "clubRequestSubmitted"
+  | "clubRequestAwaitingReview"
+  | "clubRequestApproved"
+  | "clubRequestRejected"
+  | "facultyAccessGranted";
 
 function eventDateTime(date: Date, time: string): string {
   const day = date.toLocaleDateString("en-GB", {
@@ -672,4 +678,111 @@ export function handoverBrief(data: {
     manageUrl: data.manageUrl,
   });
   return { subject: `Handover brief: ${data.clubName}`, html, text, category: "membership" };
+}
+
+// --- Provisioning ------------------------------------------------------------
+
+export function clubRequestSubmitted(data: {
+  name: string;
+  clubName: string;
+  requestsUrl: string;
+  manageUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: `Your proposal for ${data.clubName} is in`,
+    preview: "Faculty will review it shortly.",
+    paragraphs: [
+      `Hi ${data.name}, thanks for proposing ${data.clubName}. A faculty reviewer will take a look and you'll hear back either way.`,
+      "If it's approved you become the club's first admin, so you can add members, appoint coordinators and start running events straight away.",
+    ],
+    button: { label: "Track my request", url: data.requestsUrl },
+    manageUrl: data.manageUrl,
+  });
+  return { subject: `Club proposal received: ${data.clubName}`, html, text, category: "membership" };
+}
+
+export function clubRequestAwaitingReview(data: {
+  facultyName: string;
+  clubName: string;
+  requesterName: string;
+  requesterEmail: string;
+  category: string;
+  tagline: string;
+  reviewUrl: string;
+  manageUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: `${data.requesterName} wants to start ${data.clubName}`,
+    preview: "A club proposal is waiting for review.",
+    paragraphs: [`Hi ${data.facultyName}, a new club proposal needs a decision.`],
+    facts: [
+      { label: "Club", value: data.clubName },
+      { label: "Tagline", value: data.tagline },
+      { label: "Category", value: data.category },
+      { label: "Proposed by", value: `${data.requesterName} (${data.requesterEmail})` },
+    ],
+    button: { label: "Review proposal", url: data.reviewUrl },
+    note: "Approving creates the club and makes the proposer its first admin.",
+    manageUrl: data.manageUrl,
+  });
+  return { subject: `Club proposal: ${data.clubName}`, html, text, category: "membership" };
+}
+
+export function clubRequestApproved(data: {
+  name: string;
+  clubName: string;
+  adminUrl: string;
+  manageUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: `${data.clubName} is live — and you're its admin`,
+    preview: `Your proposal for ${data.clubName} was approved.`,
+    paragraphs: [
+      `Hi ${data.name}, faculty approved ${data.clubName}. It now exists on Sangam and you're its admin.`,
+      "Start by adding members and appointing a coordinator or two, then create your first event. Events go to faculty for approval before registration opens.",
+    ],
+    button: { label: "Open admin dashboard", url: data.adminUrl },
+    manageUrl: data.manageUrl,
+  });
+  return { subject: `Approved: ${data.clubName} is live on Sangam`, html, text, category: "membership" };
+}
+
+export function clubRequestRejected(data: {
+  name: string;
+  clubName: string;
+  note?: string;
+  clubsUrl: string;
+  manageUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: `Update on your ${data.clubName} proposal`,
+    preview: `A decision was made on ${data.clubName}.`,
+    paragraphs: [
+      `Hi ${data.name}, faculty weren't able to approve ${data.clubName} this time.`,
+      ...(data.note ? [`What they said: ${data.note}`] : []),
+      "You're welcome to propose again with a revised plan, or join one of the clubs already running.",
+    ],
+    button: { label: "Browse clubs", url: data.clubsUrl },
+    manageUrl: data.manageUrl,
+  });
+  return { subject: `Update on your ${data.clubName} proposal`, html, text, category: "membership" };
+}
+
+export function facultyAccessGranted(data: {
+  name: string;
+  grantedByName: string;
+  facultyUrl: string;
+  manageUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: "You now have faculty access",
+    preview: "Event approvals and club oversight are open to you.",
+    paragraphs: [
+      `Hi ${data.name}, ${data.grantedByName} has given your account faculty access on Sangam.`,
+      "That means you review and approve events across every club, see club activity, and can appoint other faculty. Clubs can't open registration for an event until a faculty reviewer approves it, so your queue matters.",
+    ],
+    button: { label: "Open faculty dashboard", url: data.facultyUrl },
+    manageUrl: data.manageUrl,
+  });
+  return { subject: "You now have faculty access on Sangam", html, text, category: "membership" };
 }
