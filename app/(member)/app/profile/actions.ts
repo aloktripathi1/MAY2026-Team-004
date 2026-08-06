@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS } from "@/lib/interests";
-import { parseNotificationPrefs, type NotificationPrefs } from "@/lib/notification-prefs";
+import {
+  DEFAULT_NOTIFICATION_PREFS,
+  parseNotificationPrefs,
+  type NotificationPrefs,
+} from "@/lib/notification-prefs";
 
 const MAX_IMAGE_CHARS = 1_500_000; // ~1MB binary as base64 data URL
 
@@ -66,6 +70,11 @@ export async function updateProfileAction(
 export async function toggleNotificationPrefAction(key: keyof NotificationPrefs) {
   const session = await getMockSession();
   if (!session?.user) throw new Error("Not authenticated");
+
+  // The key arrives from the client, so check it against the known set rather
+  // than trusting it — otherwise any string would be written into the prefs
+  // JSON blob.
+  if (!(key in DEFAULT_NOTIFICATION_PREFS)) throw new Error("Unknown notification preference");
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   const current = parseNotificationPrefs(user?.notificationPrefs);

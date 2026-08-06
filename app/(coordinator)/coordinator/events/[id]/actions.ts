@@ -6,7 +6,8 @@ import { getMockSession } from "@/backend/auth/mock-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { prisma } from "@/backend/db/prisma";
 import { parseTagInput } from "@/backend/domain/workflow-rules";
-import { requireCoordinatorForClub } from "@/backend/domain/events";
+import { diffScheduleFields, requireCoordinatorForClub } from "@/backend/domain/events";
+import { notifyEventScheduleChange } from "@/backend/email/notifications";
 import { serializeEventTags } from "@/lib/event-tags";
 
 async function requireCoordinatorForEvent(eventId: string) {
@@ -95,10 +96,22 @@ export async function updateEventAction(eventId: string, eventSlug: string, _pre
   const { title, description, date, time, venue, capacity } = parsed.data;
   const tags = parseTagInput(parsed.data.tags);
 
-  await prisma.event.update({
+  const before = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { date: true, time: true, venue: true },
+  });
+
+  const updated = await prisma.event.update({
     where: { id: eventId },
     data: { title, description, date: new Date(date), time, venue, capacity, tags: serializeEventTags(tags) },
   });
+
+  // Registrants only hear about it when the date, time or venue actually moved
+  // — a reworded description is not something to email 200 people about.
+  if (before) {
+    const changes = diffScheduleFields(before, updated);
+    if (changes.length > 0) await notifyEventScheduleChange(eventId, changes);
+  }
 
   revalidatePath(`/coordinator/events/${eventSlug}`);
   revalidatePath("/coordinator");

@@ -6,6 +6,7 @@ import { getMockSession } from "@/backend/auth/mock-session";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
 import { prisma } from "@/backend/db/prisma";
 import { normalizeTaskStatus, TASK_STATUSES } from "@/backend/domain/workflow-rules";
+import { notifyTaskAssigned } from "@/backend/email/notifications";
 
 const statusSchema = z.enum(TASK_STATUSES);
 const assignTaskSchema = z.object({
@@ -50,7 +51,7 @@ export async function assignTask(actor: TaskActor, input: AssignTaskInput) {
   });
   if (!assigneeMembership) throw new Error("Assignee must belong to this club");
 
-  return prisma.task.create({
+  const task = await prisma.task.create({
     data: {
       title: parsed.title,
       role: parsed.role,
@@ -59,6 +60,10 @@ export async function assignTask(actor: TaskActor, input: AssignTaskInput) {
       status: "todo",
     },
   });
+
+  await notifyTaskAssigned(task.id);
+
+  return task;
 }
 
 // Shared by the Volunteer "my tasks" view and the Coordinator's volunteer kanban board.

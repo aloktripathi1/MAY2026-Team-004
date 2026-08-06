@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { decideJoinRequestAction } from "@/backend/domain/workflow-rules";
+import { notifyMembershipApplied } from "@/backend/email/notifications";
 
 export async function toggleJoinRequestAction(clubId: string) {
   const session = await getMockSession();
@@ -30,6 +31,10 @@ export async function toggleJoinRequestAction(clubId: string) {
         joinedAt: new Date(),
       },
     });
+
+    // Confirms to the applicant and puts the request in front of the club's
+    // admins, same as the REST path in backend/domain/membership.ts.
+    await notifyMembershipApplied(session.user.id, clubId);
   }
 
   revalidatePath("/app/clubs");

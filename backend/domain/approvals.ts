@@ -10,6 +10,7 @@ import {
   requireClubAdminAccess,
   requireFacultyAccess,
 } from "@/backend/domain/workflow-rules";
+import { notifyEventApprovalDecision, notifyMembershipDecision } from "@/backend/email/notifications";
 
 async function requireAdminForClub(clubId: string) {
   const session = await getMockSession();
@@ -26,7 +27,13 @@ async function requireFaculty() {
 export async function setMembershipStatusAction(membershipId: string, status: "Active" | "Inactive") {
   const membership = await prisma.membership.findUniqueOrThrow({ where: { id: membershipId } });
   await requireAdminForClub(membership.clubId);
-  await prisma.membership.update({ where: { id: membershipId }, data: { status: normalizeMembershipStatus(status) } });
+  const normalized = normalizeMembershipStatus(status);
+  await prisma.membership.update({ where: { id: membershipId }, data: { status: normalized } });
+
+  if (membership.status !== normalized) {
+    await notifyMembershipDecision(membershipId, normalized);
+  }
+
   revalidatePath("/admin/approvals");
   revalidatePath("/admin/members");
   revalidatePath("/admin");
@@ -35,7 +42,14 @@ export async function setMembershipStatusAction(membershipId: string, status: "A
 export async function setEventApprovalAction(eventId: string, approval: "approved" | "pending" | "rejected") {
   const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId } });
   await requireAdminForClub(event.clubId);
-  await prisma.event.update({ where: { id: eventId }, data: { approval: normalizeEventApproval(approval) } });
+  const normalized = normalizeEventApproval(approval);
+  await prisma.event.update({ where: { id: eventId }, data: { approval: normalized } });
+
+  // A move back to `pending` isn't a decision, so it isn't worth an email.
+  if (event.approval !== normalized && normalized !== "pending") {
+    await notifyEventApprovalDecision(eventId, normalized === "approved");
+  }
+
   revalidatePath("/admin/approvals");
   revalidatePath("/admin");
   revalidatePath("/faculty/approvals");

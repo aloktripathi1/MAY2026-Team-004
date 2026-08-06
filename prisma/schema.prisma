@@ -86,8 +86,9 @@ model User {
   rollNumber     String?  @unique
   image          String?
   interests      String   @default("[]")
-  notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false}")
+  notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false,\"emailAnnouncements\":true,\"emailEvents\":true,\"emailTasks\":true,\"emailMembership\":true,\"emailIssues\":true}")
   isFaculty      Boolean  @default(false)
+  emailVerified  DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -98,6 +99,8 @@ model User {
   contributions          Contribution[]
   announcementsAuthored  Announcement[]
   countMeIns             CountMeIn[]
+  emailLogs              EmailLog[]
+  verificationTokens     EmailVerificationToken[]
 }
 
 model Club {
@@ -267,4 +270,50 @@ model TransparencyLogEntry {
 
   event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
   club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+}
+
+enum EmailStatus {
+  sent
+  skipped
+  failed
+  dryRun
+}
+
+// Every send attempt, successful or not. Two jobs:
+//   1. Audit — what did the app actually mail, to whom, and why.
+//   2. Idempotency — `dedupeKey` is unique, so a scheduled job that runs twice
+//      (Vercel Cron retries, overlapping windows) inserts the key first and
+//      only mails on a successful insert. Without it a 24h reminder sweep
+//      re-mails everyone on every retry.
+model EmailLog {
+  id        String      @id @default(cuid())
+  dedupeKey String      @unique
+  template  String
+  to        String
+  subject   String
+  status    EmailStatus
+  userId    String?
+  providerId String?
+  error     String?
+  createdAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([template, createdAt])
+  @@index([to])
+}
+
+// Single-use signup verification links. Only the SHA-256 hash of the token is
+// stored, so a database leak can't be replayed as a valid verification link.
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

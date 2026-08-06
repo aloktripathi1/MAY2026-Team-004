@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
+import { notifyIssueSubmitted } from "@/backend/email/notifications";
 
 const issueSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -45,7 +46,7 @@ export async function createIssueAction(_prevState: IssueFormState, formData: Fo
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await prisma.issue.create({
+  const issue = await prisma.issue.create({
     data: {
       title: parsed.data.title,
       category: parsed.data.category,
@@ -55,6 +56,8 @@ export async function createIssueAction(_prevState: IssueFormState, formData: Fo
       attachments: parsed.data.attachments ?? [],
     },
   });
+
+  await notifyIssueSubmitted(issue.id);
 
   revalidatePath("/app/issues");
   revalidatePath("/app");

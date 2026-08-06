@@ -6,6 +6,7 @@ import { prisma } from "@/backend/db/prisma";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { institutionalEmailSchema } from "@/backend/auth/signup-schema";
+import { notifyMembershipDecision, notifyRoleChanged } from "@/backend/email/notifications";
 
 const ROLES = ["Member", "Volunteer", "Coordinator", "Admin"] as const;
 
@@ -79,9 +80,16 @@ export async function addMemberAction(_prevState: MemberFormState, formData: For
   });
   if (existingMembership) return { error: `${parsed.data.name} is already a member of this club.` };
 
-  await prisma.membership.create({
+  const membership = await prisma.membership.create({
     data: { userId: user.id, clubId: club.id, role: parsed.data.role, status: "Active", joinedAt: new Date() },
   });
+
+  // An admin adding someone directly lands them straight in Active, so this is
+  // the same news as an approval: you're in, and here's the club.
+  await notifyMembershipDecision(membership.id, "Active");
+  if (parsed.data.role !== "Member") {
+    await notifyRoleChanged(user.id, club.id, parsed.data.role);
+  }
 
   revalidatePath("/admin/members");
   return { ok: true };
@@ -136,6 +144,11 @@ export async function bulkImportMembersAction(csvText: string): Promise<BulkImpo
     });
     imported += 1;
   }
+
+  // Deliberately silent. At the 500-row limit above, mailing every imported
+  // member inline would keep this Server Action open for minutes and trip
+  // Resend's rate limit; roster imports need a background job before they can
+  // notify. Tracked separately rather than half-done here.
 
   revalidatePath("/admin/members");
   return { imported, skipped };

@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
 import { normalizeMembershipStatus, requireClubAdminAccess } from "@/backend/domain/workflow-rules";
+import { notifyMembershipApplied, notifyMembershipDecision } from "@/backend/email/notifications";
 
 const ROLES = ["Member", "Volunteer", "Coordinator", "Admin"] as const;
 
@@ -49,6 +50,7 @@ export async function applyToJoinClub(userId: string, clubId: string) {
     const membership = await prisma.membership.create({
       data: { userId, clubId, role: "Member", status: "Pending" },
     });
+    await notifyMembershipApplied(userId, clubId);
     return { ok: true, membership } as const;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -74,10 +76,18 @@ export async function updateMembershipStatus(
     return { ok: false, code: "FORBIDDEN", message: "Not authorized for this club." } as const;
   }
 
+  const normalized = normalizeMembershipStatus(status);
   const updated = await prisma.membership.update({
     where: { id: membershipId },
-    data: { status: normalizeMembershipStatus(status) },
+    data: { status: normalized },
   });
+
+  // Only mail on an actual transition — re-saving the same status shouldn't
+  // tell an applicant they were approved a second time.
+  if (membership.status !== normalized) {
+    await notifyMembershipDecision(membershipId, normalized);
+  }
+
   return { ok: true, membership: updated } as const;
 }
 

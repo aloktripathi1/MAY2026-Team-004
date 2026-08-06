@@ -8,6 +8,7 @@ import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { parseTagInput, buildEventSlug } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 import { uploadEventBanner } from "@/backend/storage/event-banner";
+import { notifyEventCreated } from "@/backend/email/notifications";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -53,7 +54,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
     photo = uploaded.url;
   }
 
-  await prisma.event.create({
+  const event = await prisma.event.create({
     data: {
       slug,
       title,
@@ -70,6 +71,9 @@ export async function createEventAction(_prevState: NewEventState, formData: For
       approval: "pending",
     },
   });
+
+  // Tells the club's members it exists and asks faculty for approval.
+  await notifyEventCreated(event.id);
 
   revalidatePath("/coordinator");
   revalidatePath("/coordinator/new");
