@@ -16,12 +16,24 @@ export async function transferAdminAction(_prevState: TransferState, formData: F
   const currentMembership = getPrimaryClubMembership(session, "Admin");
   if (!currentMembership) return { error: "You must be a club admin to transfer this role." };
 
+  const pendingCount = await prisma.membership.count({
+    where: { clubId: currentMembership.clubId, status: "Pending" },
+  });
+  if (pendingCount > 0) {
+    return {
+      error: `Resolve the ${pendingCount} pending membership request${pendingCount === 1 ? "" : "s"} for this club before handing over admin.`,
+    };
+  }
+
   const successorMembershipId = formData.get("successorMembershipId") as string | null;
   if (!successorMembershipId) return { error: "Choose a successor first." };
 
   const successor = await prisma.membership.findUnique({ where: { id: successorMembershipId } });
   if (!successor || successor.clubId !== currentMembership.clubId) {
     return { error: "Successor must be a member of the same club." };
+  }
+  if (successor.status !== "Active") {
+    return { error: "Successor must be an active member of the club." };
   }
 
   const currentAdminMembership = await prisma.membership.findUnique({

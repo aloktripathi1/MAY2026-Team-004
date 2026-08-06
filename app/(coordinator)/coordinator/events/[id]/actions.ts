@@ -6,6 +6,7 @@ import { getMockSession } from "@/backend/auth/mock-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { prisma } from "@/backend/db/prisma";
 import { parseTagInput } from "@/backend/domain/workflow-rules";
+import { requireCoordinatorForClub } from "@/backend/domain/events";
 import { serializeEventTags } from "@/lib/event-tags";
 
 async function requireCoordinatorForEvent(eventId: string) {
@@ -24,6 +25,9 @@ export async function toggleCheckInAction(countMeInId: string, eventSlug: string
   if (!session?.user) throw new Error("Not authenticated");
 
   const countMeIn = await prisma.countMeIn.findUniqueOrThrow({ where: { id: countMeInId } });
+  const event = await prisma.event.findUniqueOrThrow({ where: { id: countMeIn.eventId } });
+  requireCoordinatorForClub(session.user.memberships, event.clubId);
+
   await prisma.countMeIn.update({ where: { id: countMeInId }, data: { checkedIn: !countMeIn.checkedIn } });
 
   revalidatePath(`/coordinator/events/${eventSlug}`);
