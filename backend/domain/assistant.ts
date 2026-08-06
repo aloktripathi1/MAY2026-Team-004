@@ -19,6 +19,12 @@ const FALLBACK_ANSWER: AssistantAnswer = {
   sourceType: null,
 };
 
+const UNSUPPORTED_ACTION_ANSWER: AssistantAnswer = {
+  answer:
+    "I can't make that kind of change. I can look up your events, tasks, announcements, and membership status, and I can update the status of your own tasks (or assign tasks, if you coordinate a club). Anything else — creating or cancelling events, posting announcements, approving members, changing roles — needs to be done from the relevant dashboard page directly.",
+  sourceType: null,
+};
+
 const classificationSchema = z.object({
   intent: z.enum([
     "event_lookup",
@@ -26,6 +32,7 @@ const classificationSchema = z.object({
     "task_action",
     "announcement_lookup",
     "membership_status",
+    "unsupported_action",
     "unrelated",
   ]),
   entities: z
@@ -52,12 +59,13 @@ type Classification = z.infer<typeof classificationSchema>;
 const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A assistant embedded in a student clubs platform. It can answer questions about the requesting user's own events, tasks, announcements, or club memberships, and can propose task mutations (status updates / assigns) via a separate tool path.
 
 Classify the user's question into exactly one intent:
-- "event_lookup": questions about events, schedules, "next event", a specific event by name, registration/capacity status.
+- "event_lookup": questions about events, schedules, "next event", a specific event by name, registration/capacity status, or anything happening/coming up in a given timeframe ("what's happening this week", "what's on today", "anything coming up soon"). These generic timeframe questions ARE event_lookup even though they don't name a specific event — treat "this week" / "today" / "soon" as a timeframe signal, not a reason to call it unrelated.
 - "task_lookup": READ-ONLY questions about the user's own assigned tasks, to-dos, or volunteer shifts ("what's on my task list", "what tasks do I have", "is my poster task still open"). Do NOT use this when the user wants to change something.
 - "task_action": the user wants to CHANGE a task — mark/set status (todo/doing/done), complete a task, assign a task to someone, or create an assignment. Examples: "mark my poster task as done", "set the check-in task to doing", "assign setup duty to Riya for Winter Fest".
 - "announcement_lookup": questions about club announcements, news, or updates.
 - "membership_status": questions about the user's own club memberships, roles, or membership status.
-- "unrelated": the question is NOT about any of the above — general knowledge, small talk, greetings, unrelated topics, or anything this app has no data for. Use this whenever the question doesn't genuinely fit one of the categories above. Do not force a fit just because a keyword loosely overlaps.
+- "unsupported_action": the user wants to CREATE, DELETE, CANCEL, or otherwise CHANGE something that this assistant has no tool for — creating or cancelling an event, posting an announcement, approving/rejecting a membership request, changing their own or someone else's role, deleting an account, editing club/event details. The only mutations this assistant can actually perform are task status changes and task assignment (that's "task_action"); every other request to create/change/delete/approve/cancel something is "unsupported_action", not "unrelated" — the user has a real, valid intent to act, this app just can't do it through chat.
+- "unrelated": the question is NOT about any of the above and is NOT a request to change/create/delete anything — general knowledge, small talk, greetings, or topics this app has no data for. Use this whenever the question doesn't genuinely fit one of the categories above. Do not force a fit just because a keyword loosely overlaps.
 
 Entity extraction (all optional, applies across intents where relevant):
 - subject: a specific, real proper-noun event, club, or topic the question names (e.g. "tasks for the Winter Fest", "announcement about the hackathon", "am I a member of Paradox"). Do NOT extract generic self-referencing phrases like "my next event", "my club", "this event", or "current tasks" as a subject — those aren't names of anything, they're just how the person refers to their own stuff. Omit subject entirely for those and for generic questions ("what's on my task list").
@@ -72,6 +80,7 @@ Rules:
 - Use only the facts present in the provided data. Never add names, dates, numbers, or details that aren't in it.
 - If the data has a "totalCount" field, that is the authoritative count — always state that exact number for "how many" questions. The accompanying list (events/tasks/announcements) may be a truncated sample of just the first few, NOT the full set, so never count its length as the answer.
 - If the question refers to something generically by the user's own relationship to it ("my next event", "my club", "my current tasks") rather than a specific name, and the data spans multiple different events/clubs, use any date/status fields present to resolve which one it means (e.g. "next event" = the one with the soonest date) — this is not the same as the data being unrelated to the question.
+- If the data includes a "today" field, treat that as the current date and judge relative timeframe words ("this week", "today", "soon") against it. If the question asked about a specific window like "this week" and the closest item in the data actually falls outside that window (e.g. it's next Monday but "this week" ended Sunday), say so plainly and mention the next upcoming item anyway instead of refusing — e.g. "Nothing this week, but next up is X on [date]." That is a real, helpful answer, not a case for the fixed no-data sentence.
 - If the data doesn't actually answer the question — including if the data is simply unrelated to what was asked — respond with exactly this sentence and nothing else: "I don't have that information." Do not soften it, explain why, or add anything else.
 - Otherwise keep the answer short: one or two sentences, natural and conversational, no markdown formatting.`;
 
@@ -187,7 +196,15 @@ async function handleEventLookup(
     going: e.going,
     status: e.status,
   }));
-  const data = totalCount !== null ? { totalCount, sampleOfTheseEvents: eventList } : { events: eventList };
+  // Claude has no real-time clock — without an explicit "today" reference it
+  // can't reliably judge whether a date satisfies a relative timeframe word
+  // like "this week"/"today", which was causing the same question to
+  // sometimes get answered and sometimes get a false "I don't have that
+  // information" depending on how it happened to guess the current date.
+  const data =
+    totalCount !== null
+      ? { today: formatEventDate(new Date()), totalCount, sampleOfTheseEvents: eventList }
+      : { today: formatEventDate(new Date()), events: eventList };
 
   return generateAnswer(question, data, {
     sourceType: "event",
@@ -408,6 +425,8 @@ export async function answerAssistantQuery(
         return await handleAnnouncementLookup(user, question, classification.entities);
       case "membership_status":
         return await handleMembershipStatus(user, question, classification.entities);
+      case "unsupported_action":
+        return UNSUPPORTED_ACTION_ANSWER;
       case "unrelated":
         return NO_DATA_ANSWER;
     }
