@@ -19,12 +19,20 @@ const memberSchema = z.object({
   role: z.enum(ROLES),
 });
 
-async function resolveAdminClub() {
+type ResolveAdminClubResult =
+  | { ok: true; club: Awaited<ReturnType<typeof prisma.club.findUniqueOrThrow>> }
+  | { ok: false; error: string };
+
+async function resolveAdminClub(): Promise<ResolveAdminClubResult> {
   const session = await getMockSession();
-  const membership = getPrimaryClubMembership(session!, "Admin");
-  const club = await prisma.club.findUnique({ where: { id: membership!.clubId } });
-  if (!club) throw new Error("Club not found");
-  return club;
+  if (!session?.user) return { ok: false, error: "Not authenticated" };
+
+  const membership = getPrimaryClubMembership(session, "Admin");
+  if (!membership) return { ok: false, error: "You must be a club admin to do this." };
+
+  const club = await prisma.club.findUnique({ where: { id: membership.clubId } });
+  if (!club) return { ok: false, error: "Club not found" };
+  return { ok: true, club };
 }
 
 type UpsertUserResult = { ok: true; user: Awaited<ReturnType<typeof prisma.user.create>> } | { ok: false; error: string };
@@ -58,7 +66,10 @@ export async function addMemberAction(_prevState: MemberFormState, formData: For
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const club = await resolveAdminClub();
+  const clubResult = await resolveAdminClub();
+  if (!clubResult.ok) return { error: clubResult.error };
+  const club = clubResult.club;
+
   const result = await upsertUser(parsed.data.name, parsed.data.roll, parsed.data.email);
   if (!result.ok) return { error: result.error };
   const user = result.user;
@@ -91,7 +102,9 @@ export async function bulkImportMembersAction(csvText: string): Promise<BulkImpo
     return { imported: 0, skipped: 0, error: `CSV has ${rows.length} rows; the limit is ${MAX_BULK_IMPORT_ROWS} per import.` };
   }
 
-  const club = await resolveAdminClub();
+  const clubResult = await resolveAdminClub();
+  if (!clubResult.ok) return { imported: 0, skipped: 0, error: clubResult.error };
+  const club = clubResult.club;
   let imported = 0;
   let skipped = 0;
 

@@ -36,15 +36,19 @@ export async function assignTaskAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await assignTask(
-    { id: session.user.id, memberships: session.user.memberships },
-    {
-      title: parsed.data.title,
-      role: parsed.data.role,
-      eventId: parsed.data.eventId,
-      assigneeId: parsed.data.assigneeId,
-    },
-  );
+  try {
+    await assignTask(
+      { id: session.user.id, memberships: session.user.memberships },
+      {
+        title: parsed.data.title,
+        role: parsed.data.role,
+        eventId: parsed.data.eventId,
+        assigneeId: parsed.data.assigneeId,
+      },
+    );
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not assign task." };
+  }
 
   revalidatePath("/coordinator/volunteers");
   return { ok: true };

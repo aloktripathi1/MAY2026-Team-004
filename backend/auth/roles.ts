@@ -10,11 +10,15 @@ export const APP_ROLE_HOME: Record<AppRole, string> = {
   faculty: "/faculty",
 };
 
+/**
+ * Returns the caller's membership matching `preferredRole`, or `undefined` if they
+ * don't hold that role anywhere. Never substitutes a different membership when a
+ * specific role was requested — callers rely on `undefined` to reject the request.
+ */
 export function getPrimaryClubMembership(session: Session, preferredRole?: string) {
   const memberships = session.user.memberships;
   if (preferredRole) {
-    const match = memberships.find((m) => m.role === preferredRole);
-    if (match) return match;
+    return memberships.find((m) => m.role === preferredRole);
   }
   return memberships[0];
 }

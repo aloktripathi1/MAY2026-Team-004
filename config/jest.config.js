@@ -4,10 +4,10 @@ const createJestConfig = nextJest({ dir: "./" });
 
 /** @type {import('jest').Config} */
 const customJestConfig = {
-  displayName: "integration",
+  displayName: "unit",
+  rootDir: "../",
   testEnvironment: "node",
-  testMatch: ["<rootDir>/tests/integration/**/*.test.ts"],
-  testTimeout: 20000,
+  testMatch: ["<rootDir>/tests/unit/**/*.test.ts"],
 };
 
 module.exports = createJestConfig(customJestConfig);

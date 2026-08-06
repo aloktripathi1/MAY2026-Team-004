@@ -16,8 +16,11 @@ describe("getPrimaryClubMembership", () => {
     expect(getPrimaryClubMembership(session, "Coordinator")).toEqual({ clubId: "c2", role: "Coordinator" });
   });
 
-  it("falls back to the first membership", () => {
-    expect(getPrimaryClubMembership(session, "Admin")).toEqual({ clubId: "c1", role: "Member" });
+  it("returns undefined when the requested role isn't held, instead of falling back to another membership", () => {
+    expect(getPrimaryClubMembership(session, "Admin")).toBeUndefined();
+  });
+
+  it("falls back to the first membership only when no role is requested", () => {
     expect(getPrimaryClubMembership(session)).toEqual({ clubId: "c1", role: "Member" });
   });
 });
