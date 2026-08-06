@@ -356,6 +356,32 @@ const CURATED_PHOTOS: Record<string, string> = {
   "Open Jam Friday": "/club-events/sarga-open-jam.png",
 };
 
+// Per-club photo pools, cycled round-robin as each club's events are
+// generated. A flagship template (CURATED_PHOTOS) always wins when it
+// applies; everything else rotates through its club's pool instead of
+// collapsing onto a single repeated banner image — three events from the
+// same club sitting next to each other (the homepage's "current signal"
+// picks the first 3 upcoming events in array order, which are often all
+// from one club) used to render the identical photo three times (#131).
+const CLUB_PHOTO_POOLS: Record<string, string[]> = {
+  codechef: ["/club-banners/codechef.jpg", "/club-events/cook-off-42.png", "/club-events/hacktoberfest.jpg"],
+  paradox: ["/club-banners/paradox.jpg", "/club-events/bp-open-round.png", "/club-events/cat-mun-conference.jpg"],
+  sarga: [
+    "/club-banners/sarga.jpg",
+    "/club-events/fusion-night-vi.png",
+    "/club-events/sarga-open-jam.png",
+    "/club-events/cat-music-performance.jpg",
+    "/club-events/cat-music-studio.jpg",
+  ],
+  kalakriti: ["/club-banners/kalakriti.jpg", "/club-events/portfolio-crit.png"],
+  prakriti: ["/club-banners/prakriti.jpg", "/club-events/climate-teach-in.png"],
+  "e-cell": ["/club-banners/e-cell.jpg", "/club-events/ignite-2026.png"],
+  quill: ["/club-banners/quill.jpg"],
+  arena: ["/club-banners/arena.jpg", "/club-events/chess-blitz-x.png", "/club-events/cat-chess-tournament.jpg"],
+  photon: ["/club-banners/photon.jpg", "/club-events/cat-robotics-team.jpg", "/club-events/cat-electronics-workshop.jpg"],
+  turf: ["/club-banners/turf.jpg", "/club-events/cat-football-match.jpg"],
+};
+
 type ApprovalDisplay = "approved" | "pending" | "not-required" | "rejected";
 interface EventDef {
   id: string;
@@ -398,6 +424,8 @@ let eventSeq = 1;
 
 for (const club of CLUB_DEFS) {
   const templates = [...EVENT_TEMPLATES[club.slug]];
+  const photoPool = CLUB_PHOTO_POOLS[club.slug] ?? [club.photo!];
+  let photoPoolIndex = 0;
   const pastCount = randInt(4, 6);
   const upcomingCount = randInt(2, 4);
 
@@ -463,11 +491,12 @@ for (const club of CLUB_DEFS) {
       going,
       capacity,
       // Flagship templates get their own bespoke photo; every other event
-      // falls back to its club's own banner photo rather than staying
-      // photo-less — a bare gradient card reads as broken/unfinished next
-      // to cards that do have a real image (#131).
+      // cycles through its club's photo pool round-robin rather than
+      // collapsing onto one repeated image — a bare gradient (or the same
+      // photo three times in a row) reads as broken next to cards that
+      // have real, varied images (#131).
       cover: COVERS[club.slug],
-      photo: CURATED_PHOTOS[template.title] ?? club.photo,
+      photo: CURATED_PHOTOS[template.title] ?? photoPool[photoPoolIndex++ % photoPool.length],
       tags: template.tags,
       description: template.description,
       approval,
