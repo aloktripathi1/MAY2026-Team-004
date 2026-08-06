@@ -9,7 +9,7 @@ import {
 } from "@/backend/domain/workflow-rules";
 import { serializeEventTags } from "@/lib/event-tags";
 
-function requireCoordinatorForClub(memberships: SessionMembership[], clubId: string) {
+export function requireCoordinatorForClub(memberships: SessionMembership[], clubId: string) {
   const allowed = memberships.some(
     (m) => m.clubId === clubId && (m.role === "Coordinator" || m.role === "Admin"),
   );

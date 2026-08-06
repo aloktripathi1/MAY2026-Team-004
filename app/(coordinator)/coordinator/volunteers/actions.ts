@@ -36,6 +36,18 @@ export async function assignTaskAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
+  const event = await prisma.event.findUnique({ where: { id: parsed.data.eventId } });
+  if (!event || event.clubId !== membership.clubId) {
+    return { error: "Event not found for this club." };
+  }
+
+  const assigneeMembership = await prisma.membership.findUnique({
+    where: { userId_clubId: { userId: parsed.data.assigneeId, clubId: membership.clubId } },
+  });
+  if (!assigneeMembership) {
+    return { error: "Assignee must be a member of this club." };
+  }
+
   await prisma.task.create({
     data: {
       title: parsed.data.title,
