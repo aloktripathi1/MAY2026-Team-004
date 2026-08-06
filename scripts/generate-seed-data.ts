@@ -15,8 +15,10 @@
  *   calendar dates, so the dataset never "expires" — prisma/seed.ts resolves
  *   them against Date.now() at seed time, every time.
  */
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
+
+const urlMapping = JSON.parse(readFileSync(path.join(process.cwd(), "scripts", "banner-url-mapping.json"), "utf8")) as Record<string, string>;
 
 // ---------- seeded RNG (mulberry32) ----------
 function mulberry32(seed: number) {
@@ -88,16 +90,16 @@ interface ClubDef {
 }
 
 const CLUB_DEFS: ClubDef[] = [
-  { id: "c1", slug: "codechef", name: "CodeChef IITM BS", tagline: "Competitive programming, weekly contests.", category: "Technical", hue: "122", emoji: "◉", founded: "2021", description: "Weekly cook-offs, algorithm deep-dives, and interview prep circles. Home for anyone who thinks in edge cases.", photo: "/club-banners/codechef.jpg", targetMembers: 55, activity: "very-active" },
-  { id: "c2", slug: "paradox", name: "Paradox - Debate Society", tagline: "Parliamentary debate & MUN circuit.", category: "Literary", hue: "5", emoji: "❋", founded: "2020", description: "British Parliamentary, Asians, and MUN training. Weekly practice rounds. Traveling squad.", photo: "/club-banners/paradox.jpg", targetMembers: 28, activity: "steady" },
-  { id: "c3", slug: "sarga", name: "Sarga - Music Circle", tagline: "Fusion, jams, semester showcases.", category: "Cultural", hue: "260", emoji: "♪", founded: "2019", description: "Instrumentalists, vocalists, producers. Open jam every Friday, big fusion show every semester.", photo: "/club-banners/sarga.jpg", targetMembers: 32, activity: "active" },
-  { id: "c4", slug: "kalakriti", name: "Kalakriti Design Guild", tagline: "Product, UI, illustration critique.", category: "Design", hue: "85", emoji: "◐", founded: "2022", description: "Portfolio reviews, Figma workshops, brand studies. Cross-pollination with product & marketing.", photo: "/club-banners/kalakriti.jpg", targetMembers: 24, activity: "steady" },
-  { id: "c5", slug: "prakriti", name: "Prakriti - Sustainability", tagline: "Campus greening & climate action.", category: "Social", hue: "155", emoji: "❦", founded: "2021", description: "Zero-waste campaigns, tree drives, and climate literacy workshops for local schools.", photo: "/club-banners/prakriti.jpg", targetMembers: 22, activity: "steady" },
-  { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", hue: "45", emoji: "◈", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", photo: "/club-banners/e-cell.jpg", targetMembers: 34, activity: "very-active" },
-  { id: "c7", slug: "quill", name: "Quill - Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", hue: "320", emoji: "✦", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", photo: "/club-banners/quill.jpg", targetMembers: 20, activity: "at-risk" },
-  { id: "c8", slug: "arena", name: "Arena - Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", hue: "0", emoji: "♞", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", photo: "/club-banners/arena.jpg", targetMembers: 24, activity: "steady" },
-  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", photo: "/club-banners/photon.jpg", targetMembers: 30, activity: "very-active" },
-  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", photo: "/club-banners/turf.jpg", targetMembers: 22, activity: "steady" },
+  { id: "c1", slug: "codechef", name: "CodeChef IITM BS", tagline: "Competitive programming, weekly contests.", category: "Technical", hue: "122", emoji: "◉", founded: "2021", description: "Weekly cook-offs, algorithm deep-dives, and interview prep circles. Home for anyone who thinks in edge cases.", photo: urlMapping["/club-banners/codechef.jpg"], targetMembers: 55, activity: "very-active" },
+  { id: "c2", slug: "paradox", name: "Paradox - Debate Society", tagline: "Parliamentary debate & MUN circuit.", category: "Literary", hue: "5", emoji: "❋", founded: "2020", description: "British Parliamentary, Asians, and MUN training. Weekly practice rounds. Traveling squad.", photo: urlMapping["/club-banners/paradox.jpg"], targetMembers: 28, activity: "steady" },
+  { id: "c3", slug: "sarga", name: "Sarga - Music Circle", tagline: "Fusion, jams, semester showcases.", category: "Cultural", hue: "260", emoji: "♪", founded: "2019", description: "Instrumentalists, vocalists, producers. Open jam every Friday, big fusion show every semester.", photo: urlMapping["/club-banners/sarga.jpg"], targetMembers: 32, activity: "active" },
+  { id: "c4", slug: "kalakriti", name: "Kalakriti Design Guild", tagline: "Product, UI, illustration critique.", category: "Design", hue: "85", emoji: "◐", founded: "2022", description: "Portfolio reviews, Figma workshops, brand studies. Cross-pollination with product & marketing.", photo: urlMapping["/club-banners/kalakriti.jpg"], targetMembers: 24, activity: "steady" },
+  { id: "c5", slug: "prakriti", name: "Prakriti - Sustainability", tagline: "Campus greening & climate action.", category: "Social", hue: "155", emoji: "❦", founded: "2021", description: "Zero-waste campaigns, tree drives, and climate literacy workshops for local schools.", photo: urlMapping["/club-banners/prakriti.jpg"], targetMembers: 22, activity: "steady" },
+  { id: "c6", slug: "e-cell", name: "E-Cell IITM BS", tagline: "Founder circles & startup weekends.", category: "Entrepreneurship", hue: "45", emoji: "◈", founded: "2019", description: "Pitch nights, mentor office hours, and the annual Ignite startup weekend. Alumni founder network.", photo: urlMapping["/club-banners/e-cell.jpg"], targetMembers: 34, activity: "very-active" },
+  { id: "c7", slug: "quill", name: "Quill - Writers' Circle", tagline: "Prose, poetry, longform criticism.", category: "Literary", hue: "320", emoji: "✦", founded: "2022", description: "Monthly zine, workshop rounds, and reading nights. Fiction, poetry, essays, all welcome.", photo: urlMapping["/club-banners/quill.jpg"], targetMembers: 20, activity: "at-risk" },
+  { id: "c8", slug: "arena", name: "Arena - Chess Club", tagline: "Blitz, bullet, and team leagues.", category: "Sports", hue: "0", emoji: "♞", founded: "2020", description: "Weekly blitz nights, inter-college leagues, opening prep clinics. Beginners always welcome.", photo: urlMapping["/club-banners/arena.jpg"], targetMembers: 24, activity: "steady" },
+  { id: "c9", slug: "photon", name: "Photon - Robotics & Electronics", tagline: "Bots, boards, and Saturday build nights.", category: "Technical", hue: "195", emoji: "⚡", founded: "2023", description: "Line-followers to autonomous bots. Weekly build nights, sensor workshops, and an annual hackware showdown.", photo: urlMapping["/club-banners/photon.jpg"], targetMembers: 30, activity: "very-active" },
+  { id: "c10", slug: "turf", name: "Turf - Football Club", tagline: "Five-a-side leagues & weekend matches.", category: "Sports", hue: "170", emoji: "⚽", founded: "2022", description: "Weekend five-a-side leagues, fitness drills, and the inter-hostel cup. All skill levels.", photo: urlMapping["/club-banners/turf.jpg"], targetMembers: 22, activity: "steady" },
 ];
 const CLUB_SLUGS = CLUB_DEFS.map((c) => c.slug);
 const clubBySlug = (slug: string) => CLUB_DEFS.find((c) => c.slug === slug)!;
@@ -346,14 +348,14 @@ const COVERS: Record<string, string> = {
   turf: "linear-gradient(135deg,#16a34a 0%,#0f766e 100%)",
 };
 const CURATED_PHOTOS: Record<string, string> = {
-  "Fusion Night - Sarga Live": "/club-events/fusion-night-vi.png",
-  "Weekly Cook-Off": "/club-events/cook-off-42.png",
-  "Ignite - Startup Weekend": "/club-events/ignite-2026.png",
-  "BP Open Round": "/club-events/bp-open-round.png",
-  "Portfolio Crit Night": "/club-events/portfolio-crit.png",
-  "Climate Teach-In · Local Schools": "/club-events/climate-teach-in.png",
-  "Chess Blitz Night": "/club-events/chess-blitz-x.png",
-  "Open Jam Friday": "/club-events/sarga-open-jam.png",
+  "Fusion Night - Sarga Live": urlMapping["/club-events/fusion-night-vi.png"],
+  "Weekly Cook-Off": urlMapping["/club-events/cook-off-42.png"],
+  "Ignite - Startup Weekend": urlMapping["/club-events/ignite-2026.png"],
+  "BP Open Round": urlMapping["/club-events/bp-open-round.png"],
+  "Portfolio Crit Night": urlMapping["/club-events/portfolio-crit.png"],
+  "Climate Teach-In · Local Schools": urlMapping["/club-events/climate-teach-in.png"],
+  "Chess Blitz Night": urlMapping["/club-events/chess-blitz-x.png"],
+  "Open Jam Friday": urlMapping["/club-events/sarga-open-jam.png"],
 };
 
 // Per-club photo pools, cycled round-robin as each club's events are
@@ -364,22 +366,22 @@ const CURATED_PHOTOS: Record<string, string> = {
 // picks the first 3 upcoming events in array order, which are often all
 // from one club) used to render the identical photo three times (#131).
 const CLUB_PHOTO_POOLS: Record<string, string[]> = {
-  codechef: ["/club-banners/codechef.jpg", "/club-events/cook-off-42.png", "/club-events/hacktoberfest.jpg"],
-  paradox: ["/club-banners/paradox.jpg", "/club-events/bp-open-round.png", "/club-events/cat-mun-conference.jpg"],
+  codechef: [urlMapping["/club-banners/codechef.jpg"], urlMapping["/club-events/cook-off-42.png"], urlMapping["/club-events/hacktoberfest.jpg"]],
+  paradox: [urlMapping["/club-banners/paradox.jpg"], urlMapping["/club-events/bp-open-round.png"], urlMapping["/club-events/cat-mun-conference.jpg"]],
   sarga: [
-    "/club-banners/sarga.jpg",
-    "/club-events/fusion-night-vi.png",
-    "/club-events/sarga-open-jam.png",
-    "/club-events/cat-music-performance.jpg",
-    "/club-events/cat-music-studio.jpg",
+    urlMapping["/club-banners/sarga.jpg"],
+    urlMapping["/club-events/fusion-night-vi.png"],
+    urlMapping["/club-events/sarga-open-jam.png"],
+    urlMapping["/club-events/cat-music-performance.jpg"],
+    urlMapping["/club-events/cat-music-studio.jpg"],
   ],
-  kalakriti: ["/club-banners/kalakriti.jpg", "/club-events/portfolio-crit.png"],
-  prakriti: ["/club-banners/prakriti.jpg", "/club-events/climate-teach-in.png"],
-  "e-cell": ["/club-banners/e-cell.jpg", "/club-events/ignite-2026.png"],
-  quill: ["/club-banners/quill.jpg"],
-  arena: ["/club-banners/arena.jpg", "/club-events/chess-blitz-x.png", "/club-events/cat-chess-tournament.jpg"],
-  photon: ["/club-banners/photon.jpg", "/club-events/cat-robotics-team.jpg", "/club-events/cat-electronics-workshop.jpg"],
-  turf: ["/club-banners/turf.jpg", "/club-events/cat-football-match.jpg"],
+  kalakriti: [urlMapping["/club-banners/kalakriti.jpg"], urlMapping["/club-events/portfolio-crit.png"]],
+  prakriti: [urlMapping["/club-banners/prakriti.jpg"], urlMapping["/club-events/climate-teach-in.png"]],
+  "e-cell": [urlMapping["/club-banners/e-cell.jpg"], urlMapping["/club-events/ignite-2026.png"]],
+  quill: [urlMapping["/club-banners/quill.jpg"]],
+  arena: [urlMapping["/club-banners/arena.jpg"], urlMapping["/club-events/chess-blitz-x.png"], urlMapping["/club-events/cat-chess-tournament.jpg"]],
+  photon: [urlMapping["/club-banners/photon.jpg"], urlMapping["/club-events/cat-robotics-team.jpg"], urlMapping["/club-events/cat-electronics-workshop.jpg"]],
+  turf: [urlMapping["/club-banners/turf.jpg"], urlMapping["/club-events/cat-football-match.jpg"]],
 };
 
 type ApprovalDisplay = "approved" | "pending" | "not-required" | "rejected";
