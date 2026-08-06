@@ -11,6 +11,8 @@
  *   npm run db:up && npm run db:push && npm run db:seed && npm run dev
  *   npm run test:integration
  */
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { prisma } from "@/backend/db/prisma";
 import { sendEmail } from "@/backend/email/client";
 import {
@@ -248,6 +250,35 @@ describe("sendEmail", () => {
 });
 
 describe("notification triggers", () => {
+  /**
+   * Guards the bug where only one of the two registration paths mailed.
+   * `POST /api/events/[id]/register` went through registerForEvent, while the
+   * "Count Me In" button went through toggleCountMeInAction and sent nothing —
+   * so a member clicking the button in the app got silence. Server Actions
+   * aren't reachable over HTTP, so this asserts the structural invariant
+   * instead: every module that creates a CountMeIn row must also trigger the
+   * confirmation.
+   */
+  it("sends a confirmation from every code path that registers someone", async () => {
+    const modules = ["backend/domain/countMeIn.ts", "backend/domain/events.ts"];
+    const missing: string[] = [];
+
+    for (const relative of modules) {
+      const source = await readFile(join(process.cwd(), relative), "utf8");
+      if (source.includes("countMeIn.create") && !source.includes("notifyRegistrationConfirmed")) {
+        missing.push(relative);
+      }
+    }
+
+    reportCase(
+      "every registration path notifies",
+      { modules },
+      { pathsMissingTheEmail: [] },
+      { pathsMissingTheEmail: missing },
+      () => expect(missing).toEqual([]),
+    );
+  });
+
   it("confirms to the applicant and alerts the club's admins", async () => {
     const user = await makeUser();
     const summary = await notifyMembershipApplied(user.id, CLUB_IDS.codechef);

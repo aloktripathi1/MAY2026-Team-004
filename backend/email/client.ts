@@ -95,22 +95,33 @@ export async function sendEmail(input: SendEmailInput): Promise<SendResult> {
   const { to, template, rendered, dedupeKey, userId = null, prefsJson } = input;
   const config = getEmailConfig();
 
-  const address = to?.trim();
-  if (!address || !address.includes("@")) {
-    return { status: "skipped", reason: "invalid recipient address" };
+  // Skips deliberately claim no dedupe key and write no EmailLog row: an
+  // opted-out recipient must start receiving mail the moment they opt back in,
+  // and a 500-member fan-out shouldn't write 500 rows to say "no".
+  //
+  // The cost is that a skip leaves no trace in the database, so it gets logged
+  // instead — otherwise "why didn't the faculty reviewer get the approval
+  // email?" has no answer anywhere, which is exactly how this bit us.
+  function skip(reason: string): SendResult {
+    console.log(`[email:skipped] ${template} → ${address || "<no address>"} — ${reason}`);
+    return { status: "skipped", reason };
   }
 
-  // Preference check before the write: an opted-out recipient shouldn't even
-  // occupy a dedupe key, so turning the category back on works immediately.
+  const address = to?.trim();
+  if (!address || !address.includes("@")) {
+    return skip("invalid recipient address");
+  }
+
+  // Preference check before the write, per the note above.
   if (rendered.category && prefsJson !== undefined && !wantsEmail(prefsJson, rendered.category)) {
-    return { status: "skipped", reason: `recipient opted out of ${rendered.category}` };
+    return skip(`recipient opted out of ${rendered.category}`);
   }
 
   // The allowlist guards real deliveries only. In dry-run nothing leaves the
   // app, so applying it there would just hide which emails *would* have gone
   // out — exactly what dry-run exists to show.
   if (config.enabled && !isAllowedRecipient(address, config.allowlist)) {
-    return { status: "skipped", reason: "recipient not in EMAIL_ALLOWLIST" };
+    return skip(`recipient not in EMAIL_ALLOWLIST (currently: ${config.allowlist.join(", ") || "<empty>"})`);
   }
 
   const willSend = config.enabled;
