@@ -33,6 +33,35 @@ export async function toggleCheckInAction(countMeInId: string, eventSlug: string
   revalidatePath(`/coordinator/events/${eventSlug}`);
 }
 
+export type BulkCheckInState = { error?: string; ok?: boolean; count?: number };
+
+export async function bulkCheckInAction(
+  eventId: string,
+  countMeInIds: string[],
+  eventSlug: string,
+): Promise<BulkCheckInState> {
+  const session = await getMockSession();
+  if (!session?.user) return { error: "Not authenticated" };
+  if (countMeInIds.length === 0) return { error: "Select at least one participant." };
+
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!event) return { error: "Event not found." };
+
+  try {
+    requireCoordinatorForClub(session.user.memberships, event.clubId);
+  } catch {
+    return { error: "Not authorized for this club." };
+  }
+
+  const result = await prisma.countMeIn.updateMany({
+    where: { id: { in: countMeInIds }, eventId },
+    data: { checkedIn: true },
+  });
+
+  revalidatePath(`/coordinator/events/${eventSlug}`);
+  return { ok: true, count: result.count };
+}
+
 const editEventSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),

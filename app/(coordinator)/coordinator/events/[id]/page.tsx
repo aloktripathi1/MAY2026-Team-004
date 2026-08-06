@@ -64,6 +64,7 @@ export default async function CoordinatorEventDashboard({ params }: { params: { 
       <div className="mt-8">
         <GlassCard className="p-0" hover={false}>
           <ParticipantList
+            eventId={event.id}
             eventSlug={event.slug}
             rows={countMeIns.map((r) => ({
               countMeInId: r.id,
