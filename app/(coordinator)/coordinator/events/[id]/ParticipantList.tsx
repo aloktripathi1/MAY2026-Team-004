@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Download, Check } from "lucide-react";
-import { Btn, StatusPill } from "@/components/ui/primitives";
+import { Btn } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { toggleCheckInAction, bulkCheckInAction } from "./actions";
 
@@ -15,8 +15,8 @@ type ParticipantRow = {
 };
 
 function exportCsv(eventSlug: string, rows: ParticipantRow[]) {
-  const header = "Participant,Roll,Status,Check-in\n";
-  const body = rows.map((r) => `${r.name},${r.roll},Confirmed,${r.checkedIn ? "Checked in" : "Not checked in"}`).join("\n");
+  const header = "Participant,Roll,Check-in\n";
+  const body = rows.map((r) => `${r.name},${r.roll},${r.checkedIn ? "Checked in" : "Not checked in"}`).join("\n");
   const blob = new Blob([header + body], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -84,7 +84,7 @@ export function ParticipantList({
           </Btn>
         </div>
       </div>
-      <div className="hidden grid-cols-[28px_2fr_140px_140px_130px] items-center gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid">
+      <div className="hidden grid-cols-[28px_2fr_140px_130px] items-center gap-4 border-b border-hairline px-6 py-3 text-mono-label md:grid">
         <input
           type="checkbox"
           aria-label="Select all not checked in"
@@ -95,7 +95,6 @@ export function ParticipantList({
         />
         <div>Participant</div>
         <div>Roll</div>
-        <div>Status</div>
         <div>Check-in</div>
       </div>
       <div className="divide-y divide-hairline">
@@ -117,7 +116,6 @@ export function ParticipantList({
                   <div className="truncate text-sm font-medium">{r.name}</div>
                   <div className="text-mono-label !normal-case !tracking-normal text-xs">{r.roll}</div>
                 </div>
-                <StatusPill tone={r.checkedIn ? "green" : "slate"}>{r.checkedIn ? "Checked in" : "Not checked in"}</StatusPill>
               </div>
               <Btn
                 size="sm"
@@ -129,7 +127,7 @@ export function ParticipantList({
                 {r.checkedIn ? <><Check className="h-3.5 w-3.5" /> Checked in</> : "Check in"}
               </Btn>
             </div>
-            <div className="hidden grid-cols-[28px_2fr_140px_140px_130px] items-center gap-4 px-6 py-4 md:grid">
+            <div className="hidden grid-cols-[28px_2fr_140px_130px] items-center gap-4 px-6 py-4 md:grid">
               <input
                 type="checkbox"
                 aria-label={`Select ${r.name}`}
@@ -143,7 +141,6 @@ export function ParticipantList({
                 <div className="truncate text-sm font-medium">{r.name}</div>
               </div>
               <div className="text-mono-label !normal-case !tracking-normal text-xs">{r.roll}</div>
-              <StatusPill tone={r.checkedIn ? "green" : "slate"}>{r.checkedIn ? "Checked in" : "Not checked in"}</StatusPill>
               <Btn
                 size="sm"
                 variant={r.checkedIn ? "primary" : "outline"}
