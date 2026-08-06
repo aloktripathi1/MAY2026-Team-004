@@ -125,3 +125,60 @@ export async function textCompletion(options: {
     throw toGenAiError(error);
   }
 }
+
+export type ToolCompletionMessage = Anthropic.Messages.MessageParam;
+export type ToolCompletionTool = Anthropic.Messages.Tool;
+export type ToolCompletionContent = Anthropic.Messages.ContentBlock;
+
+export type ToolCompletionResult = {
+  content: ToolCompletionContent[];
+  stopReason: Anthropic.Messages.StopReason | null;
+};
+
+/**
+ * A Claude Messages call with tools. Returns raw content blocks and stop_reason
+ * so callers can run their own tool loops. Knows nothing about Sangam tools.
+ */
+export async function toolCompletion(options: {
+  system: string;
+  messages: ToolCompletionMessage[];
+  tools: ToolCompletionTool[];
+  maxTokens?: number;
+  timeoutMs?: number;
+}): Promise<ToolCompletionResult> {
+  const { system, messages, tools, maxTokens = 1024, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
+
+  if (process.env.ASK_SANGAM_TRACE) {
+    console.log("\n[TRACE toolCompletion] === SYSTEM PROMPT ===\n" + system);
+    console.log("[TRACE toolCompletion] === MESSAGES ===\n" + JSON.stringify(messages, null, 2));
+    console.log("[TRACE toolCompletion] === TOOLS ===\n" + tools.map((t) => t.name).join(", "));
+  }
+
+  try {
+    const message = await getClient().messages.create(
+      {
+        model: DEFAULT_MODEL,
+        max_tokens: maxTokens,
+        system,
+        messages,
+        tools,
+        output_config: { effort: DEFAULT_EFFORT },
+      },
+      { timeout: timeoutMs },
+    );
+
+    if (process.env.ASK_SANGAM_TRACE) {
+      console.log(
+        "[TRACE toolCompletion] === RESPONSE ===\n" +
+          JSON.stringify({ stop_reason: message.stop_reason, content: message.content }, null, 2),
+      );
+    }
+
+    return {
+      content: message.content,
+      stopReason: message.stop_reason,
+    };
+  } catch (error) {
+    throw toGenAiError(error);
+  }
+}

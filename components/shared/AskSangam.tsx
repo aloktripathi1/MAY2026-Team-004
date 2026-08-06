@@ -6,8 +6,17 @@ import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X, Send, CalendarDays, ListChecks, Megaphone, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/backend/auth/roles";
+import { ToolProposalCard, type ProposalCardState } from "@/components/shared/ToolProposalCard";
 
 type SourceType = "event" | "task" | "announcement" | "membership";
+
+type ProposedAction = {
+  toolName: string;
+  summary: string;
+  argsPreview: Record<string, string>;
+  token: string;
+  status: "pending";
+};
 
 type Message = {
   role: "user" | "assistant";
@@ -15,14 +24,39 @@ type Message = {
   sourceType?: SourceType | null;
   sourceLabel?: string;
   sourceHref?: string;
+  proposedAction?: ProposedAction;
+  proposalState?: ProposalCardState;
+  proposalError?: string | null;
 };
 
 const EXAMPLE_QUESTIONS: Record<AppRole, string[]> = {
-  member: ["When's my next event?", "What are the latest announcements?", "Which clubs am I a member of?"],
-  coordinator: ["Are any of our events still pending approval?", "What's on my task list?", "When's our next event?"],
-  admin: ["How many pending approvals do I have?", "What are the latest announcements?", "Which clubs am I admin of?"],
-  volunteer: ["What tasks am I assigned?", "When's my next event?", "What's the latest announcement?"],
-  faculty: ["How many events are awaiting my approval?", "What's the next event coming up?", "Any recent announcements?"],
+  member: [
+    "When's my next event?",
+    "What are the latest announcements?",
+    "Which clubs am I a member of?",
+  ],
+  coordinator: [
+    "What's on my task list?",
+    "Mark my first open task as done",
+    "Set my first open task to doing",
+    "Are any of our events still pending approval?",
+  ],
+  admin: [
+    "What's on my task list?",
+    "Mark my first open task as done",
+    "How many pending approvals do I have?",
+  ],
+  volunteer: [
+    "What tasks am I assigned?",
+    "How many open tasks do I have?",
+    "Mark my first open task as done",
+    "Set my first open task to doing",
+  ],
+  faculty: [
+    "How many events are awaiting my approval?",
+    "What's the next event coming up?",
+    "Any recent announcements?",
+  ],
 };
 
 const SOURCE_META: Record<SourceType, { label: string; icon: typeof CalendarDays }> = {
@@ -60,13 +94,17 @@ export function AskSangam({ role }: { role: AppRole }) {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const hasOpenProposal = messages.some(
+    (m) => m.proposedAction && (!m.proposalState || m.proposalState === "pending" || m.proposalState === "accepting" || m.proposalState === "rejecting"),
+  );
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
 
   async function ask(question: string) {
     const text = question.trim();
-    if (!text || pending) return;
+    if (!text || pending || hasOpenProposal) return;
 
     setMessages((current) => [...current, { role: "user", text }]);
     setInput("");
@@ -77,7 +115,7 @@ export function AskSangam({ role }: { role: AppRole }) {
       const res = await fetch("/api/assistant/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text }),
+        body: JSON.stringify({ query: text, role }),
       });
       const body = await res.json();
 
@@ -86,12 +124,86 @@ export function AskSangam({ role }: { role: AppRole }) {
         return;
       }
 
-      const { answer, sourceType, sourceLabel, sourceHref } = body.data;
-      setMessages((current) => [...current, { role: "assistant", text: answer, sourceType, sourceLabel, sourceHref }]);
+      const { answer, sourceType, sourceLabel, sourceHref, proposedAction } = body.data;
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          text: answer,
+          sourceType,
+          sourceLabel,
+          sourceHref,
+          proposedAction: proposedAction ?? undefined,
+          proposalState: proposedAction ? "pending" : undefined,
+        },
+      ]);
     } catch {
       setError("Couldn't reach Ask Sangam. Check your connection and try again.");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function confirmProposal(messageIndex: number, decision: "accept" | "reject") {
+    const message = messages[messageIndex];
+    if (!message?.proposedAction) return;
+
+    setMessages((current) =>
+      current.map((m, i) =>
+        i === messageIndex
+          ? { ...m, proposalState: decision === "accept" ? "accepting" : "rejecting", proposalError: null }
+          : m,
+      ),
+    );
+    setError(null);
+
+    try {
+      const res = await fetch("/api/assistant/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, token: message.proposedAction.token }),
+      });
+      const body = await res.json();
+
+      if (!res.ok || !body.success) {
+        setMessages((current) =>
+          current.map((m, i) =>
+            i === messageIndex
+              ? {
+                  ...m,
+                  proposalState: "pending",
+                  proposalError: body?.error?.message ?? "Couldn't complete that action.",
+                }
+              : m,
+          ),
+        );
+        return;
+      }
+
+      const { answer, sourceType, sourceLabel, sourceHref } = body.data;
+      setMessages((current) => {
+        const next = current.map((m, i) =>
+          i === messageIndex
+            ? { ...m, proposalState: decision === "accept" ? ("accepted" as const) : ("rejected" as const), proposalError: null }
+            : m,
+        );
+        next.push({
+          role: "assistant",
+          text: answer,
+          sourceType,
+          sourceLabel,
+          sourceHref,
+        });
+        return next;
+      });
+    } catch {
+      setMessages((current) =>
+        current.map((m, i) =>
+          i === messageIndex
+            ? { ...m, proposalState: "pending", proposalError: "Couldn't reach Ask Sangam. Try again." }
+            : m,
+        ),
+      );
     }
   }
 
@@ -146,7 +258,7 @@ export function AskSangam({ role }: { role: AppRole }) {
                 {messages.length === 0 ? (
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Ask about your events, tasks, approvals, announcements, or club memberships — I'll answer based on your role.
+                      Ask about your events, tasks, approvals, announcements, or club memberships — I&apos;ll answer based on your role. Task changes need your Accept.
                     </p>
                     <div className="mt-4 space-y-2">
                       {EXAMPLE_QUESTIONS[role].map((question) => (
@@ -154,7 +266,8 @@ export function AskSangam({ role }: { role: AppRole }) {
                           key={question}
                           type="button"
                           onClick={() => ask(question)}
-                          className="block w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-left text-sm text-white/[0.85] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary"
+                          disabled={pending || hasOpenProposal}
+                          className="block w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-left text-sm text-white/[0.85] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary disabled:opacity-50"
                         >
                           {question}
                         </button>
@@ -176,6 +289,17 @@ export function AskSangam({ role }: { role: AppRole }) {
                           {message.text}
                           {message.role === "assistant" && (
                             <SourceTag sourceType={message.sourceType} sourceLabel={message.sourceLabel} sourceHref={message.sourceHref} />
+                          )}
+                          {message.role === "assistant" && message.proposedAction && (
+                            <ToolProposalCard
+                              toolName={message.proposedAction.toolName}
+                              summary={message.proposedAction.summary}
+                              argsPreview={message.proposedAction.argsPreview}
+                              state={message.proposalState ?? "pending"}
+                              error={message.proposalError}
+                              onAccept={() => void confirmProposal(index, "accept")}
+                              onReject={() => void confirmProposal(index, "reject")}
+                            />
                           )}
                         </div>
                       </div>
@@ -202,13 +326,13 @@ export function AskSangam({ role }: { role: AppRole }) {
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="Ask Sangam anything…"
-                  disabled={pending}
+                  placeholder={hasOpenProposal ? "Accept or reject the pending action…" : "Ask Sangam anything…"}
+                  disabled={pending || hasOpenProposal}
                   className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55 disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={pending || !input.trim()}
+                  disabled={pending || hasOpenProposal || !input.trim()}
                   aria-label="Send"
                   className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-secondary/40 bg-secondary/[0.14] text-secondary transition hover:bg-secondary/[0.22] disabled:cursor-not-allowed disabled:opacity-40"
                 >

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getMockSession } from "@/backend/auth/mock-session";
+import { accessibleAppRoles, type AppRole } from "@/backend/auth/roles";
 import { answerAssistantQuery } from "@/backend/domain/assistant";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
 
@@ -7,6 +8,9 @@ const USER_STORY = "Ask Sangam";
 
 const querySchema = z.object({
   query: z.string().trim().min(1, "Ask something first.").max(500, "Keep it under 500 characters."),
+  // Which dashboard the question was asked from. Capabilities are scoped to it,
+  // and it's only honoured when the session really holds that role.
+  role: z.enum(["member", "coordinator", "admin", "volunteer", "faculty"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -31,10 +35,15 @@ export async function POST(request: Request) {
     });
   }
 
+  const requestedRole = parsed.data.role;
+  const activeRole: AppRole | undefined =
+    requestedRole && accessibleAppRoles(session.user).includes(requestedRole) ? requestedRole : undefined;
+
   try {
     const result = await answerAssistantQuery(
       { id: session.user.id, isFaculty: session.user.isFaculty, memberships: session.user.memberships },
       parsed.data.query,
+      { activeRole },
     );
     return jsonSuccess(result, { status: 200, userStory: USER_STORY });
   } catch (error) {
