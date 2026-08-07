@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useFormState, useFormStatus } from "react-dom";
 import { loginAction, type LoginState } from "@/app/(public)/login/actions";
 import { signupAction, type SignupState } from "@/app/(public)/signup/actions";
@@ -43,23 +43,25 @@ export function AuthShell({ mode }: { mode: "login" | "signup" }) {
           </div>
         </section>
 
-        <section className="flex flex-1 items-center justify-center px-5 py-10 md:flex-none md:basis-[480px] md:px-12 lg:basis-[560px] lg:px-16 xl:basis-[640px] xl:px-20 2xl:basis-[720px] 2xl:px-24">
+        <section className="relative flex flex-1 items-center justify-center px-5 py-10 md:flex-none md:basis-[480px] md:px-12 lg:basis-[560px] lg:px-16 xl:basis-[640px] xl:px-20 2xl:basis-[720px] 2xl:px-24">
+          {/* Pinned outside the vertically-centered card below so it lands at
+              the same spot on every mobile auth page, regardless of how tall
+              that page's form is (signup's is taller than login's, which
+              pushed the logo to a different height when it lived inside the
+              centered block). */}
+          <Link href="/" className="absolute left-5 top-10 flex items-center gap-3 md:hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
+            <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
+          </Link>
+
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="w-full max-w-md"
           >
-            <Link href="/" className="mb-8 flex items-center gap-3 md:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" />
-              <span className="text-[14px] font-semibold tracking-[0.2em] text-white">SANGAM</span>
-            </Link>
-
             <div className="mb-8">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.055] text-secondary">
-                {isSignup ? <Sparkles className="h-5 w-5" /> : <LockKeyhole className="h-5 w-5" />}
-              </div>
               {isSignup && <div className="text-mono-label mb-3 text-white/[0.52]">Create account</div>}
               <h2 className="text-4xl font-black leading-[0.95] tracking-[-0.05em] text-white">
                 {isSignup ? "Join Sangam." : "Sign in."}
