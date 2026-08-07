@@ -3,14 +3,17 @@ import { z } from "zod";
 /** Only institutional emails are accepted for account creation (User Story 1.1). */
 export const INSTITUTIONAL_EMAIL_DOMAIN = "ds.study.iitm.ac.in";
 
+// For testing: allow any email. In production, uncomment the domain check below.
 export const institutionalEmailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .email("Enter a valid email address")
-  .refine((email) => email.endsWith(`@${INSTITUTIONAL_EMAIL_DOMAIN}`), {
-    message: `Email must end with @${INSTITUTIONAL_EMAIL_DOMAIN}`,
-  });
+  .email("Enter a valid email address");
+
+// Production version (uncomment when ready):
+// .refine((email) => email.endsWith(`@${INSTITUTIONAL_EMAIL_DOMAIN}`), {
+//   message: `Email must end with @${INSTITUTIONAL_EMAIL_DOMAIN}`,
+// });
 
 export const signupSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
