@@ -32,16 +32,50 @@ function parseAllowlist(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/**
+ * The origin of the request currently being served, or null outside a request
+ * (a cron sweep triggered by script, the seed, `scripts/*`).
+ *
+ * Used as a fallback for `APP_URL`, because a stale `APP_URL` is a silent
+ * failure of the worst kind: mail delivers perfectly and every link in it is
+ * dead. Pointing at the host the user is actually on cannot be stale. It's only
+ * a fallback — an explicit `APP_URL` still wins, since scheduled mail has no
+ * request to borrow a host from and needs the configured value.
+ *
+ * `x-forwarded-host` is what Vercel sets; `host` covers running behind nothing.
+ */
+function getRequestOrigin(): string | null {
+  try {
+    // Required lazily: this module is also loaded by CLI scripts, where
+    // next/headers has no request scope to read.
+    // eslint-disable-next-line global-require
+    const { headers } = require("next/headers") as typeof import("next/headers");
+    const list = headers();
+    const host = list.get("x-forwarded-host") ?? list.get("host");
+    if (!host) return null;
+    const proto = list.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+  } catch {
+    return null;
+  }
+}
+
 export function getEmailConfig(): EmailConfig {
   const apiKey = process.env.RESEND_API_KEY?.trim() || null;
   const flag = process.env.EMAIL_ENABLED?.trim().toLowerCase();
+
+  const appUrl =
+    process.env.APP_URL?.trim() ||
+    getRequestOrigin() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    DEFAULT_APP_URL;
 
   return {
     enabled: (flag === "true" || flag === "1") && Boolean(apiKey),
     apiKey,
     from: process.env.EMAIL_FROM?.trim() || DEFAULT_FROM,
     replyTo: process.env.EMAIL_REPLY_TO?.trim() || null,
-    appUrl: (process.env.APP_URL?.trim() || process.env.NEXTAUTH_URL?.trim() || DEFAULT_APP_URL).replace(/\/$/, ""),
+    appUrl: appUrl.replace(/\/$/, ""),
     allowlist: parseAllowlist(process.env.EMAIL_ALLOWLIST),
   };
 }
