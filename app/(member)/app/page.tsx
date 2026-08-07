@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requirePageSession } from "@/backend/auth/page-session";
 import { CalendarClock, ArrowUpRight, Pin } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
+import { memberVisibleEventWhere } from "@/backend/domain/workflow-rules";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, Stat, StatusPill, Btn } from "@/components/ui/primitives";
 import { formatWeekday, formatDayNumber, formatIssueStatus, formatTimeAgo } from "@/lib/format";
@@ -21,7 +22,7 @@ export default async function MemberDashboard() {
   // Scoped to the member's own club memberships — this page previously
   // showed every club's events/announcements regardless of membership (#88).
   const [upcoming, myIssues, announcements] = await Promise.all([
-    prisma.event.findMany({ where: { status: "upcoming", clubId: { in: clubIds } }, orderBy: { date: "asc" }, take: 4, include: { club: true, _count: { select: { countMeIns: true } } } }),
+    prisma.event.findMany({ where: { ...memberVisibleEventWhere(), status: "upcoming", clubId: { in: clubIds } }, orderBy: { date: "asc" }, take: 4, include: { club: true, _count: { select: { countMeIns: true } } } }),
     prisma.issue.findMany({ where: { raisedById: userId }, orderBy: { createdAt: "desc" } }),
     prisma.announcement.findMany({ where: { clubId: { in: clubIds } }, orderBy: { createdAt: "desc" }, take: 4, include: { club: true } }),
   ]);
