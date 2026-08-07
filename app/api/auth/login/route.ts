@@ -38,6 +38,15 @@ export async function POST(request: Request) {
   try {
     const result = await authenticateUser(email, password);
     if (!result.ok) {
+      // Distinct from bad credentials: the password was correct, so saying the
+      // address is unverified reveals nothing, and a generic "invalid email or
+      // password" here would send people to reset a password that works.
+      if (result.code === "EMAIL_UNVERIFIED") {
+        return jsonError("EMAIL_UNVERIFIED", result.message, {
+          status: 403,
+          userStory: USER_STORY,
+        });
+      }
       return jsonError("INVALID_CREDENTIALS", INVALID_CREDENTIALS_MESSAGE, {
         status: 401,
         userStory: USER_STORY,

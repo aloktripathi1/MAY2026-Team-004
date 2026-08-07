@@ -91,14 +91,70 @@ function LoginForm() {
   const [state, formAction] = useFormState(loginAction, initialLoginState);
   const callbackUrl = searchParams.get("callbackUrl") ?? "";
 
+  // Signup redirects here with ?verify=sent when verification is required, so
+  // the new account is told to check its inbox rather than silently landing on
+  // a login form that will refuse it.
+  const justSignedUp = searchParams.get("verify") === "sent";
+  const needsVerification = state.code === "EMAIL_UNVERIFIED";
+
   return (
     <form className="space-y-4" action={formAction}>
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      {justSignedUp && (
+        <p className="rounded-xl border border-secondary/40 bg-secondary/[0.08] px-4 py-3 text-sm text-secondary">
+          Account created. Check <strong>your inbox</strong> for a verification link, then sign in.
+        </p>
+      )}
       <Field label="Institutional email" name="email" placeholder="23s1000123@ds.study.iitm.ac.in" type="email" />
       <Field label="Password" name="password" placeholder="••••••••" type="password" />
       <FormError message={state.error} />
+      {needsVerification && <ResendVerification />}
       <SubmitButton label="Sign in" pendingLabel="Signing in..." />
     </form>
+  );
+}
+
+/**
+ * Shown only after a login is refused for an unverified address — the one
+ * moment it's useful, and the point at which someone whose link expired or went
+ * to spam would otherwise be stuck with no way forward.
+ */
+function ResendVerification() {
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function resend(event: React.MouseEvent<HTMLButtonElement>) {
+    // Inside a form, so don't let this submit the login itself.
+    event.preventDefault();
+    const email = (event.currentTarget.form?.elements.namedItem("email") as HTMLInputElement | null)?.value;
+    if (!email) return;
+
+    setBusy(true);
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setSent(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (sent) {
+    return <p className="text-xs text-muted-foreground">A new verification link is on its way. It expires in 24 hours.</p>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={resend}
+      disabled={busy}
+      className="text-xs text-secondary underline underline-offset-2 disabled:opacity-60"
+    >
+      {busy ? "Sending..." : "Send me a new verification link"}
+    </button>
   );
 }
 

@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { decideCountMeInAction } from "@/backend/domain/workflow-rules";
+import { notifyRegistrationConfirmed } from "@/backend/email/notifications";
 
 export async function toggleCountMeInAction(eventId: string, eventSlug: string) {
   const session = await getMockSession();
@@ -13,8 +14,9 @@ export async function toggleCountMeInAction(eventId: string, eventSlug: string) 
 
   // Serializable isolation prevents concurrent toggles for the same event
   // from all reading the same under-capacity count and overbooking it (#73).
+  let action: "cancel" | "register";
   try {
-    await prisma.$transaction(
+    action = await prisma.$transaction(
       async (tx) => {
         const existing = await tx.countMeIn.findUnique({
           where: { userId_eventId: { userId, eventId } },
@@ -26,7 +28,7 @@ export async function toggleCountMeInAction(eventId: string, eventSlug: string) 
               where: { id: eventId },
               include: { _count: { select: { countMeIns: true } } },
             });
-        const action = decideCountMeInAction(
+        const decided = decideCountMeInAction(
           Boolean(existing),
           event
             ? {
@@ -39,11 +41,12 @@ export async function toggleCountMeInAction(eventId: string, eventSlug: string) 
             : null,
         );
 
-        if (action === "cancel") {
+        if (decided === "cancel") {
           await tx.countMeIn.delete({ where: { id: existing!.id } });
         } else {
           await tx.countMeIn.create({ data: { userId, eventId } });
         }
+        return decided;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -52,6 +55,16 @@ export async function toggleCountMeInAction(eventId: string, eventSlug: string) 
       throw new Error("This event just reached capacity. Please try again.");
     }
     throw err;
+  }
+
+  // This is the path the "Count Me In" button actually takes; POST
+  // /api/events/[id]/register goes through registerForEvent in domain/events.ts
+  // instead. Both create a CountMeIn row, so both owe the member a confirmation
+  // — wiring only the REST one meant clicking the button in the app silently
+  // sent nothing. Mailed after the transaction commits, never inside it, so a
+  // slow provider can't hold a Serializable transaction open.
+  if (action === "register") {
+    await notifyRegistrationConfirmed(userId, eventId);
   }
 
   revalidatePath(`/app/events/${eventSlug}`);

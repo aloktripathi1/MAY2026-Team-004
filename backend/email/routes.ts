@@ -23,6 +23,8 @@ export const emailLinks = {
   adminIssues: () => absoluteUrl("/admin/issues"),
   coordinatorEvent: (slug: string) => absoluteUrl(`/coordinator/events/${slug}`),
   facultyApprovals: () => absoluteUrl("/faculty/approvals"),
+  facultyDashboard: () => absoluteUrl("/faculty"),
+  facultyClubRequests: () => absoluteUrl("/faculty/club-requests"),
   volunteerTasks: () => absoluteUrl("/volunteer"),
 };
 

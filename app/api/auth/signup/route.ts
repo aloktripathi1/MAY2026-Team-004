@@ -1,6 +1,7 @@
 import { setAuthCookies } from "@/backend/auth/session-cookies";
 import { createUserAccount } from "@/backend/auth/create-user";
 import { signupSchema } from "@/backend/auth/signup-schema";
+import { requiresEmailVerification } from "@/backend/auth/email-verification";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
 
 /** User Story 1.1 — Institutional Credential Verification */
@@ -38,7 +39,12 @@ export async function POST(request: Request) {
       });
     }
 
-    setAuthCookies(result.user.id);
+    // No session until the address is confirmed, when verification is required
+    // — otherwise the emailed link is decoration.
+    const verificationRequired = requiresEmailVerification();
+    if (!verificationRequired) {
+      setAuthCookies(result.user.id);
+    }
 
     return jsonSuccess(
       {
@@ -46,7 +52,8 @@ export async function POST(request: Request) {
         name: result.user.name,
         email: result.user.email,
         rollNumber: result.user.rollNumber,
-        next: "/signup/onboarding",
+        emailVerificationRequired: verificationRequired,
+        next: verificationRequired ? "/login?verify=sent" : "/signup/onboarding",
       },
       { status: 201, userStory: USER_STORY },
     );

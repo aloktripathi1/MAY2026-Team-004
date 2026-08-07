@@ -248,6 +248,46 @@ const CASES: Record<TemplateName, () => RenderedEmail> = {
       adminUrl: "https://sangam.test/admin",
       manageUrl: MANAGE,
     }),
+  clubRequestSubmitted: () =>
+    templates.clubRequestSubmitted({
+      name: "Asha",
+      clubName: "Photon - Robotics",
+      requestsUrl: "https://sangam.test/app/clubs",
+      manageUrl: MANAGE,
+    }),
+  clubRequestAwaitingReview: () =>
+    templates.clubRequestAwaitingReview({
+      facultyName: "Dr Rao",
+      clubName: "Photon - Robotics",
+      requesterName: "Asha",
+      requesterEmail: "asha@ds.study.iitm.ac.in",
+      category: "Technical",
+      tagline: "Bots, boards, and Saturday build nights.",
+      reviewUrl: "https://sangam.test/faculty/club-requests",
+      manageUrl: MANAGE,
+    }),
+  clubRequestApproved: () =>
+    templates.clubRequestApproved({
+      name: "Asha",
+      clubName: "Photon - Robotics",
+      adminUrl: "https://sangam.test/admin",
+      manageUrl: MANAGE,
+    }),
+  clubRequestRejected: () =>
+    templates.clubRequestRejected({
+      name: "Asha",
+      clubName: "Photon - Robotics",
+      note: "Overlaps heavily with an existing club.",
+      clubsUrl: "https://sangam.test/app/clubs",
+      manageUrl: MANAGE,
+    }),
+  facultyAccessGranted: () =>
+    templates.facultyAccessGranted({
+      name: "Dr Rao",
+      grantedByName: "Dr Iyer",
+      facultyUrl: "https://sangam.test/faculty",
+      manageUrl: MANAGE,
+    }),
 };
 
 const NAMES = Object.keys(CASES) as TemplateName[];
@@ -255,7 +295,7 @@ const NAMES = Object.keys(CASES) as TemplateName[];
 describe("email templates", () => {
   it("covers every template the app can send", () => {
     // TemplateName is the contract; this asserts the table hasn't drifted.
-    expect(NAMES.length).toBe(26);
+    expect(NAMES.length).toBe(31);
   });
 
   it.each(NAMES)("%s renders a complete email", (name) => {

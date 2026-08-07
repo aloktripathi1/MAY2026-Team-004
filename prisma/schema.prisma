@@ -101,6 +101,8 @@ model User {
   countMeIns             CountMeIn[]
   emailLogs              EmailLog[]
   verificationTokens     EmailVerificationToken[]
+  clubRequests           ClubRequest[]  @relation("ClubRequestRequester")
+  clubRequestsReviewed   ClubRequest[]  @relation("ClubRequestReviewer")
 }
 
 model Club {
@@ -124,6 +126,7 @@ model Club {
   equipment            Equipment[]
   transparencyEntries  TransparencyLogEntry[]
   issues               Issue[]
+  originatingRequests  ClubRequest[]
 }
 
 model Membership {
@@ -270,6 +273,48 @@ model TransparencyLogEntry {
 
   event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
   club  Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+}
+
+enum ClubRequestStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+// A student's proposal for a new club, reviewed by faculty.
+//
+// Before this, a Club row could only come from prisma/seed.ts, and the first
+// Admin of a club with it — so a freshly deployed database had no way for anyone
+// to gain any role through the app. Approving a request creates the Club and the
+// requester's Admin membership together, which is the entry point to the whole
+// role hierarchy.
+//
+// The proposed fields mirror Club rather than referencing it: the Club does not
+// exist until approval, and a rejected request must still keep what was asked for.
+model ClubRequest {
+  id          String            @id @default(cuid())
+  name        String
+  tagline     String
+  category    ClubCategory
+  description String
+  emoji       String            @default("◈")
+  status      ClubRequestStatus @default(Pending)
+  requestedById String
+  reviewedById  String?
+  reviewedAt    DateTime?
+  /// Why it was turned down, shown to the requester.
+  reviewNote  String?
+  /// Set on approval, so the request points at what it became.
+  createdClubId String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  requestedBy User  @relation("ClubRequestRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  reviewedBy  User? @relation("ClubRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdClub Club? @relation(fields: [createdClubId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([requestedById])
 }
 
 enum EmailStatus {

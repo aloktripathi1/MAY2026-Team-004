@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { ClubDiscoveryCard, type DiscoverClub } from "./ClubDiscoveryCard";
 import { DiscoverClubsSection } from "./DiscoverClubsSection";
+import { listClubRequestsForUser } from "@/backend/domain/club-requests";
+import { ProposeClub } from "./ProposeClub";
 
 export const metadata: Metadata = {
   title: "My clubs · Sangam",
@@ -17,10 +19,11 @@ export default async function AppClubs() {
   const session = await requirePageSession();
   const myClubIds = new Set(session.user.memberships.map((m) => m.clubId));
 
-  const [allClubs, profile, pendingMemberships] = await Promise.all([
+  const [allClubs, profile, pendingMemberships, myRequests] = await Promise.all([
     prisma.club.findMany({ orderBy: { name: "asc" } }),
     prisma.user.findUnique({ where: { id: session.user.id } }),
     prisma.membership.findMany({ where: { userId: session.user.id, status: "Pending" } }),
+    listClubRequestsForUser(session.user.id),
   ]);
 
   const pendingClubIds = new Set(pendingMemberships.map((m) => m.clubId));
@@ -37,6 +40,17 @@ export default async function AppClubs() {
   return (
     <>
       <PageHeader title={<>Your <span className="text-secondary">clubs.</span></>} description={`${my.length} you're in. ${discover.length} waiting to be discovered.`} />
+
+      <ProposeClub
+        myRequests={myRequests.map((r) => ({
+          id: r.id,
+          name: r.name,
+          status: r.status,
+          reviewNote: r.reviewNote,
+          clubSlug: r.createdClub?.slug ?? null,
+        }))}
+      />
+
       <div>
         <div className="text-mono-label mb-3">You're a member of</div>
         <div className="grid gap-3 md:grid-cols-2">

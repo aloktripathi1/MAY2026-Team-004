@@ -11,14 +11,54 @@ export const APP_ROLE_HOME: Record<AppRole, string> = {
 };
 
 /**
- * Returns the caller's membership matching `preferredRole`, or `undefined` if they
- * don't hold that role anywhere. Never substitutes a different membership when a
- * specific role was requested — callers rely on `undefined` to reject the request.
+ * Which club roles may act on a given role's surface.
+ *
+ * An Admin outranks a Coordinator, and the domain layer has always agreed —
+ * `requireCoordinatorForClub` (domain/events.ts) and `canManageClub`
+ * (domain/tasks.ts) both accept Coordinator *or* Admin. The pages and Server
+ * Actions did not, so a club Admin could create an event through
+ * POST /api/events yet be redirected away from /coordinator and refused by
+ * createEventAction.
+ *
+ * Harmless while every club came from the seed with both an Admin and
+ * Coordinators. It breaks the moment a club is founded through a club request:
+ * its Admin is the only member, cannot appoint themselves Coordinator (one
+ * membership per user per club), and so could never create the club's first
+ * event or assign its first task from the interface.
+ *
+ * Admin surfaces stay Admin-only — a Coordinator must never inherit upward.
+ */
+export const SURFACE_ROLES: Record<string, string[]> = {
+  Coordinator: ["Coordinator", "Admin"],
+  Admin: ["Admin"],
+};
+
+/**
+ * Finds the membership that lets this user act on `role`'s surface. Prefers an
+ * exact role match, so someone who is Coordinator of one club and Admin of
+ * another lands on the club the surface is actually about.
+ */
+export function resolveSurfaceMembership<T extends { role: string }>(
+  memberships: T[],
+  role: string,
+): T | undefined {
+  const exact = memberships.find((m) => m.role === role);
+  if (exact) return exact;
+
+  const allowed = SURFACE_ROLES[role] ?? [role];
+  return memberships.find((m) => allowed.includes(m.role));
+}
+
+/**
+ * Returns the caller's membership for `preferredRole`'s surface, or `undefined`
+ * if they hold no role that qualifies — callers rely on `undefined` to reject
+ * the request. Role seniority is honoured per SURFACE_ROLES above; it never
+ * substitutes an unrelated, junior membership.
  */
 export function getPrimaryClubMembership(session: Session, preferredRole?: string) {
   const memberships = session.user.memberships;
   if (preferredRole) {
-    return memberships.find((m) => m.role === preferredRole);
+    return resolveSurfaceMembership(memberships, preferredRole);
   }
   return memberships[0];
 }

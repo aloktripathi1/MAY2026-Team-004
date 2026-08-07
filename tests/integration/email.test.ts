@@ -11,6 +11,8 @@
  *   npm run db:up && npm run db:push && npm run db:seed && npm run dev
  *   npm run test:integration
  */
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { prisma } from "@/backend/db/prisma";
 import { sendEmail } from "@/backend/email/client";
 import {
@@ -35,6 +37,7 @@ import {
   isApiAvailable,
   reportCase,
   requireApiAvailable,
+  SEEDED_ACCOUNTS,
   uniqueIdentity,
 } from "./helpers";
 
@@ -248,6 +251,35 @@ describe("sendEmail", () => {
 });
 
 describe("notification triggers", () => {
+  /**
+   * Guards the bug where only one of the two registration paths mailed.
+   * `POST /api/events/[id]/register` went through registerForEvent, while the
+   * "Count Me In" button went through toggleCountMeInAction and sent nothing —
+   * so a member clicking the button in the app got silence. Server Actions
+   * aren't reachable over HTTP, so this asserts the structural invariant
+   * instead: every module that creates a CountMeIn row must also trigger the
+   * confirmation.
+   */
+  it("sends a confirmation from every code path that registers someone", async () => {
+    const modules = ["backend/domain/countMeIn.ts", "backend/domain/events.ts"];
+    const missing: string[] = [];
+
+    for (const relative of modules) {
+      const source = await readFile(join(process.cwd(), relative), "utf8");
+      if (source.includes("countMeIn.create") && !source.includes("notifyRegistrationConfirmed")) {
+        missing.push(relative);
+      }
+    }
+
+    reportCase(
+      "every registration path notifies",
+      { modules },
+      { pathsMissingTheEmail: [] },
+      { pathsMissingTheEmail: missing },
+      () => expect(missing).toEqual([]),
+    );
+  });
+
   it("confirms to the applicant and alerts the club's admins", async () => {
     const user = await makeUser();
     const summary = await notifyMembershipApplied(user.id, CLUB_IDS.codechef);
@@ -551,6 +583,111 @@ describe("scheduled sweeps", () => {
         for (const row of perRecipient) expect(row._count.to).toBe(1);
       },
     );
+  });
+});
+
+describe("email verification gate", () => {
+  /**
+   * The gate is env-driven and the app under test runs in its own process, so
+   * these assert the two halves that must hold regardless of the flag:
+   * every account can be verified, and no account is left unverifiable.
+   */
+  it("leaves no seeded login unable to sign in once the gate is enabled", async () => {
+    // Scoped to the seeded accounts on purpose: this suite creates its own
+    // unverified throwaway users, so a global count would always fail. These
+    // are the logins that must survive the flag being switched on.
+    const emails = Object.values(SEEDED_ACCOUNTS).map((a) => a.email);
+    const rows = await prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { email: true, emailVerified: true },
+    });
+    const unverified = rows.filter((r) => !r.emailVerified).map((r) => r.email);
+
+    reportCase(
+      "seeded accounts are verified",
+      { accounts: emails },
+      { found: emails.length, unverified: [] },
+      { found: rows.length, unverified },
+      () => {
+        expect(rows).toHaveLength(emails.length);
+        expect(unverified).toEqual([]);
+      },
+    );
+  });
+
+  /**
+   * Production deploys with `prisma db push` (vercel.json), which syncs schema
+   * structure and never runs migration SQL — so the emailVerified backfill
+   * migration does not execute there. The gate therefore cannot rely on it:
+   * it distinguishes "asked and ignored" from "never asked" by whether a
+   * verification token was ever issued.
+   */
+  it("treats an account that was never asked to verify as verified", async () => {
+    const legacy = await makeUser();
+    expect(legacy.emailVerified).toBeNull();
+
+    const tokens = await prisma.emailVerificationToken.count({ where: { userId: legacy.id } });
+
+    reportCase(
+      "legacy account has no verification token",
+      { userId: legacy.id },
+      { emailVerified: null, tokensEverIssued: 0 },
+      { emailVerified: legacy.emailVerified, tokensEverIssued: tokens },
+      () => {
+        // No token was ever issued, so the gate must not hold this account —
+        // it was never able to comply.
+        expect(tokens).toBe(0);
+      },
+    );
+  });
+
+  it("records a token for every account created since verification shipped", async () => {
+    const identity = uniqueIdentity("23w");
+    createdEmails.push(identity.email);
+
+    const res = await client.post("/api/auth/signup", identity);
+    expect(res.status).toBe(201);
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: identity.email } });
+    createdUserIds.push(user.id);
+    const tokens = await prisma.emailVerificationToken.count({ where: { userId: user.id } });
+
+    reportCase(
+      "new signup is asked to verify",
+      { email: identity.email },
+      { tokensEverIssued: ">=1" },
+      { tokensEverIssued: tokens },
+      // This is what makes the gate able to hold a new account: signup always
+      // issues a token before the account can ever sign in.
+      () => expect(tokens).toBeGreaterThanOrEqual(1),
+    );
+  });
+
+  it("re-issues a link without revealing whether the account exists", async () => {
+    const user = await makeUser();
+
+    const known = await client.post("/api/auth/resend-verification", { email: user.email });
+    const unknown = await client.post("/api/auth/resend-verification", {
+      email: "definitely-nobody@ds.study.iitm.ac.in",
+    });
+
+    reportCase(
+      "POST /api/auth/resend-verification",
+      { known: user.email, unknown: "definitely-nobody@ds.study.iitm.ac.in" },
+      { bothStatuses: 200, bothBodiesIdentical: true },
+      { known: known.status, unknown: unknown.status },
+      () => {
+        expect(known.status).toBe(200);
+        expect(unknown.status).toBe(200);
+        // Identical bodies: no enumeration oracle.
+        expect(known.body.data.message).toBe(unknown.body.data.message);
+      },
+    );
+  });
+
+  it("rejects a malformed address", async () => {
+    const res = await client.post("/api/auth/resend-verification", { email: "not-an-email" });
+    expect(res.status).toBe(400);
   });
 });
 

@@ -31,6 +31,8 @@ function mapApproval(approval: string) {
 }
 
 async function main() {
+  const now = new Date();
+
   // Wipe in FK-safe order so re-seed is idempotent.
   await prisma.countMeIn.deleteMany();
   await prisma.contribution.deleteMany();
@@ -77,6 +79,10 @@ async function main() {
       hashedPassword: passwordHash,
       interests: JSON.stringify(member.interests),
       isFaculty: false,
+      // Seeded accounts are demo logins that nobody can confirm by email, so
+      // they ship verified — otherwise REQUIRE_EMAIL_VERIFICATION locks every
+      // one of them out (#113 follow-up).
+      emailVerified: now,
     })),
   });
 
@@ -110,6 +116,7 @@ async function main() {
       hashedPassword: passwordHash,
       interests: "[]",
       isFaculty: true,
+      emailVerified: now,
     })),
   });
 
@@ -291,6 +298,7 @@ async function main() {
         hashedPassword,
         isFaculty: account.isFaculty,
         interests: "[]",
+        emailVerified: now,
       },
     });
     if (account.membership) {

@@ -6,7 +6,12 @@ import { authenticateUser } from "@/backend/auth/authenticate-user";
 import { loginSchema, safeRedirectPath } from "@/backend/auth/login-schema";
 import { homePathForUser } from "@/backend/auth/roles";
 
-export type LoginState = { error?: string };
+/**
+ * `code` lets the form react to *why* a login failed, not just show the text —
+ * an unverified address needs a "resend the link" affordance, a wrong password
+ * doesn't.
+ */
+export type LoginState = { error?: string; code?: "EMAIL_UNVERIFIED" };
 
 /**
  * Form-based login (existing UI). Shares validation + auth with
@@ -27,7 +32,10 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   const { email, password, callbackUrl } = parsed.data;
   const result = await authenticateUser(email, password);
   if (!result.ok) {
-    return { error: result.message };
+    return {
+      error: result.message,
+      ...(result.code === "EMAIL_UNVERIFIED" ? { code: result.code } : {}),
+    };
   }
 
   setAuthCookies(result.user.id);

@@ -4,7 +4,7 @@
 
 Sangam is a community and society management platform: a single source of truth for membership, events, venues, equipment, tasks, and communication, built to replace the WhatsApp groups, Google Forms, and spreadsheets clubs typically end up patching together.
 
-**Live demo:** [try-sangam.vercel.app](https://try-sangam.vercel.app). See [Demo accounts](#demo-accounts) to sign in.
+**Live demo:** [sangam-club.com](https://sangam-club.com). See [Demo accounts](#demo-accounts) to sign in.
 
 ---
 
@@ -15,6 +15,7 @@ Sangam is a community and society management platform: a single source of truth 
 - [Team](#team-dhurandhar-may2026-team-004)
 - [Getting started](#getting-started)
 - [Demo accounts](#demo-accounts)
+- [Roles and provisioning](#roles-and-provisioning)
 - [Roles and access](#roles-and-access)
 - [API docs](#api-docs-openapi--swagger)
 - [Testing](#testing)
@@ -117,12 +118,13 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 | `EMAIL_ALLOWLIST` | Comma-separated addresses or domains that may receive real mail. Anything else is skipped and logged. Empty means no restriction. |
 | `APP_URL` | Absolute origin used to build links inside emails. `NEXTAUTH_URL` is for auth callbacks; this is what recipients click. |
 | `CRON_SECRET` | Bearer token for the scheduled-email routes under `/api/cron/email/*`. Without it those routes refuse every request. |
+| `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. Off by default — see [Requiring verified email](#requiring-verified-email) before enabling. |
 
 ---
 
 ## Demo accounts
 
-Log in with any of these at [try-sangam.vercel.app/login](https://try-sangam.vercel.app/login) (or locally at `/login`). They're created by `prisma/seed.ts`.
+Log in with any of these at [sangam-club.com/login](https://sangam-club.com/login) (or locally at `/login`). They're created by `prisma/seed.ts`.
 
 **All-in-one account.** One person, every role at once (Admin on CodeChef, Coordinator on E-Cell, Volunteer on Sarga, Member on Paradox, plus Faculty), so you can switch roles from the sidebar without signing in as five different people:
 
@@ -141,6 +143,77 @@ Log in with any of these at [try-sangam.vercel.app/login](https://try-sangam.ver
 | Yalla Ashish Chandra Reddy | Member | 23f3003728@ds.study.iitm.ac.in | Ashish@2026 |
 
 Roll numbers match the email's local part (e.g. `23f3003225`). Club roles: CodeChef (Admin), E-Cell (Coordinator), Sarga (Volunteer), Paradox (Member).
+
+---
+
+## Roles and provisioning
+
+Roles are **per-club** (`Membership.role`) except faculty, which is
+institution-wide (`User.isFaculty`). Signup produces a plain account with no
+club, so every elevated role has to be granted by someone:
+
+| Role | Granted by |
+|---|---|
+| Member / Volunteer / Coordinator of a club | that club's **Admin**, from `/admin/members` — set when adding someone, or changed later from the role control on each row |
+| **Club Admin** | faculty approving the club proposal (first admin), or the outgoing admin via `/admin/handover` |
+| **Faculty** | another faculty member at `/faculty/club-requests`, or `scripts/bootstrap-faculty.ts` for the first one |
+
+### The first faculty account
+
+Faculty approve events for every club and appoint other faculty, so it is
+deliberately **not reachable from the web** — no signup option, nothing to trick.
+The first one is granted from the command line, which requires database access:
+
+```bash
+npx tsx scripts/bootstrap-faculty.ts you@ds.study.iitm.ac.in
+```
+
+The account must already exist, so sign up in the app first. `--list` shows who
+currently has faculty. Against production, pull that database's URL first:
+
+```bash
+npx vercel env pull .env.production.local --environment=production
+```
+
+```bash
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production.local | cut -d= -f2- | tr -d '"')" npx tsx scripts/bootstrap-faculty.ts you@ds.study.iitm.ac.in
+```
+
+After that, faculty appoint each other in the app. Revoking is guarded: you
+can't remove your own access, and you can't remove the last faculty account —
+either would leave the institution with no reviewer and no way to appoint one
+short of another bootstrap run.
+
+### Changing someone's role
+
+An Admin changes a member's role from the dropdown on their row in
+`/admin/members`, or over REST with `PATCH /api/clubs/{id}/members/{memberId}`
+(which now accepts `role`, `status`, or both). The member is emailed, unless
+they're still `Pending` — telling someone their role changed before they've been
+told they're in reads as nonsense.
+
+**Admin is not assignable this way.** A club has exactly one Admin, and
+`/admin/handover` owns that move because it demotes the outgoing Admin in the
+same transaction; allowing it here would let a club end up with two Admins or
+none.
+
+### New clubs
+
+Students propose clubs from **My clubs → Propose a club**; faculty review them at
+**/faculty/club-requests**. Approving creates the `Club` **and** the proposer's
+Admin membership in one transaction — a club with no admin is precisely the dead
+end this flow exists to remove, and would be unfixable through the UI.
+
+The proposer's presentation fields are derived rather than asked for: the slug is
+generated from the name (suffixed if taken), and the hue and banner gradient come
+from a hash of the name, matching the seeded clubs. A proposal is refused if the
+club already exists, if an identical one is already pending, or if the student
+already has three open. Both decisions email the proposer, and rejections can
+carry a short reason.
+
+Before this existed, `Club` rows and the first Admin of a club could only come
+from `prisma/seed.ts`, and `isFaculty` was never written outside it — so a freshly
+deployed database had clubs nobody could administer and no way to appoint anyone.
 
 ---
 
@@ -338,6 +411,44 @@ curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/ema
 
 Add `?at=2026-09-17T09:00:00Z` to drive the windows without waiting for the clock.
 
+### Requiring verified email
+
+By default a new account is signed straight in and `User.emailVerified` is only
+a record, not a gate. Set `REQUIRE_EMAIL_VERIFICATION=true` to enforce it:
+
+- signup no longer returns a session; it redirects to `/login?verify=sent`
+- `POST /api/auth/login` answers **403 `EMAIL_UNVERIFIED`** until confirmed
+  (deliberately distinct from `INVALID_CREDENTIALS` — the password *was* right,
+  and a generic message would send people to reset a password that works)
+- the login form offers "Send me a new verification link", backed by
+  `POST /api/auth/resend-verification`
+
+⚠️ **Do not enable this while `EMAIL_ALLOWLIST` is set.** A student who signs up
+from an address outside the allowlist never receives a link, and would have no
+way to sign in — the gate would lock out exactly the people it's meant to
+onboard. Enable it in the same change that clears the allowlist.
+
+Enabling the gate never strands an existing login. `prisma/seed.ts` stamps the
+seeded demo accounts, migration `20260806160000_backfill_email_verified` settles
+old rows for anyone deploying with `prisma migrate deploy` — **and the gate does
+not depend on either**.
+
+That last part matters because production deploys with `prisma db push`
+(`vercel.json`), which syncs schema structure and never executes migration SQL,
+so the backfill does not run there. Instead the gate distinguishes the two
+meanings of a null `emailVerified` by asking whether a verification token was
+ever issued for that account: signup always issues one before the account can
+sign in, so "no token, ever" identifies exactly the accounts that predate the
+feature. Those are let through and stamped on first sign-in, so it resolves once
+per account rather than on every attempt.
+
+It fails open in one rare case by design — if issuing the token itself failed,
+the account is admitted. Locking someone out because our own mail system broke
+is the worse of the two outcomes.
+
+The resend endpoint answers identically for known and unknown addresses so it
+can't be used to enumerate accounts.
+
 ### Preferences and unsubscribe
 
 `User.notificationPrefs` gained five email flags (`emailAnnouncements`, `emailEvents`,
@@ -408,7 +519,7 @@ nothing is rejected while you watch the reports.
 |---|---|
 | `RESEND_API_KEY` | a fresh key from [resend.com/api-keys](https://resend.com/api-keys) |
 | `EMAIL_FROM` | `Sangam <no-reply@sangam-club.com>` |
-| `APP_URL` | `https://try-sangam.vercel.app` — the app still serves from Vercel |
+| `APP_URL` | `https://sangam-club.com` — must match the origin the app is actually served from, or every link in every email is dead |
 | `EMAIL_ALLOWLIST` | keep it pinned to your own address for a first live round |
 | `EMAIL_ENABLED` | `true` |
 | `CRON_SECRET` | `openssl rand -hex 32`, or the sweeps stay dark |
@@ -452,7 +563,8 @@ app/
   (coordinator)/coordinator/  dashboard (+ New Event popup), all-events history, event
                     dashboard (registration, check-in, edit details), volunteers
   (volunteer)/volunteer/      task list with inline status updates, events (Count Me In)
-  (faculty)/faculty/          oversight dashboard, event approvals, club activity
+  (faculty)/faculty/          oversight dashboard, event approvals, club activity, club
+                    proposals (+ faculty access management)
   api/auth/[...nextauth]/     unrelated stub, see Tech stack above
   api/openapi/                serves docs/openapi.yaml
   (public)/api-docs/          local Swagger UI (Try it out)
@@ -488,6 +600,9 @@ backend/                  server-only code, never imported by client components
                               isEventPast, etc.)
     approvals.ts, countMeIn.ts, tasks.ts, events.ts, membership.ts   Server Actions and
                               domain logic shared across more than one route
+    club-requests.ts         student club proposals; approval creates the Club and its
+                              first Admin together (see Roles and provisioning)
+    faculty.ts               grant/revoke institution-wide faculty access
   email/                    all outbound email, see Email notifications below
     client.ts                sendEmail() — the only place mail leaves the app: preference
                               enforcement, allowlist, dry-run, idempotency claim, audit row

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { setAuthCookies } from "@/backend/auth/session-cookies";
 import { createUserAccount } from "@/backend/auth/create-user";
 import { signupSchema } from "@/backend/auth/signup-schema";
+import { requiresEmailVerification } from "@/backend/auth/email-verification";
 
 export type SignupState = { error?: string; ok?: boolean };
 
@@ -27,6 +28,13 @@ export async function signupAction(_prevState: SignupState, formData: FormData):
   const result = await createUserAccount(parsed.data);
   if (!result.ok) {
     return { error: result.message };
+  }
+
+  // With verification required, signing the new account straight in would make
+  // the emailed link pointless — you'd already be inside the app. Send them to
+  // the login page with a note instead.
+  if (requiresEmailVerification()) {
+    redirect("/login?verify=sent");
   }
 
   setAuthCookies(result.user.id);
