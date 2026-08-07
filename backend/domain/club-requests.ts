@@ -78,6 +78,7 @@ export type ClubRequestInput = {
   category: ClubCategory;
   description: string;
   emoji?: string;
+  photo?: string;
 };
 
 export async function submitClubRequest(userId: string, input: ClubRequestInput) {
@@ -124,6 +125,7 @@ export async function submitClubRequest(userId: string, input: ClubRequestInput)
       category: input.category,
       description: input.description.trim(),
       ...(input.emoji?.trim() ? { emoji: input.emoji.trim() } : {}),
+      ...(input.photo ? { photo: input.photo } : {}),
       requestedById: userId,
     },
   });
@@ -189,6 +191,7 @@ export async function approveClubRequest(requestId: string, reviewerId: string) 
           emoji: request.emoji,
           hue,
           banner: clubGradient(hue),
+          photo: request.photo,
           founded: String(new Date().getFullYear()),
           active: true,
         },

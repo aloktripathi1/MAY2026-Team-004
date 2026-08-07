@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CalendarDays, IdCard, Mail } from "lucide-react";
 import { requirePageSession } from "@/backend/auth/page-session";
 import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS, parseInterests } from "@/lib/interests";
@@ -30,7 +31,7 @@ export default async function ProfilePage() {
       <PageHeader title={<>Your <span className="text-secondary">profile.</span></>} />
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="night-panel rounded-3xl p-6 text-center">
+        <div className="night-panel self-start rounded-3xl p-6 text-center">
           <div className="flex justify-center">
             {image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -44,9 +45,29 @@ export default async function ProfilePage() {
             )}
           </div>
           <div className="mt-4 text-3xl font-black leading-none tracking-[-0.05em] text-white">{user!.name}</div>
-          {primaryMembership && (
-            <div className="text-mono-label mt-2">{primaryMembership.club.name} · {primaryMembership.role}</div>
+          {(primaryMembership || user!.isFaculty) && (
+            <div className="text-mono-label mt-2">
+              {primaryMembership ? `${primaryMembership.club.name} · ${primaryMembership.role}` : "Faculty"}
+            </div>
           )}
+
+          <div className="mt-6 space-y-3 border-t border-hairline pt-5 text-left">
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4 shrink-0" />
+              <span className="truncate">{user!.email}</span>
+            </div>
+            {user!.rollNumber && (
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <IdCard className="h-4 w-4 shrink-0" />
+                <span>{user!.rollNumber}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span>Joined {user!.createdAt.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
+            </div>
+          </div>
+
           <div className="mt-6">
             <EditDetailsModal name={user!.name} interests={interests} image={image} />
           </div>

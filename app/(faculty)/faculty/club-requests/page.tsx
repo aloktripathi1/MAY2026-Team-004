@@ -38,6 +38,7 @@ export default async function FacultyClubRequests({ searchParams }: { searchPara
       category: r.category,
       description: r.description,
       emoji: r.emoji,
+      photo: r.photo,
       status: r.status,
       requesterName: r.requestedBy.name,
       requesterEmail: r.requestedBy.email,

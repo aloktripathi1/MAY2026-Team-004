@@ -13,6 +13,7 @@ export type ClubRequestRow = {
   category: string;
   description: string;
   emoji: string;
+  photo: string | null;
   status: string;
   requesterName: string;
   requesterEmail: string;
@@ -79,13 +80,23 @@ export function ClubRequestReview({ requests }: { requests: ClubRequestRow[] }) 
         {requests.map((request) => (
           <div key={request.id} className="night-panel rounded-2xl p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2.5">
-                  <span aria-hidden className="text-xl">{request.emoji}</span>
-                  <h3 className="text-lg font-semibold text-white">{request.name}</h3>
-                  <StatusPill tone={statusTone(request.status)}>{request.status}</StatusPill>
+              <div className="flex min-w-0 gap-3">
+                {request.photo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={request.photo}
+                    alt=""
+                    className="h-12 w-12 shrink-0 rounded-xl border border-white/[0.12] object-cover"
+                  />
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    {!request.photo && <span aria-hidden className="text-xl">{request.emoji}</span>}
+                    <h3 className="text-lg font-semibold text-white">{request.name}</h3>
+                    <StatusPill tone={statusTone(request.status)}>{request.status}</StatusPill>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{request.tagline}</p>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{request.tagline}</p>
               </div>
               <span className="text-mono-label whitespace-nowrap">{request.category}</span>
             </div>

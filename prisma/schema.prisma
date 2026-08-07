@@ -298,6 +298,7 @@ model ClubRequest {
   category    ClubCategory
   description String
   emoji       String            @default("◈")
+  photo       String?
   status      ClubRequestStatus @default(Pending)
   requestedById String
   reviewedById  String?

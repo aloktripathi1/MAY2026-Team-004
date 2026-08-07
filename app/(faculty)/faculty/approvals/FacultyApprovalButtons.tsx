@@ -42,14 +42,27 @@ export function FacultyApprovalButtons({ eventId, layout = "vertical" }: Faculty
 
   return (
     <div className={containerClass}>
-      <Btn size="sm" className="w-full md:w-auto" disabled={Boolean(choice) || pending} onClick={() => decide("approved", "Approved")}>
+      <Btn
+        size="sm"
+        className="w-full md:w-auto"
+        disabled={Boolean(choice) || pending}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          decide("approved", "Approved");
+        }}
+      >
         <Check className="h-4 w-4" /> {choice ?? "Approve"}
       </Btn>
       <Btn
         size="sm"
         variant="outline"
         disabled={Boolean(choice) || pending}
-        onClick={() => decide("rejected", "Rejected")}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          decide("rejected", "Rejected");
+        }}
         className={`w-full md:w-auto ${choice === "Rejected" ? "border-destructive/45 bg-destructive/[0.14] text-destructive" : ""}`}
       >
         <X className="h-4 w-4" /> {choice === "Rejected" ? choice : "Reject"}

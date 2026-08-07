@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { requirePageSession } from "@/backend/auth/page-session";
 import { ArrowLeft, CalendarClock, MapPin, Users2 } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
-import { StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
@@ -71,9 +70,6 @@ export default async function EventDetail({ params }: { params: { id: string } }
         <div className="relative flex min-h-[280px] flex-col justify-end p-8 md:min-h-[380px] md:p-12">
           <div className="mb-3 flex gap-1.5">
             {normalizeEventTags(event.tags).map((t) => <span key={t} className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur">{t}</span>)}
-            <StatusPill tone={event.approval === "approved" ? "green" : event.approval === "pending" ? "amber" : event.approval === "rejected" ? "magenta" : "slate"}>
-              {event.approval === "approved" ? "Approved" : event.approval === "pending" ? "Pending approval" : event.approval === "rejected" ? "Rejected" : "No approval needed"}
-            </StatusPill>
           </div>
           <div className="text-mono-label mb-2 text-white/80">{event.club.name}</div>
           <h1 className="text-display text-4xl leading-[1] text-white md:text-6xl">{event.title}</h1>
@@ -94,18 +90,23 @@ export default async function EventDetail({ params }: { params: { id: string } }
           </div>
 
           <div className="night-panel rounded-2xl p-6">
-            <div className="text-mono-label mb-4">Who's going</div>
+            <div className="text-mono-label mb-2">Who's going</div>
             {attendees.length === 0 ? (
               <p className="text-sm text-muted-foreground">No one's counted themselves in yet - be the first.</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {attendees.map((r) => (
-                  <div key={r.id} title={r.user.name} className="ring-2 ring-background">
-                    <Avatar name={r.user.name} image={r.user.image} size="sm" />
+              <div className="flex -space-x-1">
+                {attendees.map((r, i) => (
+                  <div
+                    key={r.id}
+                    title={r.user.name}
+                    className="rounded-lg shadow-[0_3px_3px_-2px_oklch(0_0_0/55%)] transition-transform hover:-translate-y-0.5"
+                    style={{ zIndex: attendees.length - i }}
+                  >
+                    <Avatar name={r.user.name} image={r.user.image} size="md" showBorder={false} />
                   </div>
                 ))}
                 {extraCount > 0 && (
-                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.06] text-xs font-semibold text-muted-foreground ring-2 ring-background">
+                  <div className="relative z-0 grid h-10 w-10 place-items-center rounded-lg bg-white/[0.06] text-xs font-semibold text-muted-foreground shadow-[0_3px_3px_-2px_oklch(0_0_0/55%)]">
                     +{extraCount}
                   </div>
                 )}
