@@ -119,6 +119,7 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 | `APP_URL` | Absolute origin used to build links inside emails. `NEXTAUTH_URL` is for auth callbacks; this is what recipients click. |
 | `CRON_SECRET` | Bearer token for the scheduled-email routes under `/api/cron/email/*`. Without it those routes refuse every request. |
 | `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. Off by default — see [Requiring verified email](#requiring-verified-email) before enabling. |
+| `ALLOWED_EMAIL_DOMAINS` | Email domains that may create an account, comma-separated (subdomains included). Defaults to `ds.study.iitm.ac.in`. Distinct from `EMAIL_ALLOWLIST`: this is who may **sign up**, that is who may **receive** mail. |
 
 ---
 
