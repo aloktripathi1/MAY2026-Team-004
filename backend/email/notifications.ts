@@ -95,6 +95,27 @@ export async function notifyEmailVerification(
   });
 }
 
+/** "Forgot password" link. Transactional: no preference can switch it off. */
+export async function notifyPasswordReset(
+  user: { id: string; name: string; email: string },
+  token: string,
+  expiresInHours: number,
+): Promise<SendResult> {
+  const rendered = templates.resetPassword({
+    name: user.name,
+    resetUrl: emailLinks.resetPassword(token),
+    expiresInHours,
+  });
+  return runOne({
+    to: user.email,
+    userId: user.id,
+    template: "resetPassword",
+    rendered,
+    // One key per issued token, so re-requesting a reset always mails.
+    dedupeKey: dedupeKey("resetPassword", user.id, token.slice(0, 12)),
+  });
+}
+
 /** A member applied to join a club: confirm to them, alert the club's admins. */
 export async function notifyMembershipApplied(userId: string, clubId: string): Promise<NotifySummary> {
   const [applicant, club, admins] = await Promise.all([

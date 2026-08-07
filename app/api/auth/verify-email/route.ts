@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { consumeVerificationToken } from "@/backend/auth/email-verification";
 import { escapeHtml } from "@/backend/email/render";
+import { setAuthCookies } from "@/backend/auth/session-cookies";
+import { getCurrentUserById } from "@/backend/auth/get-current-user";
 
 /**
  * Landing page for the link in the verification email. Recipients click this in
@@ -50,11 +52,12 @@ export async function GET(request: Request) {
     return page(title, result.message, result.code === "INVALID" ? 400 : 410, "/login");
   }
 
-  return page(
-    result.alreadyVerified ? "Already verified" : "Email verified",
-    result.alreadyVerified
-      ? "This address was already confirmed. Nothing else to do."
-      : "Thanks — your email address is confirmed. Sangam can now reach you about your clubs and events.",
-    200,
-  );
+  // Frictionless onboarding: clicking the link both confirms the address and
+  // signs the user in, landing them straight on their dashboard — no separate
+  // login step.
+  setAuthCookies(result.userId);
+  const current = await getCurrentUserById(result.userId);
+  const home = current.ok ? current.user.home : "/app";
+
+  return NextResponse.redirect(new URL(home, request.url));
 }

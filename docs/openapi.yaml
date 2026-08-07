@@ -82,14 +82,12 @@ paths:
                 value:
                   name: Ananya Rao
                   email: 23s1000999@ds.study.iitm.ac.in
-                  rollNumber: "23s1000999"
                   password: SecurePass1
               nonInstitutional:
                 summary: Rejected - wrong email domain
                 value:
                   name: Outside User
                   email: student@gmail.com
-                  rollNumber: "23s1000888"
                   password: SecurePass1
       responses:
         "201":
@@ -1749,7 +1747,6 @@ components:
       required:
         - name
         - email
-        - rollNumber
         - password
       additionalProperties: false
       properties:
@@ -1763,14 +1760,11 @@ components:
           format: email
           description: |
             Institutional email only. Must end with @ds.study.iitm.ac.in.
-            Case-insensitive input; stored lowercase.
+            Case-insensitive input; stored lowercase. The roll number is not
+            submitted separately — it's derived from the local part of this
+            address (everything before the @) and returned in the response.
           pattern: "^[^@\\s]+@ds\\.study\\.iitm\\.ac\\.in$"
           example: 23s1000999@ds.study.iitm.ac.in
-        rollNumber:
-          type: string
-          minLength: 1
-          description: Unique institutional roll number
-          example: "23s1000999"
         password:
           type: string
           format: password

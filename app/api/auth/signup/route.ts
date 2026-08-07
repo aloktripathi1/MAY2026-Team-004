@@ -53,7 +53,9 @@ export async function POST(request: Request) {
         email: result.user.email,
         rollNumber: result.user.rollNumber,
         emailVerificationRequired: verificationRequired,
-        next: verificationRequired ? "/login?verify=sent" : "/signup/onboarding",
+        next: verificationRequired
+          ? `/signup/check-email?email=${encodeURIComponent(result.user.email)}`
+          : "/signup/onboarding",
       },
       { status: 201, userStory: USER_STORY },
     );

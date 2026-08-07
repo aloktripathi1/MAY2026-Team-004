@@ -17,7 +17,6 @@ export async function signupAction(_prevState: SignupState, formData: FormData):
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
-    rollNumber: formData.get("rollNumber"),
     password: formData.get("password"),
   });
 
@@ -32,9 +31,10 @@ export async function signupAction(_prevState: SignupState, formData: FormData):
 
   // With verification required, signing the new account straight in would make
   // the emailed link pointless — you'd already be inside the app. Send them to
-  // the login page with a note instead.
+  // a dedicated "check your email" page instead; clicking the link in the email
+  // (see app/api/auth/verify-email/route.ts) is what signs them in.
   if (requiresEmailVerification()) {
-    redirect("/login?verify=sent");
+    redirect(`/signup/check-email?email=${encodeURIComponent(result.user.email)}`);
   }
 
   setAuthCookies(result.user.id);

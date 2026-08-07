@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { prisma } from "@/backend/db/prisma";
-import type { SignupInput } from "@/backend/auth/signup-schema";
+import { deriveRollNumber, type SignupInput } from "@/backend/auth/signup-schema";
 import { sendVerificationEmail } from "@/backend/auth/email-verification";
 
 export type CreateUserResult =
@@ -35,8 +35,9 @@ export async function createUserAccount(input: SignupInput): Promise<CreateUserR
     };
   }
 
+  const rollNumber = deriveRollNumber(input.email);
   const existingRoll = await prisma.user.findUnique({
-    where: { rollNumber: input.rollNumber },
+    where: { rollNumber },
   });
   if (existingRoll) {
     return {
@@ -51,7 +52,7 @@ export async function createUserAccount(input: SignupInput): Promise<CreateUserR
     data: {
       name: input.name,
       email: input.email,
-      rollNumber: input.rollNumber,
+      rollNumber,
       hashedPassword,
       interests: "[]",
     },

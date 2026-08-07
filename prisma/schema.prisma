@@ -101,6 +101,7 @@ model User {
   countMeIns             CountMeIn[]
   emailLogs              EmailLog[]
   verificationTokens     EmailVerificationToken[]
+  passwordResetTokens    PasswordResetToken[]
   clubRequests           ClubRequest[]  @relation("ClubRequestRequester")
   clubRequestsReviewed   ClubRequest[]  @relation("ClubRequestReviewer")
 }
@@ -352,6 +353,21 @@ model EmailLog {
 // Single-use signup verification links. Only the SHA-256 hash of the token is
 // stored, so a database leak can't be replayed as a valid verification link.
 model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Single-use "forgot password" links. Only the SHA-256 hash of the token is
+// stored, same reasoning as EmailVerificationToken above.
+model PasswordResetToken {
   id         String    @id @default(cuid())
   tokenHash  String    @unique
   userId     String

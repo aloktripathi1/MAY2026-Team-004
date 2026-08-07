@@ -18,6 +18,7 @@ export const emailLinks = {
   issues: () => absoluteUrl("/app/issues"),
   profile: () => absoluteUrl("/app/profile"),
   verify: (token: string) => absoluteUrl(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
+  resetPassword: (token: string) => absoluteUrl(`/reset-password?token=${encodeURIComponent(token)}`),
   adminDashboard: () => absoluteUrl("/admin"),
   adminApprovals: () => absoluteUrl("/admin/approvals"),
   adminIssues: () => absoluteUrl("/admin/issues"),

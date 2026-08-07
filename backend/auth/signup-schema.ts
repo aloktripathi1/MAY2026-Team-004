@@ -72,8 +72,16 @@ export const institutionalEmailSchema = z
 export const signupSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   email: institutionalEmailSchema,
-  rollNumber: z.string().trim().min(1, "Roll number is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
+
+/**
+ * Roll number is not asked for separately — it's the local part of the
+ * institutional email (e.g. `23f1001234@ds.study.iitm.ac.in` ->
+ * `23f1001234`), which is already validated and unique to the account.
+ */
+export function deriveRollNumber(email: string): string {
+  return email.slice(0, email.lastIndexOf("@"));
+}

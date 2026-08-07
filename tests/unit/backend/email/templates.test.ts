@@ -19,6 +19,12 @@ const CASES: Record<TemplateName, () => RenderedEmail> = {
       manageUrl: MANAGE,
       expiresInHours: 24,
     }),
+  resetPassword: () =>
+    templates.resetPassword({
+      name: "Asha",
+      resetUrl: "https://sangam.test/reset-password?token=t",
+      expiresInHours: 1,
+    }),
   membershipApplicationReceived: () =>
     templates.membershipApplicationReceived({
       name: "Asha",
@@ -295,7 +301,7 @@ const NAMES = Object.keys(CASES) as TemplateName[];
 describe("email templates", () => {
   it("covers every template the app can send", () => {
     // TemplateName is the contract; this asserts the table hasn't drifted.
-    expect(NAMES.length).toBe(31);
+    expect(NAMES.length).toBe(32);
   });
 
   it.each(NAMES)("%s renders a complete email", (name) => {

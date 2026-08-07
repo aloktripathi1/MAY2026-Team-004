@@ -20,6 +20,7 @@ export type RenderedEmail = {
 export type TemplateName =
   // Auth & membership
   | "verifyEmail"
+  | "resetPassword"
   | "membershipApplicationReceived"
   | "membershipApproved"
   | "membershipRejected"
@@ -97,6 +98,20 @@ export function verifyEmail(data: { name: string; verifyUrl: string; manageUrl: 
     note: `This link expires in ${data.expiresInHours} hours and can only be used once. If you didn't create a Sangam account, you can ignore this email.`,
   });
   return { subject: "Confirm your Sangam email address", html, text, category: null };
+}
+
+export function resetPassword(data: { name: string; resetUrl: string; expiresInHours: number }): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: "Reset your password",
+    preview: "Set a new password for your Sangam account.",
+    paragraphs: [
+      `Hi ${data.name}, we received a request to reset the password on your Sangam account.`,
+      "If this was you, choose a new password using the button below.",
+    ],
+    button: { label: "Reset my password", url: data.resetUrl },
+    note: `This link expires in ${data.expiresInHours} hour${data.expiresInHours === 1 ? "" : "s"} and can only be used once. If you didn't request this, you can ignore this email — your password won't change.`,
+  });
+  return { subject: "Reset your Sangam password", html, text, category: null };
 }
 
 export function membershipApplicationReceived(data: { name: string; clubName: string; manageUrl: string; clubsUrl: string }): RenderedEmail {
