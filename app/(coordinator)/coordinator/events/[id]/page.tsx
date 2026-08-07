@@ -8,8 +8,11 @@ import { NewEventModal } from "@/components/coordinator/NewEventModal";
 import { EditDetailsButton } from "./EditDetailsButton";
 import { ParticipantList } from "./ParticipantList";
 
-async function getEventForCoordinator(slug: string, clubId: string) {
-  const event = await prisma.event.findUnique({ where: { slug } });
+// Accepts the slug or the id; the club check below is what actually scopes it.
+async function getEventForCoordinator(slugOrId: string, clubId: string) {
+  const event = await prisma.event.findFirst({
+    where: { OR: [{ slug: slugOrId }, { id: slugOrId }] },
+  });
   if (!event || event.clubId !== clubId) return null;
   return event;
 }

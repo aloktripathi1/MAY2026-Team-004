@@ -19,6 +19,7 @@ import {
   submitClubRequest,
 } from "@/backend/domain/club-requests";
 import { grantFaculty, revokeFaculty } from "@/backend/domain/faculty";
+import { updateMembershipRole } from "@/backend/domain/membership";
 import { deleteUsersByEmails } from "./db-cleanup";
 import { isApiAvailable, reportCase, requireApiAvailable, uniqueIdentity } from "./helpers";
 
@@ -258,5 +259,110 @@ describe("club requests", () => {
         expect(mine[0]?.status).toBe("Rejected");
       },
     );
+  });
+});
+
+describe("member role changes", () => {
+  /**
+   * The gap this closes: the join-request path always creates a `Member`, and
+   * nothing could change a role afterwards — so a student who joined a club
+   * could never be made a Volunteer or Coordinator without being removed and
+   * re-added.
+   */
+  async function clubWithAdmin() {
+    const membership = await prisma.membership.findFirstOrThrow({
+      where: { role: "Admin", status: "Active" },
+      include: { club: true },
+    });
+    const actor = [{ clubId: membership.clubId, role: "Admin", clubSlug: "", clubName: "", personaName: "" }] as any;
+    return { clubId: membership.clubId, actor, adminMembershipId: membership.id };
+  }
+
+  it("promotes a Member to Coordinator and back", async () => {
+    const { clubId, actor } = await clubWithAdmin();
+    const student = await makeStudent();
+    const membership = await prisma.membership.create({
+      data: { userId: student.id, clubId, role: "Member", status: "Active" },
+    });
+
+    const up = await updateMembershipRole(actor, membership.id, "Coordinator");
+    const down = await updateMembershipRole(actor, membership.id, "Volunteer");
+    const final = await prisma.membership.findUniqueOrThrow({ where: { id: membership.id } });
+
+    reportCase(
+      "updateMembershipRole",
+      { from: "Member", to: "Coordinator", then: "Volunteer" },
+      { promoted: "Coordinator", demoted: "Volunteer" },
+      { promoted: up.ok && up.membership.role, demoted: final.role },
+      () => {
+        expect(up.ok && up.membership.role).toBe("Coordinator");
+        expect(down.ok).toBe(true);
+        expect(final.role).toBe("Volunteer");
+      },
+    );
+  });
+
+  it("reports no change when the role already matches", async () => {
+    const { clubId, actor } = await clubWithAdmin();
+    const student = await makeStudent();
+    const membership = await prisma.membership.create({
+      data: { userId: student.id, clubId, role: "Volunteer", status: "Active" },
+    });
+
+    const result = await updateMembershipRole(actor, membership.id, "Volunteer");
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.changed).toBe(false);
+  });
+
+  // Handover owns the Admin transition, and does it as a swap. Allowing it here
+  // would let a club end up with two Admins, or none.
+  it("refuses to touch the Admin role", async () => {
+    const { actor, adminMembershipId } = await clubWithAdmin();
+    const result = await updateMembershipRole(actor, adminMembershipId, "Coordinator");
+
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.code).toBe("ADMIN_ROLE");
+  });
+
+  it("refuses an admin of a different club", async () => {
+    const { clubId } = await clubWithAdmin();
+    const student = await makeStudent();
+    const membership = await prisma.membership.create({
+      data: { userId: student.id, clubId, role: "Member", status: "Active" },
+    });
+
+    const otherClub = await prisma.club.findFirstOrThrow({ where: { id: { not: clubId } } });
+    const outsider = [{ clubId: otherClub.id, role: "Admin", clubSlug: "", clubName: "", personaName: "" }] as any;
+
+    const result = await updateMembershipRole(outsider, membership.id, "Coordinator");
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.code).toBe("FORBIDDEN");
+  });
+
+  it("emails an active member about the change", async () => {
+    const { clubId, actor } = await clubWithAdmin();
+    const student = await makeStudent();
+    const membership = await prisma.membership.create({
+      data: { userId: student.id, clubId, role: "Member", status: "Active" },
+    });
+
+    await updateMembershipRole(actor, membership.id, "Coordinator");
+    const mailed = await prisma.emailLog.count({ where: { userId: student.id, template: "roleChanged" } });
+    expect(mailed).toBe(1);
+  });
+
+  // Someone still awaiting approval hasn't been told they're in, so "your role
+  // changed" would be the first thing they hear about a club that may yet
+  // refuse them.
+  it("stays silent for a pending member", async () => {
+    const { clubId, actor } = await clubWithAdmin();
+    const student = await makeStudent();
+    const membership = await prisma.membership.create({
+      data: { userId: student.id, clubId, role: "Member", status: "Pending" },
+    });
+
+    await updateMembershipRole(actor, membership.id, "Volunteer");
+    const mailed = await prisma.emailLog.count({ where: { userId: student.id, template: "roleChanged" } });
+    expect(mailed).toBe(0);
   });
 });

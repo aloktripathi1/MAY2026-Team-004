@@ -13,7 +13,6 @@ import {
   SEEDED_ACCOUNTS,
 } from "./helpers";
 
-const EVENT_ID = "e2";
 let client: ApiClient;
 
 beforeAll(async () => {
@@ -37,29 +36,20 @@ async function getPageHtml(path: string, authenticated = true) {
   return response.text();
 }
 
-function renderedAttendance(html: string) {
+/** Every event id a page rendered a live attendance figure for. */
+function renderedEventIds(html: string): Set<string> {
+  return new Set([...html.matchAll(/data-event-attendance="([^"]+)"/g)].map((m) => m[1]));
+}
+
+function renderedAttendance(html: string, eventId: string) {
   const match = html.match(
-    new RegExp(
-      `data-event-attendance="${EVENT_ID}"[^>]*data-attendance-count="(\\d+)"`,
-    ),
+    new RegExp(`data-event-attendance="${eventId}"[^>]*data-attendance-count="(\\d+)"`),
   );
   expect(match).not.toBeNull();
   return Number(match![1]);
 }
 
 it("uses the same live registration count in API, member, volunteer, admin, and public views", async () => {
-  const expectedCount = await prisma.countMeIn.count({
-    where: { eventId: EVENT_ID },
-  });
-
-  const apiResponse = await client.get("/api/events", {
-    clubId: CLUB_IDS.codechef,
-  });
-  expect(apiResponse.status).toBe(200);
-  const apiEvent = apiResponse.body.data.events.find(
-    (event: { id: string }) => event.id === EVENT_ID,
-  );
-
   const [publicHtml, memberHtml, volunteerHtml, adminHtml] = await Promise.all([
     getPageHtml("/", false),
     getPageHtml("/app"),
@@ -67,17 +57,40 @@ it("uses the same live registration count in API, member, volunteer, admin, and 
     getPageHtml("/admin"),
   ]);
 
-  expect({
-    api: apiEvent._count.countMeIns,
-    public: renderedAttendance(publicHtml),
-    member: renderedAttendance(memberHtml),
-    volunteer: renderedAttendance(volunteerHtml),
-    admin: renderedAttendance(adminHtml),
-  }).toEqual({
-    api: expectedCount,
-    public: expectedCount,
-    member: expectedCount,
-    volunteer: expectedCount,
-    admin: expectedCount,
-  });
+  // The event is discovered rather than hard-coded. Each view renders a
+  // different slice — the landing page shows only the next three *upcoming*
+  // events, so the id this test used to pin (a past event) could never appear
+  // there and the test failed regardless of the behaviour it was checking.
+  // Intersecting the views finds an event they all show, which is the only
+  // place the cross-view invariant can actually be observed.
+  const pages = { public: publicHtml, member: memberHtml, volunteer: volunteerHtml, admin: adminHtml };
+  const shared = [...renderedEventIds(publicHtml)].filter((id) =>
+    Object.values(pages).every((html) => renderedEventIds(html).has(id)),
+  );
+
+  expect(shared.length).toBeGreaterThan(0);
+
+  const apiResponse = await client.get("/api/events", { clubId: CLUB_IDS.codechef });
+  expect(apiResponse.status).toBe(200);
+
+  for (const eventId of shared) {
+    const expectedCount = await prisma.countMeIn.count({ where: { eventId } });
+    const apiEvent = apiResponse.body.data.events.find((event: { id: string }) => event.id === eventId);
+
+    expect({
+      eventId,
+      api: apiEvent?._count.countMeIns,
+      public: renderedAttendance(publicHtml, eventId),
+      member: renderedAttendance(memberHtml, eventId),
+      volunteer: renderedAttendance(volunteerHtml, eventId),
+      admin: renderedAttendance(adminHtml, eventId),
+    }).toEqual({
+      eventId,
+      api: expectedCount,
+      public: expectedCount,
+      member: expectedCount,
+      volunteer: expectedCount,
+      admin: expectedCount,
+    });
+  }
 });

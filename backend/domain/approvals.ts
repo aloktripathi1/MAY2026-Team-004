@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
 import { setEventApprovalByFaculty } from "@/backend/domain/events";
+import { updateMembershipRole } from "@/backend/domain/membership";
 import {
   normalizeEventApproval,
   normalizeMembershipStatus,
@@ -37,6 +38,26 @@ export async function setMembershipStatusAction(membershipId: string, status: "A
   revalidatePath("/admin/approvals");
   revalidatePath("/admin/members");
   revalidatePath("/admin");
+}
+
+/**
+ * Changes a member's role from the admin members table. Admin is excluded —
+ * `/admin/handover` owns that transition (see updateMembershipRole).
+ */
+export async function setMembershipRoleAction(
+  membershipId: string,
+  role: "Member" | "Volunteer" | "Coordinator",
+) {
+  const session = await getMockSession();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const result = await updateMembershipRole(session.user.memberships, membershipId, role);
+  if (!result.ok) throw new Error(result.message);
+
+  revalidatePath("/admin/members");
+  revalidatePath("/admin");
+  revalidatePath("/coordinator/volunteers");
+  return { ok: true };
 }
 
 export async function setEventApprovalAction(eventId: string, approval: "approved" | "pending" | "rejected") {

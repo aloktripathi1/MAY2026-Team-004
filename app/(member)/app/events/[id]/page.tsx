@@ -11,9 +11,11 @@ import { formatEventDate } from "@/lib/format";
 import { isEventPast } from "@/backend/domain/workflow-rules";
 import { CountMeInButton } from "./CountMeInButton";
 
-async function getEvent(slug: string) {
-  return prisma.event.findUnique({
-    where: { slug },
+// The route segment is named [id] but links are built from the slug, so accept
+// either — an id-shaped link used to 404 here.
+async function getEvent(slugOrId: string) {
+  return prisma.event.findFirst({
+    where: { OR: [{ slug: slugOrId }, { id: slugOrId }] },
     include: { club: true, _count: { select: { countMeIns: true } } },
   });
 }

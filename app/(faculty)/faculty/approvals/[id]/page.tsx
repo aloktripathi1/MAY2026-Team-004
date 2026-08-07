@@ -8,9 +8,11 @@ import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
 import { FacultyApprovalButtons } from "../FacultyApprovalButtons";
 
-async function getEvent(slug: string) {
-  return prisma.event.findUnique({
-    where: { slug },
+// The approvals list links by slug, but an id is the natural thing to build a
+// deep link from elsewhere — accept both rather than 404 on one of them.
+async function getEvent(slugOrId: string) {
+  return prisma.event.findFirst({
+    where: { OR: [{ slug: slugOrId }, { id: slugOrId }] },
     include: { club: true },
   });
 }

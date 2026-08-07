@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ChevronDown, Search, Upload, UserPlus, X } from "lucide-react";
 import { PageHeader } from "@/components/shell/AppShell";
 import { StatusPill, Btn } from "@/components/ui/primitives";
@@ -8,6 +8,14 @@ import { Avatar } from "@/components/ui/Avatar";
 import { INTEREST_OPTIONS } from "@/lib/interests";
 import { AddMemberModal } from "./AddMemberModal";
 import { BulkImportModal } from "./BulkImportModal";
+import { setMembershipRoleAction } from "@/backend/domain/approvals";
+
+/**
+ * Roles an admin may assign from this table. Admin is absent on purpose: a club
+ * has exactly one, and /admin/handover moves it, demoting the outgoing admin in
+ * the same transaction.
+ */
+const ASSIGNABLE_ROLES = ["Member", "Volunteer", "Coordinator"] as const;
 
 export type MemberRow = {
   id: string;
@@ -27,7 +35,45 @@ function selectClasses() {
   return "w-fit appearance-none rounded-lg border border-white/[0.12] bg-white/[0.035] py-1.5 pl-3 pr-7 text-xs text-white outline-none transition focus:border-secondary/55";
 }
 
+function RoleControl({
+  member, onError, disabled,
+}: { member: MemberRow; onError: (message: string | null) => void; disabled: boolean }) {
+  const [pending, startTransition] = useTransition();
+
+  // The single Admin is shown as static text — changing it here would leave the
+  // club with two admins or none.
+  if (member.role === "Admin") {
+    return <span className="text-xs">Admin</span>;
+  }
+
+  return (
+    <div className="relative w-fit">
+      <select
+        value={member.role}
+        disabled={disabled || pending}
+        aria-label={`Role for ${member.name}`}
+        onChange={(e) => {
+          const next = e.target.value as (typeof ASSIGNABLE_ROLES)[number];
+          onError(null);
+          startTransition(async () => {
+            try {
+              await setMembershipRoleAction(member.id, next);
+            } catch (err) {
+              onError(err instanceof Error ? err.message : "Could not change that role.");
+            }
+          });
+        }}
+        className={selectClasses()}
+      >
+        {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}
+
 export function MembersDirectory({ members }: { members: MemberRow[] }) {
+  const [roleError, setRoleError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [role, setRole] = useState<string>("All roles");
   const [status, setStatus] = useState<string>("All statuses");
@@ -127,6 +173,12 @@ export function MembersDirectory({ members }: { members: MemberRow[] }) {
         )}
       </div>
 
+      {roleError && (
+        <p className="mb-3 rounded-xl border border-destructive/30 bg-destructive/[0.12] px-4 py-2.5 text-sm text-destructive">
+          {roleError}
+        </p>
+      )}
+
       <div className="night-panel overflow-hidden rounded-2xl">
         {/* Fixed-column table only fits desktop widths — 5 fields into 3
             mobile tracks pushed names down to one letter and wrapped Status
@@ -148,7 +200,8 @@ export function MembersDirectory({ members }: { members: MemberRow[] }) {
                 <Avatar name={m.name} image={m.image} size="sm" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{m.name}</div>
-                  <div className="truncate text-xs text-muted-foreground">{m.roll} · {m.role} · Joined {m.joined}</div>
+                  <div className="truncate text-xs text-muted-foreground">{m.roll} · Joined {m.joined}</div>
+                  <div className="mt-2"><RoleControl member={m} onError={setRoleError} disabled={false} /></div>
                 </div>
                 <StatusPill tone={m.status === "Active" ? "green" : m.status === "Pending" ? "amber" : "slate"}>{m.status}</StatusPill>
               </div>
@@ -158,7 +211,7 @@ export function MembersDirectory({ members }: { members: MemberRow[] }) {
                   <div className="min-w-0 truncate text-sm font-medium">{m.name}</div>
                 </div>
                 <div className="text-mono-label !normal-case !tracking-normal text-xs">{m.roll}</div>
-                <div className="text-xs">{m.role}</div>
+                <RoleControl member={m} onError={setRoleError} disabled={false} />
                 <div className="text-xs text-muted-foreground">{m.joined}</div>
                 <StatusPill tone={m.status === "Active" ? "green" : m.status === "Pending" ? "amber" : "slate"}>{m.status}</StatusPill>
               </div>

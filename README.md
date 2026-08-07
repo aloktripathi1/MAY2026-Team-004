@@ -4,7 +4,7 @@
 
 Sangam is a community and society management platform: a single source of truth for membership, events, venues, equipment, tasks, and communication, built to replace the WhatsApp groups, Google Forms, and spreadsheets clubs typically end up patching together.
 
-**Live demo:** [try-sangam.vercel.app](https://try-sangam.vercel.app). See [Demo accounts](#demo-accounts) to sign in.
+**Live demo:** [sangam-club.com](https://sangam-club.com). See [Demo accounts](#demo-accounts) to sign in.
 
 ---
 
@@ -124,7 +124,7 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 
 ## Demo accounts
 
-Log in with any of these at [try-sangam.vercel.app/login](https://try-sangam.vercel.app/login) (or locally at `/login`). They're created by `prisma/seed.ts`.
+Log in with any of these at [sangam-club.com/login](https://sangam-club.com/login) (or locally at `/login`). They're created by `prisma/seed.ts`.
 
 **All-in-one account.** One person, every role at once (Admin on CodeChef, Coordinator on E-Cell, Volunteer on Sarga, Member on Paradox, plus Faculty), so you can switch roles from the sidebar without signing in as five different people:
 
@@ -154,7 +154,7 @@ club, so every elevated role has to be granted by someone:
 
 | Role | Granted by |
 |---|---|
-| Member / Volunteer / Coordinator of a club | that club's **Admin**, from `/admin/members` |
+| Member / Volunteer / Coordinator of a club | that club's **Admin**, from `/admin/members` — set when adding someone, or changed later from the role control on each row |
 | **Club Admin** | faculty approving the club proposal (first admin), or the outgoing admin via `/admin/handover` |
 | **Faculty** | another faculty member at `/faculty/club-requests`, or `scripts/bootstrap-faculty.ts` for the first one |
 
@@ -183,6 +183,19 @@ After that, faculty appoint each other in the app. Revoking is guarded: you
 can't remove your own access, and you can't remove the last faculty account —
 either would leave the institution with no reviewer and no way to appoint one
 short of another bootstrap run.
+
+### Changing someone's role
+
+An Admin changes a member's role from the dropdown on their row in
+`/admin/members`, or over REST with `PATCH /api/clubs/{id}/members/{memberId}`
+(which now accepts `role`, `status`, or both). The member is emailed, unless
+they're still `Pending` — telling someone their role changed before they've been
+told they're in reads as nonsense.
+
+**Admin is not assignable this way.** A club has exactly one Admin, and
+`/admin/handover` owns that move because it demotes the outgoing Admin in the
+same transaction; allowing it here would let a club end up with two Admins or
+none.
 
 ### New clubs
 
@@ -491,7 +504,7 @@ nothing is rejected while you watch the reports.
 |---|---|
 | `RESEND_API_KEY` | a fresh key from [resend.com/api-keys](https://resend.com/api-keys) |
 | `EMAIL_FROM` | `Sangam <no-reply@sangam-club.com>` |
-| `APP_URL` | `https://try-sangam.vercel.app` — the app still serves from Vercel |
+| `APP_URL` | `https://sangam-club.com` — must match the origin the app is actually served from, or every link in every email is dead |
 | `EMAIL_ALLOWLIST` | keep it pinned to your own address for a first live round |
 | `EMAIL_ENABLED` | `true` |
 | `CRON_SECRET` | `openssl rand -hex 32`, or the sweeps stay dark |
