@@ -2,6 +2,10 @@
  * Email chrome: one HTML shell every template renders into, plus the plain-text
  * twin. Table-based and inline-styled on purpose — email clients strip <style>
  * blocks, ignore flexbox and grid, and Outlook still needs tables for layout.
+ *
+ * Colors are lifted straight from public/logo.svg (the actual brand mark) so
+ * this shell and the app agree on what "Sangam" looks like, rather than
+ * approximating from the CSS custom properties separately.
  */
 
 /** Escapes text destined for HTML. Every interpolated value goes through this. */
@@ -38,18 +42,41 @@ export type LayoutInput = {
 };
 
 const BRAND = "Sangam";
-const INK = "#0f0f14";
-const MUTED = "#6b7280";
-const ACCENT = "#7c3aed";
-const HAIRLINE = "#e5e7eb";
+
+// Page background — a touch darker than the card, so the card reads as a
+// surface sitting on top of it (same relationship as .night-panel vs the app
+// background in globals.css).
+const PAGE_BG = "#0A0A0C";
+const CARD_BG = "#0D0D10";
+// Low-opacity warm-gray hairline. Solid hex rather than rgba() — Outlook's
+// Word rendering engine handles alpha inconsistently on borders.
+const BORDER = "#2A241D";
+
+// Text hierarchy: warm off-white primary, warm-gray secondary — never pure
+// white/gray, which is what made the old template read as generic.
+const TEXT = "#F2EDE7";
+const MUTED = "#948C80";
+
+// Brand marks straight from the logo: maroon ink, gold accent, pale-gold highlight.
+const MAROON = "#861118";
+const GOLD = "#D6A64F";
+const GOLD_SOFT = "#E8C98A";
+// Dark text on the gold button needs real contrast, not pure black.
+const INK_ON_GOLD = "#1A1410";
+
+const SERIF = "Georgia, 'Times New Roman', Times, serif";
+// Inter first for clients that support it (Gmail's web/app rendering does);
+// falls back to each platform's native system font everywhere else, since
+// email clients can't reliably load a webfont via @font-face/<link>.
+const SANS = "'Inter', -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
 
 function factsHtml(facts: { label: string; value: string }[]): string {
   const rows = facts
     .map(
       ({ label, value }) => `
         <tr>
-          <td style="padding:6px 16px 6px 0;color:${MUTED};font-size:13px;white-space:nowrap;vertical-align:top;">${escapeHtml(label)}</td>
-          <td style="padding:6px 0;color:${INK};font-size:14px;font-weight:600;vertical-align:top;">${escapeHtml(value)}</td>
+          <td style="padding:6px 16px 6px 0;color:${MUTED};font-size:13px;font-family:${SANS};white-space:nowrap;vertical-align:top;">${escapeHtml(label)}</td>
+          <td style="padding:6px 0;color:${TEXT};font-size:14px;font-family:${SANS};font-weight:600;vertical-align:top;">${escapeHtml(value)}</td>
         </tr>`,
     )
     .join("");
@@ -70,7 +97,7 @@ export function renderLayout(input: LayoutInput): { html: string; text: string }
   const paragraphsHtml = paragraphs
     .map(
       (p) =>
-        `<p style="margin:0 0 14px;color:${INK};font-size:15px;line-height:1.6;">${escapeHtml(p)}</p>`,
+        `<p style="margin:0 0 14px;color:${TEXT};font-size:15px;font-family:${SANS};line-height:1.6;">${escapeHtml(p)}</p>`,
     )
     .join("");
 
@@ -78,48 +105,55 @@ export function renderLayout(input: LayoutInput): { html: string; text: string }
     ? `
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
         <tr>
-          <td style="border-radius:8px;background:${ACCENT};">
-            <a href="${safeUrl(button.url)}" style="display:inline-block;padding:12px 22px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">${escapeHtml(button.label)}</a>
+          <td style="border-radius:6px;background:${GOLD};">
+            <a href="${safeUrl(button.url)}" style="display:inline-block;padding:12px 22px;color:${INK_ON_GOLD};font-size:15px;font-family:${SANS};font-weight:700;text-decoration:none;border-radius:6px;">${escapeHtml(button.label)}</a>
           </td>
         </tr>
       </table>`
     : "";
 
   const noteHtml = note
-    ? `<p style="margin:0 0 8px;color:${MUTED};font-size:13px;line-height:1.5;">${escapeHtml(note)}</p>`
+    ? `<p style="margin:0 0 8px;color:${MUTED};font-size:13px;font-family:${SANS};line-height:1.5;">${escapeHtml(note)}</p>`
     : "";
 
+  // Transactional mail (no manageUrl) already explains itself in the note
+  // above — a generic "this is an account email" line under it adds nothing,
+  // so the footer row is skipped entirely rather than filled with filler.
   const manageHtml = manageUrl
-    ? `<p style="margin:0;color:${MUTED};font-size:12px;line-height:1.5;">
-         You're receiving this because of your ${BRAND} notification settings.
-         <a href="${safeUrl(manageUrl)}" style="color:${MUTED};text-decoration:underline;">Change what ${BRAND} emails you</a>.
+    ? `<p style="margin:0;color:${MUTED};font-size:12px;font-family:${SANS};line-height:1.5;">
+         Sent based on your ${BRAND} notification settings.
+         <a href="${safeUrl(manageUrl)}" style="color:${MUTED};text-decoration:underline;">Manage what you get</a>.
        </p>`
-    : `<p style="margin:0;color:${MUTED};font-size:12px;line-height:1.5;">This is an account email from ${BRAND}.</p>`;
+    : "";
 
   const html = `${previewHtml}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f7;padding:28px 0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAGE_BG};padding:28px 0;">
   <tr>
     <td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid ${HAIRLINE};border-radius:14px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${CARD_BG};border:1px solid ${BORDER};border-radius:4px;">
         <tr>
-          <td style="padding:22px 28px 0;">
-            <span style="font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${ACCENT};">${BRAND}</span>
+          <td style="height:3px;line-height:3px;font-size:0;background:${MAROON};border-radius:4px 4px 0 0;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="padding:24px 28px 0;">
+            <span style="font-size:20px;font-weight:700;letter-spacing:0.01em;color:${GOLD_SOFT};font-family:${SERIF};">${BRAND}</span>
           </td>
         </tr>
         <tr>
-          <td style="padding:12px 28px 4px;">
-            <h1 style="margin:0 0 14px;color:${INK};font-size:21px;line-height:1.3;font-weight:700;">${escapeHtml(heading)}</h1>
+          <td style="padding:16px 28px 4px;">
+            <h1 style="margin:0 0 14px;color:${TEXT};font-size:21px;line-height:1.3;font-weight:700;font-family:${SANS};">${escapeHtml(heading)}</h1>
             ${paragraphsHtml}
             ${facts?.length ? factsHtml(facts) : ""}
             ${buttonHtml}
             ${noteHtml}
           </td>
         </tr>
+        ${manageHtml ? `
         <tr>
-          <td style="padding:18px 28px 24px;border-top:1px solid ${HAIRLINE};">
+          <td style="padding:18px 28px 24px;border-top:1px solid ${BORDER};">
             ${manageHtml}
           </td>
-        </tr>
+        </tr>` : `<tr><td style="padding:0 0 24px;"></td></tr>`}
       </table>
     </td>
   </tr>
@@ -132,12 +166,8 @@ export function renderLayout(input: LayoutInput): { html: string; text: string }
     ...(facts?.length ? ["", ...facts.map(({ label, value }) => `${label}: ${value}`)] : []),
     ...(button ? ["", `${button.label}: ${button.url}`] : []),
     ...(note ? ["", note] : []),
-    "",
-    "—",
-    manageUrl
-      ? `You're receiving this because of your ${BRAND} notification settings. Change what ${BRAND} emails you: ${manageUrl}`
-      : `This is an account email from ${BRAND}.`,
+    ...(manageUrl ? ["", "—", `Sent based on your ${BRAND} notification settings. Manage what you get: ${manageUrl}`] : []),
   ];
 
-  return { html: `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">${html}</div>`, text: textParts.join("\n") };
+  return { html: `<div style="font-family:${SANS};background:${PAGE_BG};">${html}</div>`, text: textParts.join("\n") };
 }
