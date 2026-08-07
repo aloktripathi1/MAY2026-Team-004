@@ -120,7 +120,15 @@ export async function sendEmail(input: SendEmailInput): Promise<SendResult> {
   // The allowlist guards real deliveries only. In dry-run nothing leaves the
   // app, so applying it there would just hide which emails *would* have gone
   // out — exactly what dry-run exists to show.
-  if (config.enabled && !isAllowedRecipient(address, config.allowlist)) {
+  //
+  // Transactional mail is exempt. The allowlist exists to stop *notification*
+  // fan-out reaching real students by accident during rollout — a 45-member
+  // announcement, a reminder sweep. Verification is the opposite: it goes to one
+  // address the recipient just typed themselves, and it is the only way into
+  // their own account. Filtering it would mean a student signs up, never
+  // receives a link, and can never sign in — turning a safety net into a lockout.
+  const transactional = rendered.category === null;
+  if (config.enabled && !transactional && !isAllowedRecipient(address, config.allowlist)) {
     return skip(`recipient not in EMAIL_ALLOWLIST (currently: ${config.allowlist.join(", ") || "<empty>"})`);
   }
 
