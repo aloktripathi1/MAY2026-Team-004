@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { ChevronDown, ImagePlus, Plus, Send, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -15,6 +16,7 @@ function SubmitButton() {
 }
 
 export function IssueForm({ leading }: { leading?: ReactNode } = {}) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -33,8 +35,9 @@ export function IssueForm({ leading }: { leading?: ReactNode } = {}) {
       setShowSuccess(true);
       setAttachments([]);
       formRef.current?.reset();
+      router.refresh();
     }
-  }, [state]);
+  }, [state, router]);
 
   function openForm() {
     setShowSuccess(false);

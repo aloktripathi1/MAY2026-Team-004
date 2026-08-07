@@ -58,6 +58,20 @@ export async function clubRecipients(
   return memberships.map(toRecipient);
 }
 
+/** Active club members matching explicit user ids (targeted announcements). */
+export async function clubMemberRecipientsByIds(
+  clubId: string,
+  userIds: string[],
+): Promise<Recipient[]> {
+  const unique = [...new Set(userIds.filter(Boolean))];
+  if (unique.length === 0) return [];
+  const memberships = await prisma.membership.findMany({
+    where: { clubId, status: "Active", userId: { in: unique } },
+    include: { user: USER_SELECT },
+  });
+  return memberships.map(toRecipient);
+}
+
 /** Active admins of a club — the people who action approval requests. */
 export async function clubAdminRecipients(clubId: string): Promise<Recipient[]> {
   const memberships = await prisma.membership.findMany({

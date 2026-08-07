@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { assignTask } from "@/backend/domain/tasks";
 
@@ -19,7 +19,7 @@ export async function assignTaskAction(
   _prevState: AssignTaskState,
   formData: FormData
 ): Promise<AssignTaskState> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Coordinator");

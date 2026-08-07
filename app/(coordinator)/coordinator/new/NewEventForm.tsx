@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { ImagePlus, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -16,6 +17,7 @@ function SubmitButton() {
 }
 
 export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
+  const router = useRouter();
   const [tags, setTags] = useState<string[]>([]);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -24,8 +26,9 @@ export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
   useEffect(() => {
     if (state.ok) {
       onSuccess?.();
+      router.refresh();
     }
-  }, [state, onSuccess]);
+  }, [state, onSuccess, router]);
 
   useEffect(() => {
     return () => {

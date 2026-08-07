@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { memberVisibleEventWhere } from "@/backend/domain/workflow-rules";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -25,7 +25,7 @@ export default async function VolunteerEventsPage({
   searchParams: { tab?: string };
 }) {
   const tab: "upcoming" | "past" = searchParams.tab === "past" ? "past" : "upcoming";
-  const session = await getMockSession();
+  const session = await getAppSession();
 
   // Scoped to the volunteer's own (Active) club memberships — this page
   // previously showed every club's events regardless of membership (#85).

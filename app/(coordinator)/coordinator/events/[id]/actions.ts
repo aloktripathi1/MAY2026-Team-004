@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { prisma } from "@/backend/db/prisma";
 import { parseTagInput } from "@/backend/domain/workflow-rules";
@@ -11,7 +11,7 @@ import { notifyEventScheduleChange } from "@/backend/email/notifications";
 import { serializeEventTags } from "@/lib/event-tags";
 
 async function requireCoordinatorForEvent(eventId: string) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
   const membership = getPrimaryClubMembership(session, "Coordinator");
   if (!membership) throw new Error("You must be a club coordinator.");
@@ -22,7 +22,7 @@ async function requireCoordinatorForEvent(eventId: string) {
 }
 
 export async function toggleCheckInAction(countMeInId: string, eventSlug: string) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const countMeIn = await prisma.countMeIn.findUniqueOrThrow({ where: { id: countMeInId } });
@@ -41,7 +41,7 @@ export async function bulkCheckInAction(
   countMeInIds: string[],
   eventSlug: string,
 ): Promise<BulkCheckInState> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
   if (countMeInIds.length === 0) return { error: "Select at least one participant." };
 

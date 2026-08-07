@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { ChevronDown, Send } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -12,6 +13,7 @@ function SubmitButton() {
 }
 
 export function AnnouncementForm({ memberCount, onSuccess }: { memberCount: number; onSuccess?: () => void }) {
+  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useFormState<AnnouncementFormState, FormData>(createAnnouncementAction, {});
   const isFirstRender = useRef(true);
@@ -24,8 +26,9 @@ export function AnnouncementForm({ memberCount, onSuccess }: { memberCount: numb
     if (state.ok) {
       formRef.current?.reset();
       onSuccess?.();
+      router.refresh();
     }
-  }, [state, onSuccess]);
+  }, [state, onSuccess, router]);
 
   return (
     <form ref={formRef} action={formAction}>

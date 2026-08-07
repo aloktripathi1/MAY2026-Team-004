@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { notifyIssueSubmitted } from "@/backend/email/notifications";
 
@@ -16,7 +16,7 @@ const issueSchema = z.object({
 export type IssueFormState = { error?: string; ok?: boolean };
 
 export async function createIssueAction(_prevState: IssueFormState, formData: FormData): Promise<IssueFormState> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   // Admin's Issues board is scoped to a club (where: { clubId }), so an

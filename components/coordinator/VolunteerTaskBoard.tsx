@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { TaskStatusButtons } from "@/components/tasks/TaskStatusButtons";
 
@@ -34,16 +34,30 @@ export function VolunteerTaskBoard({
   events: EventItem[];
   team: TeamMember[];
 }) {
+  const [tasks, setTasks] = useState(initialTasks);
   const [todoSortOrder, setTodoSortOrder] = useState<"asc" | "desc">("asc");
+
+  // Pick up server data after mutations → router.refresh().
+  // Key off content so identical-looking props still sync after Accept/assign.
+  const tasksSignature = initialTasks
+    .map((t) => `${t.id}:${t.status}:${t.assigneeId}:${t.title}`)
+    .join("|");
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [tasksSignature, initialTasks]);
 
   function toggleSort() {
     setTodoSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   }
 
+  function handleStatusChange(taskId: string, status: string) {
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status } : task)));
+  }
+
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {columns.map((col) => {
-        let colTasks = initialTasks.filter((t) => t.status === col);
+        let colTasks = tasks.filter((t) => t.status === col);
 
         if (col === "todo") {
           colTasks = [...colTasks].sort((a, b) => {
@@ -75,7 +89,6 @@ export function VolunteerTaskBoard({
               )}
             </div>
 
-            {/* Scrollable Container Sized for Exactly 2 Cards with Thin Scrollbar */}
             <div className="max-h-[310px] min-h-[160px] overflow-y-auto space-y-2 pr-2 pl-0.5 py-0.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-white/30">
               {colTasks.length === 0 && (
                 <div className="rounded-xl border border-dashed border-hairline p-4 text-center text-xs text-muted-foreground">
@@ -93,7 +106,11 @@ export function VolunteerTaskBoard({
                     <div className="text-mono-label mt-1 line-clamp-2">{eventTitle}</div>
                     <div className="mt-2.5 truncate text-xs text-muted-foreground">{assigneeName}</div>
                     <div className="mt-3 w-full">
-                      <TaskStatusButtons taskId={t.id} status={t.status} />
+                      <TaskStatusButtons
+                        taskId={t.id}
+                        status={t.status}
+                        onStatusChange={(status) => handleStatusChange(t.id, status)}
+                      />
                     </div>
                   </div>
                 );

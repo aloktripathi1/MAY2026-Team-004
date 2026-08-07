@@ -1,4 +1,4 @@
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { requireClubAdminAccess } from "@/backend/domain/workflow-rules";
 import { prisma } from "@/backend/db/prisma";
 import { jsonError } from "@/backend/api/http";
@@ -7,7 +7,7 @@ import { jsonError } from "@/backend/api/http";
  * events, tasks, issues, and announcements for the admin's own club, as one
  * downloadable JSON bundle a successor can actually inspect. */
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401 });
   }

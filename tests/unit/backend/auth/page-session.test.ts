@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getMockSession } from "../../../../backend/auth/mock-session";
+import { getAppSession } from "../../../../backend/auth/app-session";
 import {
   requirePageMembership,
   requirePageSession,
@@ -11,11 +11,11 @@ jest.mock("next/navigation", () => ({
   }),
 }));
 
-jest.mock("../../../../backend/auth/mock-session", () => ({
-  getMockSession: jest.fn(),
+jest.mock("../../../../backend/auth/app-session", () => ({
+  getAppSession: jest.fn(),
 }));
 
-const mockGetSession = jest.mocked(getMockSession);
+const mockGetSession = jest.mocked(getAppSession);
 const mockRedirect = jest.mocked(redirect);
 
 beforeEach(() => {

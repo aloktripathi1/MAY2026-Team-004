@@ -1,5 +1,5 @@
 import type { DefaultSession } from "next-auth";
-import type { SessionMembership } from "@/backend/auth/mock-session";
+import type { SessionMembership } from "@/backend/auth/app-session";
 
 declare module "next-auth" {
   interface Session {

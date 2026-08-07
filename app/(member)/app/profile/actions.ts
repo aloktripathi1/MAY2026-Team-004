@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { INTEREST_OPTIONS } from "@/lib/interests";
 import {
@@ -36,7 +36,7 @@ export async function updateProfileAction(
   _prevState: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const imageRaw = formData.get("image");
@@ -68,7 +68,7 @@ export async function updateProfileAction(
 }
 
 export async function toggleNotificationPrefAction(key: keyof NotificationPrefs) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   // The key arrives from the client, so check it against the known set rather

@@ -3,7 +3,7 @@ import crypto from "crypto";
 const DEV_FALLBACK_SECRET = "sangam-dev-only-insecure-secret";
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 
-/** Best-effort one-time use within a single server process (v1 — no durable store). */
+/** Best-effort one-time use within a single server process. */
 const consumedTokens = new Set<string>();
 
 function getSecret(): string {
@@ -21,6 +21,8 @@ export type PendingActionPayload = {
   args: Record<string, unknown>;
   /** Shell the proposal was made from, so Accept executes with the same scope. */
   role?: string;
+  /** One-time id embedded in the payload for clearer consume tracking. */
+  jti: string;
   exp: number;
 };
 
@@ -36,6 +38,7 @@ function decodePayload(encoded: string): PendingActionPayload | null {
       typeof parsed.userId !== "string" ||
       typeof parsed.toolName !== "string" ||
       typeof parsed.exp !== "number" ||
+      typeof parsed.jti !== "string" ||
       typeof parsed.args !== "object" ||
       parsed.args === null ||
       Array.isArray(parsed.args) ||
@@ -55,11 +58,12 @@ function signBody(body: string): string {
 
 /** Sign a pending write so the client can Accept/Reject without a DB row. */
 export function signPendingAction(
-  payload: Omit<PendingActionPayload, "exp">,
+  payload: Omit<PendingActionPayload, "exp" | "jti"> & { jti?: string },
   ttlMs = DEFAULT_TTL_MS,
 ): string {
   const full: PendingActionPayload = {
     ...payload,
+    jti: payload.jti ?? crypto.randomUUID(),
     exp: Date.now() + ttlMs,
   };
   const body = encodePayload(full);
@@ -72,7 +76,6 @@ export type VerifyPendingResult =
 
 /**
  * Verify signature, expiry, optional user match, and best-effort one-time use.
- * On success with `consume: true`, marks the token used for this process.
  */
 export function verifyPendingAction(
   token: string,
@@ -96,10 +99,13 @@ export function verifyPendingAction(
   if (!payload) return { ok: false, reason: "invalid" };
   if (payload.exp < Date.now()) return { ok: false, reason: "expired" };
   if (payload.userId !== options.expectedUserId) return { ok: false, reason: "user_mismatch" };
-  if (consumedTokens.has(token)) return { ok: false, reason: "consumed" };
+  if (consumedTokens.has(token) || consumedTokens.has(payload.jti)) {
+    return { ok: false, reason: "consumed" };
+  }
 
   if (options.consume) {
     consumedTokens.add(token);
+    consumedTokens.add(payload.jti);
   }
 
   return { ok: true, payload };

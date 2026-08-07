@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { requireFacultyAccess } from "@/backend/domain/workflow-rules";
 import { approveClubRequest, rejectClubRequest } from "@/backend/domain/club-requests";
 import { grantFaculty, revokeFaculty } from "@/backend/domain/faculty";
@@ -17,7 +17,7 @@ import { notifyFacultyAccessGranted } from "@/backend/email/notifications";
 export type ReviewState = { error?: string; ok?: boolean; message?: string };
 
 async function requireFaculty() {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireFacultyAccess(session.user.isFaculty);
   return session.user;

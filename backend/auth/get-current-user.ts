@@ -21,8 +21,7 @@ export type GetCurrentUserResult =
 
 /**
  * Loads the authenticated user from the database by session cookie user id.
- * Does not fall back to mock/demo personas — callers must treat missing session
- * as unauthenticated. Mock/demo remains in lib/mock-session.ts only.
+ * Callers must treat a missing/invalid session as unauthenticated.
  */
 export async function getCurrentUserById(userId: string): Promise<GetCurrentUserResult> {
   const user = await prisma.user.findUnique({

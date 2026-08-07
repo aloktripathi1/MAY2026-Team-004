@@ -23,3 +23,19 @@ export async function deleteMembershipsByIds(membershipIds: string[]): Promise<n
   const result = await prisma.membership.deleteMany({ where: { id: { in: ids } } });
   return result.count;
 }
+
+/** Deletes announcements by id (e.g. Ask Sangam / domain integration fixtures). */
+export async function deleteAnnouncementsByIds(announcementIds: string[]): Promise<number> {
+  const ids = [...new Set(announcementIds.filter(Boolean))];
+  if (ids.length === 0) return 0;
+  const result = await prisma.announcement.deleteMany({ where: { id: { in: ids } } });
+  return result.count;
+}
+
+/** Deletes tasks by id without touching their parent events. */
+export async function deleteTasksByIds(taskIds: string[]): Promise<number> {
+  const ids = [...new Set(taskIds.filter(Boolean))];
+  if (ids.length === 0) return 0;
+  const result = await prisma.task.deleteMany({ where: { id: { in: ids } } });
+  return result.count;
+}

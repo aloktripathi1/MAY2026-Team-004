@@ -1,4 +1,4 @@
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { registerForEvent } from "@/backend/domain/events";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
 
@@ -6,7 +6,7 @@ import { jsonError, jsonSuccess } from "@/backend/api/http";
 const USER_STORY = "2.1";
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY });
   }

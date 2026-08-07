@@ -1,4 +1,4 @@
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { requireClubAdminAccess } from "@/backend/domain/workflow-rules";
 import { prisma } from "@/backend/db/prisma";
 import { jsonError } from "@/backend/api/http";
@@ -6,7 +6,7 @@ import { toCsv } from "@/lib/csv";
 
 /** GET /api/clubs/[id]/transparency/export — CSV download of the club's transparency log (#104). */
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401 });
   }

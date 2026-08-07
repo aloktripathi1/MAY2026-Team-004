@@ -39,11 +39,11 @@ it("rejects an unauthenticated request", async () => {
   });
 });
 
-it("never falls back to the privileged demo persona when no cookie is sent", async () => {
+it("never returns a privileged session when no cookie is sent", async () => {
   const res = await client.get(ME_PATH);
   const expected = { status: 401, notDemoId: "u1", notDemoEmail: "23s1000123@ds.study.iitm.ac.in" };
 
-  reportCase("GET /api/auth/me - no demo-persona fallback", "no session cookie", expected, res, () => {
+  reportCase("GET /api/auth/me - anonymous has no session", "no session cookie", expected, res, () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
     expect(res.body.data?.id).not.toBe("u1");

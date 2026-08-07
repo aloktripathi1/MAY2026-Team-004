@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { decideCountMeInAction } from "@/backend/domain/workflow-rules";
 import { notifyRegistrationConfirmed } from "@/backend/email/notifications";
 
 export async function toggleCountMeInAction(eventId: string, eventSlug: string) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
   const userId = session.user.id;
 

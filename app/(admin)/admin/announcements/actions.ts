@@ -2,10 +2,9 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
-import { prisma } from "@/backend/db/prisma";
+import { getAppSession } from "@/backend/auth/app-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
-import { notifyAnnouncement } from "@/backend/email/notifications";
+import { createAnnouncement } from "@/backend/domain/announcements";
 
 const schema = z.object({
   title: z.string().min(1, "Headline is required"),
@@ -17,8 +16,11 @@ const schema = z.object({
 
 export type AnnouncementFormState = { error?: string; ok?: boolean };
 
-export async function createAnnouncementAction(_prevState: AnnouncementFormState, formData: FormData): Promise<AnnouncementFormState> {
-  const session = await getMockSession();
+export async function createAnnouncementAction(
+  _prevState: AnnouncementFormState,
+  formData: FormData,
+): Promise<AnnouncementFormState> {
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");
@@ -33,21 +35,21 @@ export async function createAnnouncementAction(_prevState: AnnouncementFormState
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const announcement = await prisma.announcement.create({
-    data: {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      pinned: parsed.data.pinned ?? false,
-      audience: parsed.data.audience,
-      priority: parsed.data.priority,
-      clubId: membership.clubId,
-      authorId: session.user.id,
-    },
-  });
-
-  // High priority mails the audience now; Low and Med are picked up by the
-  // daily digest sweep instead, so a busy club doesn't flood inboxes.
-  await notifyAnnouncement(announcement.id);
+  try {
+    await createAnnouncement(
+      { id: session.user.id, memberships: session.user.memberships },
+      {
+        title: parsed.data.title,
+        body: parsed.data.body,
+        pinned: parsed.data.pinned ?? false,
+        audience: parsed.data.audience,
+        priority: parsed.data.priority,
+        clubId: membership.clubId,
+      },
+    );
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not post announcement." };
+  }
 
   revalidatePath("/admin/announcements");
   revalidatePath("/admin");

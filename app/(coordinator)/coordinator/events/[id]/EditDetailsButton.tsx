@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
@@ -24,6 +25,7 @@ function SubmitButton() {
 }
 
 export function EditDetailsButton({ event }: { event: EventDetails }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const action = updateEventAction.bind(null, event.id, event.slug);
@@ -35,8 +37,11 @@ export function EditDetailsButton({ event }: { event: EventDetails }) {
       isFirstRender.current = false;
       return;
     }
-    if (state.ok) setOpen(false);
-  }, [state]);
+    if (state.ok) {
+      setOpen(false);
+      router.refresh();
+    }
+  }, [state, router]);
 
   const tags = Array.isArray(event.tags) ? event.tags.join(",") : event.tags;
 

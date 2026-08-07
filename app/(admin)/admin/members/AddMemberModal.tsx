@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { ChevronDown, UserPlus } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -17,6 +18,7 @@ function SubmitButton() {
 }
 
 export function AddMemberModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useFormState<MemberFormState, FormData>(addMemberAction, {});
   const isFirstRender = useRef(true);
@@ -29,8 +31,9 @@ export function AddMemberModal({ open, onClose }: { open: boolean; onClose: () =
     if (state.ok) {
       formRef.current?.reset();
       onClose();
+      router.refresh();
     }
-  }, [state, onClose]);
+  }, [state, onClose, router]);
 
   return (
     <Modal open={open} onClose={onClose} title="Add member">

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { ChevronDown, KeyRound } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -15,7 +17,12 @@ function SubmitButton() {
 }
 
 export function TransferAdminForm({ candidates }: { candidates: { membershipId: string; name: string; role: string }[] }) {
+  const router = useRouter();
   const [state, formAction] = useFormState<TransferState, FormData>(transferAdminAction, {});
+
+  useEffect(() => {
+    if (state.ok) router.refresh();
+  }, [state, router]);
 
   if (state.ok) {
     return <div className="text-sm text-success">Transfer complete - the role change took effect immediately.</div>;

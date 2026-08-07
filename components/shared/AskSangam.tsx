@@ -2,21 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X, Send, CalendarDays, ListChecks, Megaphone, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/backend/auth/roles";
+import {
+  askSangamConfirmAction,
+  askSangamQueryAction,
+} from "@/backend/assistant/actions";
+import type { AssistantProposedAction } from "@/backend/domain/assistant-types";
 import { ToolProposalCard, type ProposalCardState } from "@/components/shared/ToolProposalCard";
 
 type SourceType = "event" | "task" | "announcement" | "membership";
-
-type ProposedAction = {
-  toolName: string;
-  summary: string;
-  argsPreview: Record<string, string>;
-  token: string;
-  status: "pending";
-};
 
 type Message = {
   role: "user" | "assistant";
@@ -24,33 +22,51 @@ type Message = {
   sourceType?: SourceType | null;
   sourceLabel?: string;
   sourceHref?: string;
-  proposedAction?: ProposedAction;
+  proposedAction?: AssistantProposedAction;
   proposalState?: ProposalCardState;
   proposalError?: string | null;
+  selectedChoiceId?: string | null;
+  selectedGroupChoices?: Record<string, string>;
 };
 
+function resolveSelectedChoiceId(message: Message): string | null {
+  const proposal = message.proposedAction;
+  if (!proposal?.choices?.length) return null;
+  if (proposal.choiceGroups?.length) {
+    const parts: string[] = [];
+    for (const group of proposal.choiceGroups) {
+      const selected = message.selectedGroupChoices?.[group.id];
+      if (!selected) return null;
+      parts.push(selected);
+    }
+    return parts.join("__");
+  }
+  return message.selectedChoiceId ?? null;
+}
+
+/** Role-scoped examples: one chip per capability that shell allows (live Test Club 1 data). */
 const EXAMPLE_QUESTIONS: Record<AppRole, string[]> = {
   member: [
     "When's my next event?",
     "What are the latest announcements?",
     "Which clubs am I a member of?",
   ],
+  volunteer: [
+    "Mark Setup PA System as doing",
+    "What tasks am I assigned?",
+    "When's my next event?",
+    "What are the latest announcements?",
+  ],
   coordinator: [
-    "What's on my task list?",
-    "Mark my first open task as done",
-    "Set my first open task to doing",
-    "Are any of our events still pending approval?",
+    "Change the first task status to doing",
+    "Assign check-in to Pardhiv Nukasani for Test Event 1",
+    "Assign Poster design to Soham Reddy and Booth setup to Sai Dutta for Test Event 1",
+    "What are the latest announcements?",
   ],
   admin: [
-    "What's on my task list?",
-    "Mark my first open task as done",
-    "How many pending approvals do I have?",
-  ],
-  volunteer: [
-    "What tasks am I assigned?",
-    "How many open tasks do I have?",
-    "Mark my first open task as done",
-    "Set my first open task to doing",
+    'Draft an announcement titled "Rehearsal moved" saying rehearsal is moved to Friday for all members',
+    'Draft an announcement titled "Rehearsal moved" saying rehearsal is moved to Friday for Purnendu',
+    "What are the latest announcements?",
   ],
   faculty: [
     "How many events are awaiting my approval?",
@@ -66,7 +82,15 @@ const SOURCE_META: Record<SourceType, { label: string; icon: typeof CalendarDays
   membership: { label: "Membership", icon: Users2 },
 };
 
-function SourceTag({ sourceType, sourceLabel, sourceHref }: { sourceType?: SourceType | null; sourceLabel?: string; sourceHref?: string }) {
+function SourceTag({
+  sourceType,
+  sourceLabel,
+  sourceHref,
+}: {
+  sourceType?: SourceType | null;
+  sourceLabel?: string;
+  sourceHref?: string;
+}) {
   if (!sourceType) return null;
   const meta = SOURCE_META[sourceType];
   const Icon = meta.icon;
@@ -87,6 +111,7 @@ function SourceTag({ sourceType, sourceLabel, sourceHref }: { sourceType?: Sourc
 }
 
 export function AskSangam({ role }: { role: AppRole }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -95,7 +120,12 @@ export function AskSangam({ role }: { role: AppRole }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const hasOpenProposal = messages.some(
-    (m) => m.proposedAction && (!m.proposalState || m.proposalState === "pending" || m.proposalState === "accepting" || m.proposalState === "rejecting"),
+    (m) =>
+      m.proposedAction &&
+      (!m.proposalState ||
+        m.proposalState === "pending" ||
+        m.proposalState === "accepting" ||
+        m.proposalState === "rejecting"),
   );
 
   useEffect(() => {
@@ -112,19 +142,13 @@ export function AskSangam({ role }: { role: AppRole }) {
     setPending(true);
 
     try {
-      const res = await fetch("/api/assistant/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text, role }),
-      });
-      const body = await res.json();
-
-      if (!res.ok || !body.success) {
-        setError(body?.error?.message ?? "Ask Sangam couldn't answer that just now.");
+      const result = await askSangamQueryAction({ query: text, role });
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
 
-      const { answer, sourceType, sourceLabel, sourceHref, proposedAction } = body.data;
+      const { answer, sourceType, sourceLabel, sourceHref, proposedAction } = result.data;
       setMessages((current) => [
         ...current,
         {
@@ -133,8 +157,11 @@ export function AskSangam({ role }: { role: AppRole }) {
           sourceType,
           sourceLabel,
           sourceHref,
-          proposedAction: proposedAction ?? undefined,
+          proposedAction,
           proposalState: proposedAction ? "pending" : undefined,
+          selectedGroupChoices: proposedAction?.defaultGroupSelections
+            ? { ...proposedAction.defaultGroupSelections }
+            : undefined,
         },
       ]);
     } catch {
@@ -144,9 +171,33 @@ export function AskSangam({ role }: { role: AppRole }) {
     }
   }
 
-  async function confirmProposal(messageIndex: number, decision: "accept" | "reject") {
+  async function decide(messageIndex: number, decision: "accept" | "reject") {
     const message = messages[messageIndex];
-    if (!message?.proposedAction) return;
+    const proposal = message?.proposedAction;
+    if (!proposal || pending) return;
+
+    const choiceTokens = proposal.choices?.map((c) => c.token) ?? [];
+    const selectedChoiceId = resolveSelectedChoiceId(message);
+    const selectedToken =
+      proposal.choices && proposal.choices.length > 0
+        ? proposal.choices.find((c) => c.id === selectedChoiceId)?.token
+        : proposal.token;
+
+    if (decision === "accept" && !selectedToken) {
+      setMessages((current) =>
+        current.map((m, i) =>
+          i === messageIndex
+            ? {
+                ...m,
+                proposalError: proposal.choiceGroups?.length
+                  ? "Select who should receive this and when it should send."
+                  : "Select an option first.",
+              }
+            : m,
+        ),
+      );
+      return;
+    }
 
     setMessages((current) =>
       current.map((m, i) =>
@@ -155,47 +206,71 @@ export function AskSangam({ role }: { role: AppRole }) {
           : m,
       ),
     );
-    setError(null);
 
     try {
-      const res = await fetch("/api/assistant/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, token: message.proposedAction.token }),
-      });
-      const body = await res.json();
+      if (decision === "reject" && choiceTokens.length > 0) {
+        for (const token of choiceTokens) {
+          await askSangamConfirmAction({ decision: "reject", token });
+        }
+        setMessages((current) => {
+          const next = current.map((m, i) =>
+            i === messageIndex ? { ...m, proposalState: "rejected" as const } : m,
+          );
+          return [
+            ...next,
+            {
+              role: "assistant" as const,
+              text: "Okay — I won't make that change.",
+              sourceType: null,
+            },
+          ];
+        });
+        return;
+      }
 
-      if (!res.ok || !body.success) {
+      const result = await askSangamConfirmAction({
+        decision,
+        token: selectedToken!,
+      });
+      if (!result.ok) {
         setMessages((current) =>
           current.map((m, i) =>
-            i === messageIndex
-              ? {
-                  ...m,
-                  proposalState: "pending",
-                  proposalError: body?.error?.message ?? "Couldn't complete that action.",
-                }
-              : m,
+            i === messageIndex ? { ...m, proposalState: "pending", proposalError: result.error } : m,
           ),
         );
         return;
       }
 
-      const { answer, sourceType, sourceLabel, sourceHref } = body.data;
+      if (decision === "accept" && choiceTokens.length > 0) {
+        for (const token of choiceTokens) {
+          if (token !== selectedToken) {
+            void askSangamConfirmAction({ decision: "reject", token });
+          }
+        }
+      }
+
       setMessages((current) => {
         const next = current.map((m, i) =>
           i === messageIndex
-            ? { ...m, proposalState: decision === "accept" ? ("accepted" as const) : ("rejected" as const), proposalError: null }
+            ? { ...m, proposalState: decision === "accept" ? ("accepted" as const) : ("rejected" as const) }
             : m,
         );
-        next.push({
-          role: "assistant",
-          text: answer,
-          sourceType,
-          sourceLabel,
-          sourceHref,
-        });
-        return next;
+        return [
+          ...next,
+          {
+            role: "assistant" as const,
+            text: result.data.answer,
+            sourceType: result.data.sourceType,
+            sourceLabel: result.data.sourceLabel,
+            sourceHref: result.data.sourceHref,
+          },
+        ];
       });
+
+      if (decision === "accept") {
+        // Soft-refresh RSC payloads so boards/lists pick up the write.
+        router.refresh();
+      }
     } catch {
       setMessages((current) =>
         current.map((m, i) =>
@@ -258,14 +333,15 @@ export function AskSangam({ role }: { role: AppRole }) {
                 {messages.length === 0 ? (
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Ask about your events, tasks, approvals, announcements, or club memberships — I&apos;ll answer based on your role. Task changes need your Accept.
+                      Ask about your events, tasks, approvals, announcements, or club memberships — I&apos;ll
+                      answer based on your role.
                     </p>
                     <div className="mt-4 space-y-2">
                       {EXAMPLE_QUESTIONS[role].map((question) => (
                         <button
                           key={question}
                           type="button"
-                          onClick={() => ask(question)}
+                          onClick={() => void ask(question)}
                           disabled={pending || hasOpenProposal}
                           className="block w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-left text-sm text-white/[0.85] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary disabled:opacity-50"
                         >
@@ -277,7 +353,10 @@ export function AskSangam({ role }: { role: AppRole }) {
                 ) : (
                   <div className="space-y-3">
                     {messages.map((message, index) => (
-                      <div key={index} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+                      <div
+                        key={index}
+                        className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
+                      >
                         <div
                           className={cn(
                             "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
@@ -288,17 +367,51 @@ export function AskSangam({ role }: { role: AppRole }) {
                         >
                           {message.text}
                           {message.role === "assistant" && (
-                            <SourceTag sourceType={message.sourceType} sourceLabel={message.sourceLabel} sourceHref={message.sourceHref} />
+                            <SourceTag
+                              sourceType={message.sourceType}
+                              sourceLabel={message.sourceLabel}
+                              sourceHref={message.sourceHref}
+                            />
                           )}
                           {message.role === "assistant" && message.proposedAction && (
                             <ToolProposalCard
                               toolName={message.proposedAction.toolName}
                               summary={message.proposedAction.summary}
                               argsPreview={message.proposedAction.argsPreview}
+                              choices={message.proposedAction.choices}
+                              choicePrompt={message.proposedAction.choicePrompt}
+                              choiceGroups={message.proposedAction.choiceGroups}
+                              selectedChoiceId={message.selectedChoiceId}
+                              onSelectChoice={(choiceId) =>
+                                setMessages((current) =>
+                                  current.map((m, i) =>
+                                    i === index
+                                      ? { ...m, selectedChoiceId: choiceId, proposalError: null }
+                                      : m,
+                                  ),
+                                )
+                              }
+                              selectedGroupChoices={message.selectedGroupChoices}
+                              onSelectGroupChoice={(groupId, optionId) =>
+                                setMessages((current) =>
+                                  current.map((m, i) =>
+                                    i === index
+                                      ? {
+                                          ...m,
+                                          selectedGroupChoices: {
+                                            ...(m.selectedGroupChoices ?? {}),
+                                            [groupId]: optionId,
+                                          },
+                                          proposalError: null,
+                                        }
+                                      : m,
+                                  ),
+                                )
+                              }
                               state={message.proposalState ?? "pending"}
                               error={message.proposalError}
-                              onAccept={() => void confirmProposal(index, "accept")}
-                              onReject={() => void confirmProposal(index, "reject")}
+                              onAccept={() => void decide(index, "accept")}
+                              onReject={() => void decide(index, "reject")}
                             />
                           )}
                         </div>
@@ -326,7 +439,7 @@ export function AskSangam({ role }: { role: AppRole }) {
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder={hasOpenProposal ? "Accept or reject the pending action…" : "Ask Sangam anything…"}
+                  placeholder="Ask Sangam anything…"
                   disabled={pending || hasOpenProposal}
                   className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55 disabled:opacity-60"
                 />

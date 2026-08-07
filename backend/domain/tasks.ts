@@ -1,8 +1,4 @@
-"use server";
-
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
 import type { SessionMembership } from "@/backend/auth/session-cookies";
 import { prisma } from "@/backend/db/prisma";
 import { normalizeTaskStatus, TASK_STATUSES } from "@/backend/domain/workflow-rules";
@@ -66,15 +62,87 @@ export async function assignTask(actor: TaskActor, input: AssignTaskInput) {
   return task;
 }
 
-// Shared by the Volunteer "my tasks" view and the Coordinator's volunteer kanban board.
-export async function updateTaskStatusAction(taskId: string, status: string) {
-  const session = await getMockSession();
-  if (!session?.user) throw new Error("Not authenticated");
-  await updateTaskStatus({ id: session.user.id, memberships: session.user.memberships }, taskId, status);
+export const BULK_ASSIGN_MAX_ROWS = 50;
 
-  // Keep every role surface that reads task status in sync.
-  revalidatePath("/volunteer");
-  revalidatePath("/coordinator");
-  revalidatePath("/coordinator/volunteers");
-  revalidatePath("/app");
+export type BulkAssignRow = AssignTaskInput;
+
+export type BulkAssignValidationError = {
+  index: number;
+  message: string;
+};
+
+/**
+ * Validate every row first, then create all in one transaction (all-or-nothing).
+ * Task-assignment emails are sent after commit (best-effort).
+ */
+export async function assignTasksBulk(actor: TaskActor, rows: BulkAssignRow[]) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("At least one task assignment is required");
+  }
+  if (rows.length > BULK_ASSIGN_MAX_ROWS) {
+    throw new Error(`Bulk assign is limited to ${BULK_ASSIGN_MAX_ROWS} tasks at once`);
+  }
+
+  const errors: BulkAssignValidationError[] = [];
+  const prepared: Array<AssignTaskInput & { clubId: string }> = [];
+
+  for (let index = 0; index < rows.length; index++) {
+    const parsed = assignTaskSchema.safeParse(rows[index]);
+    if (!parsed.success) {
+      errors.push({
+        index,
+        message: parsed.error.issues[0]?.message ?? "Invalid assignment row",
+      });
+      continue;
+    }
+
+    const event = await prisma.event.findUnique({ where: { id: parsed.data.eventId } });
+    if (!event) {
+      errors.push({ index, message: "Event not found" });
+      continue;
+    }
+    if (!canManageClub(actor.memberships, event.clubId)) {
+      errors.push({ index, message: "Not authorized for this club" });
+      continue;
+    }
+
+    const assigneeMembership = await prisma.membership.findFirst({
+      where: { userId: parsed.data.assigneeId, clubId: event.clubId },
+    });
+    if (!assigneeMembership) {
+      errors.push({ index, message: "Assignee must belong to this club" });
+      continue;
+    }
+
+    prepared.push({ ...parsed.data, clubId: event.clubId });
+  }
+
+  if (errors.length > 0) {
+    const detail = errors.map((e) => `Row ${e.index + 1}: ${e.message}`).join("; ");
+    throw new Error(`Bulk assign validation failed — nothing was created. ${detail}`);
+  }
+
+  const tasks = await prisma.$transaction(
+    prepared.map((row) =>
+      prisma.task.create({
+        data: {
+          title: row.title,
+          role: row.role,
+          eventId: row.eventId,
+          assigneeId: row.assigneeId,
+          status: "todo",
+        },
+      }),
+    ),
+  );
+
+  for (const task of tasks) {
+    try {
+      await notifyTaskAssigned(task.id);
+    } catch (error) {
+      console.error("[assignTasksBulk] notifyTaskAssigned failed", task.id, error);
+    }
+  }
+
+  return tasks;
 }

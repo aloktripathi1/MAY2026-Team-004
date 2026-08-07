@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { listClubRequests } from "@/backend/domain/club-requests";
 import { listFaculty } from "@/backend/domain/faculty";
 import { PageHeader } from "@/components/shell/AppShell";
@@ -22,7 +22,7 @@ const TABS = [
 export default async function FacultyClubRequests({ searchParams }: { searchParams: { tab?: string } }) {
   // The layout already gates on isFaculty; re-checked here so the page is safe
   // on its own if it's ever moved or rendered outside that layout.
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) redirect("/login");
   if (!session.user.isFaculty) redirect("/app");
 
