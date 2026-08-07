@@ -16,7 +16,16 @@ export type ClubCreationInput = {
   photo?: string;
 };
 
-export async function requestClubCreation(userId: string, input: ClubCreationInput) {
+export async function requestClubCreation(userId: string, userRole: string | undefined, input: ClubCreationInput) {
+  // Only Members can create clubs
+  if (userRole && userRole !== "Member") {
+    return {
+      ok: false,
+      code: "FORBIDDEN" as const,
+      message: "Only Members can create clubs.",
+    };
+  }
+
   const existingCreation = await prisma.clubCreationRequest.findFirst({
     where: { creatorId: userId, status: "pending" },
   });
@@ -26,6 +35,19 @@ export async function requestClubCreation(userId: string, input: ClubCreationInp
       ok: false,
       code: "PENDING_REQUEST_EXISTS" as const,
       message: "You already have a pending club creation request.",
+    };
+  }
+
+  // Check if user already has an approved club
+  const approvedClub = await prisma.clubCreationRequest.findFirst({
+    where: { creatorId: userId, status: "approved" },
+  });
+
+  if (approvedClub) {
+    return {
+      ok: false,
+      code: "CLUB_LIMIT_REACHED" as const,
+      message: "You can only create one club.",
     };
   }
 

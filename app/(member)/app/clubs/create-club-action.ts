@@ -23,7 +23,8 @@ export async function createClubRequestAction(_prevState: any, formData: FormDat
   if (!input.tagline?.trim()) return { error: "Tagline is required" };
   if (!input.category) return { error: "Category is required" };
 
-  const result = await requestClubCreation(session.user.id, input);
+  const userRole = (session.user as any).role;
+  const result = await requestClubCreation(session.user.id, userRole, input);
 
   if (!result.ok) {
     return { error: result.message };

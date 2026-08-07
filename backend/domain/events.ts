@@ -34,11 +34,22 @@ export type EventInput = {
   tags?: string;
 };
 
-export async function createEvent(memberships: SessionMembership[], clubId: string, input: EventInput) {
-  try {
-    requireCoordinatorForClub(memberships, clubId);
-  } catch {
-    return { ok: false, code: "FORBIDDEN", message: "You must be a coordinator for this club." } as const;
+export async function createEvent(
+  memberships: SessionMembership[],
+  clubId: string,
+  input: EventInput,
+  userRole?: string,
+) {
+  // EventCoordinator and Admin users can create events
+  // Regular Members must be Coordinator or Admin in the club
+  const isEventCoordinatorOrAdmin = userRole === "EventCoordinator" || userRole === "Admin";
+
+  if (!isEventCoordinatorOrAdmin) {
+    try {
+      requireCoordinatorForClub(memberships, clubId);
+    } catch {
+      return { ok: false, code: "FORBIDDEN", message: "You must be a coordinator for this club." } as const;
+    }
   }
 
   const club = await prisma.club.findUnique({ where: { id: clubId } });

@@ -26,8 +26,17 @@ export async function createEventAction(_prevState: NewEventState, formData: For
   const session = await getMockSession();
   if (!session?.user) return { error: "Not authenticated" };
 
+  const isEventCoordinatorOrAdmin = (session.user as any).role === "EventCoordinator" || (session.user as any).role === "Admin";
   const membership = getPrimaryClubMembership(session, "Coordinator");
-  if (!membership) return { error: "You must be a club coordinator to create events." };
+
+  if (!isEventCoordinatorOrAdmin && !membership) {
+    return { error: "You must be a club coordinator or event coordinator to create events." };
+  }
+
+  const clubId = membership?.clubId || (formData.get("clubId") as string);
+  if (!clubId) {
+    return { error: "No club specified" };
+  }
 
   const parsed = eventSchema.safeParse({
     title: formData.get("title"),
@@ -63,7 +72,7 @@ export async function createEventAction(_prevState: NewEventState, formData: For
       time,
       venue,
       capacity,
-      clubId: membership.clubId,
+      clubId,
       cover: "linear-gradient(135deg,#7c3aed 0%,#ec4899 60%,#f97316 100%)",
       photo,
       tags: serializeEventTags(tags),
