@@ -16,7 +16,6 @@ Sangam is a community and society management platform: a single source of truth 
 - [Getting started](#getting-started)
 - [Demo accounts](#demo-accounts)
 - [Roles and provisioning](#roles-and-provisioning)
-- [Roles and access](#roles-and-access)
 - [API docs](#api-docs-openapi--swagger)
 - [Testing](#testing)
 - [Email notifications](#email-notifications)
@@ -148,9 +147,12 @@ Roll numbers match the email's local part (e.g. `23f3003225`). Club roles: CodeC
 
 ## Roles and provisioning
 
+Five roles: Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor.
 Roles are **per-club** (`Membership.role`) except faculty, which is
-institution-wide (`User.isFaculty`). Signup produces a plain account with no
-club, so every elevated role has to be granted by someone:
+institution-wide (`User.isFaculty`) rather than scoped to a single club — so
+one person can be Coordinator of one club and a plain Member of another.
+Signup produces a plain account with no club, so every elevated role has to be
+granted by someone:
 
 | Role | Granted by |
 |---|---|
@@ -215,13 +217,13 @@ Before this existed, `Club` rows and the first Admin of a club could only come
 from `prisma/seed.ts`, and `isFaculty` was never written outside it — so a freshly
 deployed database had clubs nobody could administer and no way to appoint anyone.
 
----
+### Route protection
 
-## Roles and access
-
-Five roles: Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. Role is per-club, not global: a `Membership` join table (`User` x `Club`) carries a `ClubRole`, so one person can be Coordinator of one club and a plain Member of another. Faculty is separate, an institution-wide `User.isFaculty` flag rather than a per-club role, since faculty oversight isn't scoped to a single club.
-
-`/admin`, `/coordinator`, `/volunteer`, `/faculty`, and `/app` (member) each check the signed session cookie against the database and redirect to `/login` if you're not signed in as a user who actually holds that role. There's no bypass in production: an anonymous or forged request to any of these routes is turned away, not handed a privileged session.
+`/admin`, `/coordinator`, `/volunteer`, `/faculty`, and `/app` (member) each
+check the signed session cookie against the database and redirect to `/login`
+if you're not signed in as a user who actually holds that role. There's no
+bypass in production: an anonymous or forged request to any of these routes is
+turned away, not handed a privileged session.
 
 ---
 
@@ -242,13 +244,13 @@ Source of truth: `docs/openapi.yaml` (OpenAPI 3, Swagger-compatible). Served liv
 3. Expand an operation (e.g. `POST /api/auth/signup`), click **Try it out**, edit the example body, click **Execute**
 4. Check **Server response** for the status code and JSON (documented response shapes live in the YAML)
 
-Example signup body (institutional email only, `@ds.study.iitm.ac.in`):
+Example signup body (institutional email only, `@ds.study.iitm.ac.in`). Roll number
+isn't submitted — it's derived server-side from the email's local part:
 
 ```json
 {
   "name": "Ananya Rao",
   "email": "23s1000999@ds.study.iitm.ac.in",
-  "rollNumber": "23s1000999",
   "password": "SecurePass1"
 }
 ```
@@ -321,7 +323,7 @@ With `npm run dev` running:
 ```bash
 curl -s -X POST http://localhost:3000/api/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ananya Rao","email":"23s1000999@ds.study.iitm.ac.in","rollNumber":"23s1000999","password":"SecurePass1"}'
+  -d '{"name":"Ananya Rao","email":"23s1000999@ds.study.iitm.ac.in","password":"SecurePass1"}'
 ```
 
 ---
@@ -364,6 +366,7 @@ It prints the resolved sender, mode and result, and delivers nothing while `EMAI
 | Email | Trigger | Category |
 |---|---|---|
 | Signup verification | account created (`createUserAccount`) | *transactional — no opt-out* |
+| Password reset | user requests one via `/forgot-password` | *transactional — no opt-out* |
 | Membership request received | member applies to a club | `membership` |
 | Membership request awaiting approval | member applies → club admins | `membership` |
 | Membership approved / rejected | admin decides on the request | `membership` |
@@ -416,7 +419,10 @@ Add `?at=2026-09-17T09:00:00Z` to drive the windows without waiting for the cloc
 A new account is **not** signed in until its address is confirmed. Set
 `REQUIRE_EMAIL_VERIFICATION=false` to turn that off. When active:
 
-- signup no longer returns a session; it redirects to `/login?verify=sent`
+- signup no longer returns a session; it redirects to `/signup/check-email`
+- clicking the emailed link (`GET /api/auth/verify-email`) confirms the address
+  **and** signs the user in, landing them straight on their dashboard — no
+  separate login step afterward
 - `POST /api/auth/login` answers **403 `EMAIL_UNVERIFIED`** until confirmed
   (deliberately distinct from `INVALID_CREDENTIALS` — the password *was* right,
   and a generic message would send people to reset a password that works)
@@ -643,7 +649,7 @@ tests/
 
 ## Data model
 
-Role is per-club, not global, as described in [Roles and access](#roles-and-access). Venues and Equipment are separate models, not a merged "Resource" type. The shape is shared exactly by `prisma/schema.prisma` and the live Postgres database via `backend/db/prisma.ts`.
+Role is per-club, not global, as described in [Roles and provisioning](#roles-and-provisioning). Venues and Equipment are separate models, not a merged "Resource" type. The shape is shared exactly by `prisma/schema.prisma` and the live Postgres database via `backend/db/prisma.ts`.
 
 `EmailLog` and `EmailVerificationToken` support [Email notifications](#email-notifications):
 `EmailLog.dedupeKey` is unique and doubles as the idempotency lock for the cron sweeps, and only
