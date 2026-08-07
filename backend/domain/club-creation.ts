@@ -17,12 +17,13 @@ export type ClubCreationInput = {
 };
 
 export async function requestClubCreation(userId: string, userRole: string | undefined, input: ClubCreationInput) {
-  // Only Members can create clubs
-  if (userRole && userRole !== "Member") {
+  // Only Members (non-admin) can create clubs
+  // Faculty/Admins manage clubs differently
+  if (userRole === "Admin" || userRole === "EventCoordinator") {
     return {
       ok: false,
       code: "FORBIDDEN" as const,
-      message: "Only Members can create clubs.",
+      message: "Only regular Members can create clubs.",
     };
   }
 

@@ -104,7 +104,6 @@ function LoginForm() {
 
 function SignupForm() {
   const [state, formAction] = useFormState(signupAction, initialSignupState);
-  const [selectedRole, setSelectedRole] = useState("Member");
 
   return (
     <form className="space-y-4" action={formAction}>
@@ -112,62 +111,9 @@ function SignupForm() {
       <Field label="Institutional email" name="email" id="signup-email" placeholder="23s1000123@ds.study.iitm.ac.in" type="email" />
       <Field label="Roll number" name="rollNumber" placeholder="23s1000123" />
       <Field label="Password" name="password" id="signup-password" placeholder="••••••••" type="password" />
-
-      <div>
-        <div className="text-mono-label mb-3 text-white/[0.54]">Choose your role</div>
-        <div className="space-y-2">
-          <RoleOption
-            value="Member"
-            label="Member"
-            description="Create clubs, manage memberships"
-            selected={selectedRole === "Member"}
-            onChange={() => setSelectedRole("Member")}
-          />
-          <RoleOption
-            value="EventCoordinator"
-            label="Event Coordinator"
-            description="Create and manage events"
-            selected={selectedRole === "EventCoordinator"}
-            onChange={() => setSelectedRole("EventCoordinator")}
-          />
-          <RoleOption
-            value="Admin"
-            label="Admin of Society"
-            description="Full system administration"
-            selected={selectedRole === "Admin"}
-            onChange={() => setSelectedRole("Admin")}
-          />
-        </div>
-        <input type="hidden" name="role" value={selectedRole} />
-      </div>
-
       <FormError message={state.error} />
       <SubmitButton label="Create account" pendingLabel="Creating account..." />
     </form>
-  );
-}
-
-function RoleOption({
-  value,
-  label,
-  description,
-  selected,
-  onChange,
-}: {
-  value: string;
-  label: string;
-  description: string;
-  selected: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/[0.12] bg-white/[0.045] px-3.5 py-3 transition hover:bg-white/[0.07]" style={{ borderColor: selected ? "rgb(59, 130, 246)" : undefined, backgroundColor: selected ? "rgb(59, 130, 246, 0.1)" : undefined }}>
-      <input type="radio" name="role-option" value={value} checked={selected} onChange={onChange} className="h-4 w-4" />
-      <div className="flex-1">
-        <div className="text-sm font-medium text-white">{label}</div>
-        <div className="text-xs text-white/[0.56]">{description}</div>
-      </div>
-    </label>
   );
 }
 

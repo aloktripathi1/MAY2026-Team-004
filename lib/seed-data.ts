@@ -2481,6 +2481,7 @@ export interface FacultyMember {
   email: string;
 }
 export const faculty: FacultyMember[] = [
+  { id: "f0", name: "Faculty Admin", email: "faculty@ds.study.iitm.ac.in" },
   { id: "f1", name: "Prof. R. Krishnan", email: "faculty.mentor@ds.study.iitm.ac.in" },
   { id: "f2", name: "Dr. Meenakshi Subramaniam", email: "meenakshi.subramaniam@ds.study.iitm.ac.in" },
 ];

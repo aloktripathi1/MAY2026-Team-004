@@ -17,7 +17,6 @@ export const signupSchema = z.object({
   email: institutionalEmailSchema,
   rollNumber: z.string().trim().min(1, "Roll number is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["Member", "EventCoordinator", "Admin"]).default("Member"),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
