@@ -108,6 +108,31 @@ model User {
   countMeIns             CountMeIn[]
   emailLogs              EmailLog[]
   verificationTokens     EmailVerificationToken[]
+  clubCreationRequests   ClubCreationRequest[]
+}
+
+model ClubCreationRequest {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  tagline   String
+  category  ClubCategory
+  hue       String
+  emoji     String
+  founded   String
+  description String
+  banner    String
+  photo     String?
+
+  status    ApprovalStatus @default(pending)
+  creatorId String
+  creator   User    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  approvedAt DateTime?
+
+  @@index([status])
+  @@index([creatorId])
 }
 
 model Club {
