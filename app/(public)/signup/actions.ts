@@ -18,6 +18,7 @@ export async function signupAction(_prevState: SignupState, formData: FormData):
     email: formData.get("email"),
     rollNumber: formData.get("rollNumber"),
     password: formData.get("password"),
+    role: formData.get("role") || "Member",
   });
 
   if (!parsed.success) {

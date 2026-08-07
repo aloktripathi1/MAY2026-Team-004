@@ -20,6 +20,12 @@ enum ClubCategory {
   Design
 }
 
+enum UserRole {
+  Member
+  EventCoordinator
+  Admin
+}
+
 enum ClubRole {
   Member
   Volunteer
@@ -88,6 +94,7 @@ model User {
   interests      String   @default("[]")
   notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false,\"emailAnnouncements\":true,\"emailEvents\":true,\"emailTasks\":true,\"emailMembership\":true,\"emailIssues\":true}")
   isFaculty      Boolean  @default(false)
+  role           UserRole @default(Member)
   emailVerified  DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

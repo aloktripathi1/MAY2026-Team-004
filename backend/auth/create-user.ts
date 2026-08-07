@@ -54,6 +54,7 @@ export async function createUserAccount(input: SignupInput): Promise<CreateUserR
       rollNumber: input.rollNumber,
       hashedPassword,
       interests: "[]",
+      role: input.role,
     },
     select: {
       id: true,
