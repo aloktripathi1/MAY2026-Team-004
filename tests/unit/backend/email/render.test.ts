@@ -68,12 +68,14 @@ describe("renderLayout", () => {
     const withManage = renderLayout({ ...base, manageUrl: "https://sangam.test/unsub" });
     expect(withManage.html).toContain("https://sangam.test/unsub");
     expect(withManage.text).toContain("https://sangam.test/unsub");
+    expect(withManage.html).toContain("Manage what you get");
 
-    // Transactional mail has no opt-out, and must say so rather than dangle a
-    // dead "manage preferences" link.
+    // Transactional mail has no opt-out and no preferences to manage — the
+    // footer is omitted rather than filled with a generic "this is an
+    // account email" line that says nothing the note above it hasn't already.
     const transactional = renderLayout(base);
-    expect(transactional.html).toContain("account email");
-    expect(transactional.html).not.toContain("Change what");
+    expect(transactional.html).not.toContain("Manage what you get");
+    expect(transactional.text).not.toContain("Manage what you get");
   });
 
   it("hides the preheader from the visible body", () => {
