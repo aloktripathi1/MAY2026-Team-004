@@ -91,10 +91,10 @@ export function verifyEmail(data: { name: string; verifyUrl: string; manageUrl: 
     heading: "Confirm your email",
     preview: "One click and your Sangam account is ready.",
     paragraphs: [
-      `Hi ${data.name}, welcome to Sangam — confirm this address so we can reach you about your clubs and events.`,
+      `Hi ${data.name}, welcome to Sangam. Confirm this address so we can reach you about your clubs and events.`,
     ],
     button: { label: "Confirm my email", url: data.verifyUrl },
-    note: `This link expires in ${data.expiresInHours} hours and works once. Didn't create a Sangam account? Ignore this email — nothing else happens.`,
+    note: `This link expires in ${data.expiresInHours} hours and works once. Didn't create a Sangam account? Ignore this email. Nothing else happens.`,
   });
   return { subject: "Confirm your Sangam email", html, text, category: null };
 }
@@ -105,10 +105,10 @@ export function resetPassword(data: { name: string; resetUrl: string; expiresInH
     heading: "Reset your password",
     preview: "Set a new password for your Sangam account.",
     paragraphs: [
-      `Hi ${data.name}, we received a request to reset your Sangam password — choose a new one below.`,
+      `Hi ${data.name}, we received a request to reset your Sangam password. Choose a new one below.`,
     ],
     button: { label: "Reset my password", url: data.resetUrl },
-    note: `This link expires in ${hours} and works once. Didn't request this? Ignore this email — your password stays the same.`,
+    note: `This link expires in ${hours} and works once. Didn't request this? Ignore this email. Your password stays the same.`,
   });
   return { subject: "Reset your Sangam password", html, text, category: null };
 }
@@ -119,7 +119,7 @@ export function membershipApplicationReceived(data: { name: string; clubName: st
     preview: `${data.clubName} has your membership request.`,
     paragraphs: [
       `Hi ${data.name}, we've received your request to join ${data.clubName} and passed it to the admins.`,
-      "You'll hear back by email as soon as they decide — nothing else needed from you now.",
+      "You'll hear back by email as soon as they decide. Nothing else needed from you now.",
     ],
     button: { label: "View my clubs", url: data.clubsUrl },
     manageUrl: data.manageUrl,
@@ -129,10 +129,10 @@ export function membershipApplicationReceived(data: { name: string; clubName: st
 
 export function membershipApproved(data: { name: string; clubName: string; clubUrl: string; manageUrl: string }): RenderedEmail {
   const { html, text } = renderLayout({
-    heading: `You're in — welcome to ${data.clubName}`,
+    heading: `You're in: welcome to ${data.clubName}`,
     preview: `Your ${data.clubName} membership was approved.`,
     paragraphs: [
-      `Hi ${data.name}, ${data.clubName} approved your membership request — you're officially a member.`,
+      `Hi ${data.name}, ${data.clubName} approved your membership request. You're officially a member.`,
       "Events, announcements and volunteer openings are all live in your dashboard now.",
     ],
     button: { label: `Open ${data.clubName}`, url: data.clubUrl },
@@ -160,7 +160,7 @@ export function welcome(data: { name: string; clubName: string; appUrl: string; 
     heading: "Welcome to Sangam",
     preview: "Here's how to get the most out of Sangam.",
     paragraphs: [
-      `Hi ${data.name}, you're an active member of ${data.clubName} now — your dashboard is live.`,
+      `Hi ${data.name}, you're an active member of ${data.clubName} now. Your dashboard is live.`,
       "Count yourself in for events, pick up volunteer tasks, follow announcements, or raise an issue if something's wrong.",
     ],
     button: { label: "Go to my dashboard", url: data.appUrl },
@@ -180,7 +180,7 @@ export function membershipRequestAwaitingApproval(data: {
   const { html, text } = renderLayout({
     heading: `${data.applicantName} wants to join ${data.clubName}`,
     preview: "A membership request is waiting for your decision.",
-    paragraphs: [`Hi ${data.adminName}, ${data.applicantName} just requested to join ${data.clubName} — it's waiting on your approvals board.`],
+    paragraphs: [`Hi ${data.adminName}, ${data.applicantName} just requested to join ${data.clubName}. It's waiting on your approvals board.`],
     facts: [
       { label: "Applicant", value: data.applicantName },
       { label: "Email", value: data.applicantEmail },
@@ -206,7 +206,7 @@ export function eventCreated(data: {
 }): RenderedEmail {
   const { html, text } = renderLayout({
     heading: `${data.clubName} just announced ${data.eventTitle}`,
-    preview: `${data.eventTitle} — ${eventDateTime(data.date, data.time)}`,
+    preview: `${data.eventTitle} · ${eventDateTime(data.date, data.time)}`,
     paragraphs: [`Hi ${data.name}, it's on the calendar and registration's open.`],
     facts: [
       { label: "Event", value: data.eventTitle },
@@ -233,7 +233,7 @@ export function registrationConfirmation(data: {
     heading: `You're in for ${data.eventTitle}`,
     preview: `Your spot at ${data.eventTitle} is confirmed.`,
     paragraphs: [
-      `Hi ${data.name}, your spot's confirmed — we'll remind you the day before.`,
+      `Hi ${data.name}, your spot's confirmed. We'll remind you the day before.`,
     ],
     facts: [
       { label: "Event", value: data.eventTitle },
@@ -260,8 +260,8 @@ export function eventReminder(data: {
 }): RenderedEmail {
   const { html, text } = renderLayout({
     heading: `${data.eventTitle} is tomorrow`,
-    preview: `${eventDateTime(data.date, data.time)} — ${data.venue}`,
-    paragraphs: [`Hi ${data.name}, quick reminder — you're registered and it's tomorrow.`],
+    preview: `${eventDateTime(data.date, data.time)} · ${data.venue}`,
+    paragraphs: [`Hi ${data.name}, quick reminder: you're registered and it's tomorrow.`],
     facts: [
       { label: "When", value: eventDateTime(data.date, data.time) },
       { label: "Where", value: data.venue },
@@ -293,7 +293,7 @@ export function eventScheduleChange(data: {
     heading: `${data.eventTitle} has changed`,
     preview: `Updated details for ${data.eventTitle}.`,
     paragraphs: [
-      `Hi ${data.name}, ${data.clubName} changed the plan for ${data.eventTitle} — here's what's different.`,
+      `Hi ${data.name}, ${data.clubName} changed the plan for ${data.eventTitle}. Here's what's different.`,
       data.changes.map((c) => `${c.label}: ${c.from} → ${c.to}`).join(" · "),
     ],
     facts: [
@@ -304,7 +304,7 @@ export function eventScheduleChange(data: {
     note: "New time doesn't work? Withdraw from the event page any time.",
     manageUrl: data.manageUrl,
   });
-  return { subject: `Changed: ${data.eventTitle} — new date, time or venue`, html, text, category: "events" };
+  return { subject: `Changed: ${data.eventTitle}, new date, time or venue`, html, text, category: "events" };
 }
 
 export function registrationClosingSoon(data: {
@@ -352,7 +352,7 @@ export function eventCancelled(data: {
     heading: `${data.eventTitle} has been cancelled`,
     preview: `${data.eventTitle} is no longer going ahead.`,
     paragraphs: [
-      `Hi ${data.name}, ${data.clubName} cancelled ${data.eventTitle} (was set for ${eventDateTime(data.date, data.time)}) — your registration's been released.`,
+      `Hi ${data.name}, ${data.clubName} cancelled ${data.eventTitle} (was set for ${eventDateTime(data.date, data.time)}). Your registration's been released.`,
       ...(data.reason ? [`Reason given: ${data.reason}`] : []),
     ],
     button: { label: "Browse other events", url: data.eventsUrl },
@@ -373,7 +373,7 @@ export function eventApprovalDecision(data: {
     preview: data.approved ? "Registrations are open." : "A decision was made on your event.",
     paragraphs: data.approved
       ? [
-          `Hi ${data.name}, it's live — visible to members with registration open.`,
+          `Hi ${data.name}, it's live and visible to members, with registration open.`,
         ]
       : [
           `Hi ${data.name}, check the event page for details, and talk to your faculty reviewer about what to change.`,
@@ -454,7 +454,7 @@ export function taskDueReminder(data: {
     heading: `${data.taskTitle} is due tomorrow`,
     preview: dueDateTime(data.dueAt),
     paragraphs: [
-      `Hi ${data.name}, quick reminder — your task for ${data.eventTitle} is due ${dueDateTime(data.dueAt)}.`,
+      `Hi ${data.name}, quick reminder: your task for ${data.eventTitle} is due ${dueDateTime(data.dueAt)}.`,
     ],
     button: { label: "Open my tasks", url: data.tasksUrl },
     manageUrl: data.manageUrl,
@@ -475,7 +475,7 @@ export function taskOverdue(data: {
     preview: `Was due ${dueDateTime(data.dueAt)}.`,
     paragraphs: [
       `Hi ${data.name}, your task for ${data.eventTitle} was due ${dueDateTime(data.dueAt)} and is still open.`,
-      "If it's actually done, mark it done so your coordinator isn't chasing it. If you're stuck, say so — someone can pick it up.",
+      "If it's actually done, mark it done so your coordinator isn't chasing it. If you're stuck, say so. Someone can pick it up.",
     ],
     button: { label: "Update the task", url: data.tasksUrl },
     manageUrl: data.manageUrl,
@@ -519,7 +519,7 @@ export function announcementDigest(data: {
     preview: data.items.map((i) => i.title).join(" · "),
     paragraphs: [
       `Hi ${data.name}, here's what your clubs posted since your last digest.`,
-      ...data.items.map((item) => `${item.clubName} — ${item.title}: ${excerpt(item.body, 180)}`),
+      ...data.items.map((item) => `${item.clubName} · ${item.title}: ${excerpt(item.body, 180)}`),
     ],
     button: { label: "Open Sangam", url: data.announcementsUrl },
     note: "High-priority announcements are sent the moment they're posted; everything else arrives here.",
@@ -567,7 +567,7 @@ export function issueStatusChanged(data: {
   const { html, text } = renderLayout({
     heading: `Your issue is now ${data.status}`,
     preview: data.issueTitle,
-    paragraphs: [`Hi ${data.name}, the status just changed on the issue you raised — see below.`],
+    paragraphs: [`Hi ${data.name}, the status just changed on the issue you raised. See below.`],
     facts: [
       { label: "Issue", value: data.issueTitle },
       { label: "Status", value: data.status },
@@ -575,7 +575,7 @@ export function issueStatusChanged(data: {
     button: { label: "View issue", url: data.issuesUrl },
     manageUrl: data.manageUrl,
   });
-  return { subject: `${data.issueTitle} — now ${data.status}`, html, text, category: "issues" };
+  return { subject: `${data.issueTitle}: now ${data.status}`, html, text, category: "issues" };
 }
 
 export function issueResolved(data: {
@@ -631,11 +631,11 @@ export function handoverConfirmation(data: {
     preview: `${data.outgoingAdminName} → ${data.incomingAdminName}`,
     paragraphs: data.isIncoming
       ? [
-          `Hi ${data.name}, ${data.outgoingAdminName} has handed you the admin role — you're all set.`,
+          `Hi ${data.name}, ${data.outgoingAdminName} has handed you the admin role. You're all set.`,
           "You can now approve memberships and events, post announcements, and manage the club's issues board.",
         ]
       : [
-          `Hi ${data.name}, your admin role has been transferred to ${data.incomingAdminName} — you're now a coordinator for ${data.clubName}.`,
+          `Hi ${data.name}, your admin role has been transferred to ${data.incomingAdminName}. You're now a coordinator for ${data.clubName}.`,
         ],
     facts: [
       { label: "Club", value: data.clubName },
@@ -659,7 +659,7 @@ export function roleChanged(data: {
     heading: `You're now a ${data.role} for ${data.clubName}`,
     preview: `Your role in ${data.clubName} changed.`,
     paragraphs: [
-      `Hi ${data.name}, your dashboard's updated to match — welcome aboard.`,
+      `Hi ${data.name}, your dashboard's updated to match. Welcome aboard.`,
     ],
     button: { label: "Open Sangam", url: data.appUrl },
     manageUrl: data.manageUrl,
@@ -709,7 +709,7 @@ export function clubRequestSubmitted(data: {
     heading: `Your proposal for ${data.clubName} is in`,
     preview: "Faculty will review it shortly.",
     paragraphs: [
-      `Hi ${data.name}, thanks for proposing ${data.clubName} — a faculty reviewer will take a look and you'll hear back either way.`,
+      `Hi ${data.name}, thanks for proposing ${data.clubName}. A faculty reviewer will take a look and you'll hear back either way.`,
       "If it's approved you become the club's first admin, so you can add members, appoint coordinators and start running events straight away.",
     ],
     button: { label: "Track my request", url: data.requestsUrl },
@@ -731,7 +731,7 @@ export function clubRequestAwaitingReview(data: {
   const { html, text } = renderLayout({
     heading: `${data.requesterName} wants to start ${data.clubName}`,
     preview: "A club proposal is waiting for review.",
-    paragraphs: [`Hi ${data.facultyName}, ${data.requesterName} proposed ${data.clubName} — it's waiting on your decision.`],
+    paragraphs: [`Hi ${data.facultyName}, ${data.requesterName} proposed ${data.clubName}. It's waiting on your decision.`],
     facts: [
       { label: "Club", value: data.clubName },
       { label: "Tagline", value: data.tagline },
@@ -752,10 +752,10 @@ export function clubRequestApproved(data: {
   manageUrl: string;
 }): RenderedEmail {
   const { html, text } = renderLayout({
-    heading: `${data.clubName} is live — and you're its admin`,
+    heading: `${data.clubName} is live, and you're its admin`,
     preview: `Your proposal for ${data.clubName} was approved.`,
     paragraphs: [
-      `Hi ${data.name}, faculty approved it — you're officially its admin.`,
+      `Hi ${data.name}, faculty approved it. You're officially its admin.`,
       "Start by adding members and appointing a coordinator or two, then create your first event. Events go to faculty for approval before registration opens.",
     ],
     button: { label: "Open admin dashboard", url: data.adminUrl },
