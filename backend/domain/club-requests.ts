@@ -1,5 +1,6 @@
 import { Prisma, type ClubCategory } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
+import { notifyClubRequestDecision, notifyClubRequestSubmitted } from "@/backend/email/notifications";
 
 /**
  * Club provisioning: a student proposes a club, faculty decide, and approval
@@ -127,6 +128,12 @@ export async function submitClubRequest(userId: string, input: ClubRequestInput)
     },
   });
 
+  // Notifications live here rather than in the Server Action so every caller
+  // gets them — the same reasoning as membership.ts and events.ts. Attaching
+  // them to one entry point is what left the "Count Me In" button silent while
+  // the REST route mailed correctly.
+  await notifyClubRequestSubmitted(request.id);
+
   return { ok: true, request } as const;
 }
 
@@ -204,6 +211,10 @@ export async function approveClubRequest(requestId: string, reviewerId: string) 
       return created;
     });
 
+    // After the transaction commits, never inside it: a slow mail provider must
+    // not hold the club/membership write open.
+    await notifyClubRequestDecision(requestId);
+
     return { ok: true, club } as const;
   } catch (error) {
     // The requester could have been added to a club of this name by another
@@ -239,6 +250,8 @@ export async function rejectClubRequest(requestId: string, reviewerId: string, n
       reviewNote: note?.trim() || null,
     },
   });
+
+  await notifyClubRequestDecision(requestId);
 
   return { ok: true, request: updated } as const;
 }

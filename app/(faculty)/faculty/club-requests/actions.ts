@@ -6,7 +6,7 @@ import { getMockSession } from "@/backend/auth/mock-session";
 import { requireFacultyAccess } from "@/backend/domain/workflow-rules";
 import { approveClubRequest, rejectClubRequest } from "@/backend/domain/club-requests";
 import { grantFaculty, revokeFaculty } from "@/backend/domain/faculty";
-import { notifyClubRequestDecision, notifyFacultyAccessGranted } from "@/backend/email/notifications";
+import { notifyFacultyAccessGranted } from "@/backend/email/notifications";
 
 /**
  * Faculty-only actions. Faculty are institution-wide rather than club-scoped, so
@@ -38,10 +38,10 @@ export async function approveClubRequestAction(requestId: string): Promise<Revie
     return { error: "Faculty access is required to review club proposals." };
   }
 
+  // approveClubRequest emails the proposer itself, so every caller notifies.
   const result = await approveClubRequest(requestId, reviewer.id);
   if (!result.ok) return { error: result.message };
 
-  await notifyClubRequestDecision(requestId);
   revalidateProvisioning();
   return { ok: true, message: `${result.club.name} is live, and the proposer is now its admin.` };
 }
@@ -64,7 +64,6 @@ export async function rejectClubRequestAction(requestId: string, note?: string):
   const result = await rejectClubRequest(requestId, reviewer.id, parsed.data.note);
   if (!result.ok) return { error: result.message };
 
-  await notifyClubRequestDecision(requestId);
   revalidateProvisioning();
   return { ok: true, message: "Proposal declined, and the proposer has been told." };
 }

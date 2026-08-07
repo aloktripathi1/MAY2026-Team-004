@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { CLUB_CATEGORIES, submitClubRequest } from "@/backend/domain/club-requests";
-import { notifyClubRequestSubmitted } from "@/backend/email/notifications";
 
 /**
  * Any signed-in student may propose a club; faculty decide. Kept in its own file
@@ -51,8 +50,7 @@ export async function submitClubRequestAction(
   });
   if (!result.ok) return { error: result.message };
 
-  await notifyClubRequestSubmitted(result.request.id);
-
+  // submitClubRequest emails the proposer and faculty itself.
   revalidatePath("/app/clubs");
   revalidatePath("/faculty/club-requests");
   return { ok: true, message: "Proposal sent. Faculty will review it and you'll get an email either way." };
