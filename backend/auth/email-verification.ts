@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { prisma } from "@/backend/db/prisma";
+import { getEmailConfig } from "@/backend/email/config";
 import { notifyEmailVerification } from "@/backend/email/notifications";
 
 /**
@@ -18,20 +19,27 @@ export const VERIFICATION_TTL_HOURS = 24;
 /**
  * Whether an unverified account is refused sign-in.
  *
- * Off by default, and that default is deliberate rather than lazy: the gate is
- * only safe once verification email genuinely reaches new signups. While
- * `EMAIL_ALLOWLIST` is pinned during rollout, a student who signs up never
- * receives a link, so switching this on would lock every new account out of the
- * app with no way back in. Turn it on in the same change that clears the
- * allowlist — see "Requiring verified email" in the README.
+ * **On by default.** Set `REQUIRE_EMAIL_VERIFICATION=false` to disable it.
  *
- * Accounts that predate verification are backfilled as verified by migration
- * 20260806..._backfill_email_verified, and prisma/seed.ts stamps the seeded
- * accounts, so enabling this never strands an existing login.
+ * The one hard precondition is that the app can actually deliver the link. If
+ * email is not enabled, requiring verification would refuse everyone with no way
+ * to comply — locking the whole app, including the person trying to configure it.
+ * So the gate is inert whenever `getEmailConfig().enabled` is false: locally and
+ * in tests it never fires, and in production it fires as soon as email works.
+ *
+ * That leaves nothing to remember. Verification mail is transactional, so it is
+ * exempt from `EMAIL_ALLOWLIST` (see sendEmail) and reaches a new signup even
+ * mid-rollout; the link's origin falls back to the request host if `APP_URL` is
+ * stale (see getEmailConfig); and accounts predating the feature are recognised
+ * by never having been issued a token (see authenticate-user.ts) rather than by
+ * a migration having run.
  */
 export function requiresEmailVerification(): boolean {
   const flag = process.env.REQUIRE_EMAIL_VERIFICATION?.trim().toLowerCase();
-  return flag === "true" || flag === "1";
+  if (flag === "false" || flag === "0") return false;
+
+  // No way to send the link means no way to satisfy the gate.
+  return getEmailConfig().enabled;
 }
 
 function hashToken(token: string): string {

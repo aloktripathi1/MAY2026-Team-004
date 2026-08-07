@@ -116,9 +116,9 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 | `EMAIL_FROM` | Sender identity — `Sangam <no-reply@sangam-club.com>` once the domain is verified. Defaults to Resend's `onboarding@resend.dev` test sender. |
 | `EMAIL_REPLY_TO` | Optional `Reply-To`. Omit to let replies bounce. |
 | `EMAIL_ALLOWLIST` | Comma-separated addresses or domains that may receive real mail. Anything else is skipped and logged. Empty means no restriction. |
-| `APP_URL` | Absolute origin used to build links inside emails. `NEXTAUTH_URL` is for auth callbacks; this is what recipients click. |
+| `APP_URL` | Absolute origin used to build links inside emails. Falls back to the host of the request being served, so a stale value can't produce dead links in mail sent during a request — but set it, because scheduled mail has no request to borrow a host from. |
 | `CRON_SECRET` | Bearer token for the scheduled-email routes under `/api/cron/email/*`. Without it those routes refuse every request. |
-| `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. Off by default — see [Requiring verified email](#requiring-verified-email) before enabling. |
+| `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. **On by default**, and only active once email can actually be delivered. Set `false` to disable — see [Requiring verified email](#requiring-verified-email). |
 
 ---
 
@@ -413,8 +413,8 @@ Add `?at=2026-09-17T09:00:00Z` to drive the windows without waiting for the cloc
 
 ### Requiring verified email
 
-By default a new account is signed straight in and `User.emailVerified` is only
-a record, not a gate. Set `REQUIRE_EMAIL_VERIFICATION=true` to enforce it:
+A new account is **not** signed in until its address is confirmed. Set
+`REQUIRE_EMAIL_VERIFICATION=false` to turn that off. When active:
 
 - signup no longer returns a session; it redirects to `/login?verify=sent`
 - `POST /api/auth/login` answers **403 `EMAIL_UNVERIFIED`** until confirmed
@@ -423,10 +423,16 @@ a record, not a gate. Set `REQUIRE_EMAIL_VERIFICATION=true` to enforce it:
 - the login form offers "Send me a new verification link", backed by
   `POST /api/auth/resend-verification`
 
-⚠️ **Do not enable this while `EMAIL_ALLOWLIST` is set.** A student who signs up
-from an address outside the allowlist never receives a link, and would have no
-way to sign in — the gate would lock out exactly the people it's meant to
-onboard. Enable it in the same change that clears the allowlist.
+The gate is **inert unless email can actually be delivered** — if `EMAIL_ENABLED`
+is off or no API key is set, it does not fire. Requiring a step nobody can
+complete would refuse every account, including whoever is trying to configure it.
+That also means it never interferes locally or in tests, and starts applying in
+production the moment email works.
+
+`EMAIL_ALLOWLIST` does **not** filter verification mail. The allowlist exists to
+keep *notification* fan-out off real inboxes during rollout; verification goes to
+one address the recipient just typed and is the only way into their own account,
+so filtering it would turn the safety net into a lockout.
 
 Enabling the gate never strands an existing login. `prisma/seed.ts` stamps the
 seeded demo accounts, migration `20260806160000_backfill_email_verified` settles

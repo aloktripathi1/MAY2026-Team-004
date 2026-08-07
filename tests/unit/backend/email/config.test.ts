@@ -101,3 +101,18 @@ describe("absoluteUrl", () => {
     expect(absoluteUrl("https://elsewhere.test/x", "https://sangam.test")).toBe("https://elsewhere.test/x");
   });
 });
+
+describe("transactional mail and the allowlist", () => {
+  /**
+   * Verification is the only way into your own account. Filtering it through
+   * EMAIL_ALLOWLIST would mean a student signs up, never receives a link, and
+   * can never sign in — the safety net becoming the lockout. sendEmail exempts
+   * `category: null` for exactly this reason; the check itself is asserted here
+   * so the allowlist helper's contract stays honest.
+   */
+  it("would otherwise block a signup outside the allowlist", () => {
+    const allowlist = ["23f2005593@ds.study.iitm.ac.in"];
+    expect(isAllowedRecipient("brand.new.student@ds.study.iitm.ac.in", allowlist)).toBe(false);
+    expect(isAllowedRecipient("23f2005593@ds.study.iitm.ac.in", allowlist)).toBe(true);
+  });
+});
