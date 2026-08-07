@@ -152,9 +152,6 @@ export function AppShell({
                         >
                           <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-secondary" : ""}`} />
                           <span className="truncate">{option.name}</span>
-                          {active && (
-                            <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" aria-hidden />
-                          )}
                         </Link>
                       );
                     })}

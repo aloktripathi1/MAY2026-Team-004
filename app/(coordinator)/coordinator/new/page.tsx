@@ -33,7 +33,7 @@ export default async function AllEventsPage() {
         actions={<NewEventModal />}
       />
 
-      <div className="max-w-4xl space-y-4">
+      <div className="max-w-3xl space-y-4">
         {events.length === 0 && (
           <GlassCard className="p-8 text-center text-sm text-muted-foreground">
             No events found. Click "New event" above to publish one.

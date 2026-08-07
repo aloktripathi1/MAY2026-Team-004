@@ -1,6 +1,5 @@
 "use client";
 
-import { User as UserIcon } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -19,18 +18,25 @@ const sizeClasses = {
   xl: "h-28 w-28",
 };
 
-const iconSizes = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 56,
+const textSizes = {
+  sm: "text-xs",
+  md: "text-sm",
+  lg: "text-base",
+  xl: "text-2xl",
 };
 
 const imagePixelSizes = { sm: 32, md: 40, lg: 48, xl: 112 };
 
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export function Avatar({ name, image, size = "md", className = "", showBorder = true }: AvatarProps) {
   const sizeClass = sizeClasses[size];
-  const iconSize = iconSizes[size];
+  const textSize = textSizes[size];
   const borderClass = showBorder ? "border border-primary/25 bg-primary/15" : "bg-primary/15";
 
   if (image) {
@@ -48,8 +54,8 @@ export function Avatar({ name, image, size = "md", className = "", showBorder = 
   }
 
   return (
-    <div className={cn(sizeClass, "shrink-0 rounded-lg flex items-center justify-center text-white", borderClass, className)}>
-      <UserIcon size={iconSize} className="text-muted-foreground" />
+    <div className={cn(sizeClass, textSize, "shrink-0 rounded-lg flex items-center justify-center font-semibold text-primary", borderClass, className)}>
+      {getInitials(name)}
     </div>
   );
 }

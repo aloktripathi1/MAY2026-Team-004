@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { CLUB_CATEGORIES, submitClubRequest } from "@/backend/domain/club-requests";
+import { uploadClubPhoto } from "@/backend/storage/club-photo";
 
 /**
  * Any signed-in student may propose a club; faculty decide. Kept in its own file
@@ -41,12 +42,21 @@ export async function submitClubRequestAction(
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
+  let photo: string | undefined;
+  const photoFile = formData.get("photo");
+  if (photoFile instanceof File && photoFile.size > 0) {
+    const uploaded = await uploadClubPhoto(photoFile);
+    if (!uploaded.ok) return { error: uploaded.error };
+    photo = uploaded.url;
+  }
+
   const result = await submitClubRequest(session.user.id, {
     name: parsed.data.name,
     tagline: parsed.data.tagline,
     category: parsed.data.category as (typeof CLUB_CATEGORIES)[number],
     description: parsed.data.description,
     emoji: parsed.data.emoji,
+    photo,
   });
   if (!result.ok) return { error: result.message };
 

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { ImagePlus, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { TimePicker } from "@/components/ui/TimePicker";
 import { createEventAction, type NewEventState } from "./actions";
 
 const TAGS = ["Contest", "Music", "Debate", "Workshop", "Sponsored", "Off-campus", "Hybrid", "Online"];
@@ -87,8 +89,14 @@ export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
         <div className="mt-1.5 text-xs text-muted-foreground/70">PNG, JPEG, WEBP, or GIF. Up to 5MB. Falls back to a gradient cover if skipped.</div>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        <Field label="Date" name="date" type="date" />
-        <Field label="Time" name="time" type="time" />
+        <label className="block w-full">
+          <div className="text-mono-label mb-1.5">Date</div>
+          <DatePicker name="date" required min={new Date().toISOString().slice(0, 10)} />
+        </label>
+        <label className="block w-full">
+          <div className="text-mono-label mb-1.5">Time</div>
+          <TimePicker name="time" required />
+        </label>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
         <Field label="Venue" name="venue" placeholder="Amphitheatre" />
@@ -129,7 +137,6 @@ export function NewEventForm({ onSuccess }: { onSuccess?: () => void }) {
 function Field({
   label, name, placeholder, type = "text", area,
 }: { label: string; name: string; placeholder?: string; type?: string; area?: boolean }) {
-  const isDateOrTime = type === "date" || type === "time";
   return (
     <label className="block w-full">
       <div className="text-mono-label mb-1.5">{label}</div>
@@ -141,7 +148,7 @@ function Field({
           required
           type={type}
           placeholder={placeholder}
-          className={`h-11 w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55 ${isDateOrTime ? "[color-scheme:dark]" : ""}`}
+          className="h-11 w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-4 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55"
         />
       )}
     </label>

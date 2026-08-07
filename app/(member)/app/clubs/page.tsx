@@ -4,7 +4,7 @@ import { prisma } from "@/backend/db/prisma";
 import { parseInterests } from "@/lib/interests";
 import { INTEREST_CATEGORY_MAP } from "@/lib/club-interests";
 import { PageHeader } from "@/components/shell/AppShell";
-import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { GlassCard } from "@/components/ui/primitives";
 import { ClubDiscoveryCard, type DiscoverClub } from "./ClubDiscoveryCard";
 import { DiscoverClubsSection } from "./DiscoverClubsSection";
 import { listClubRequestsForUser } from "@/backend/domain/club-requests";
@@ -69,7 +69,6 @@ export default async function AppClubs() {
                 <div className="text-base font-medium">{c.name}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">{c.tagline}</div>
               </div>
-              <StatusPill tone="green">Approved</StatusPill>
             </GlassCard>
           ))}
         </div>
