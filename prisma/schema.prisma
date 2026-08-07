@@ -84,6 +84,7 @@ model User {
   hashedPassword String
   name           String
   rollNumber     String?  @unique
+  googleId       String?  @unique
   image          String?
   interests      String   @default("[]")
   notificationPrefs String @default("{\"onlyMyClubs\":true,\"suggestedClubEvents\":true,\"pinnedAnnouncementsOnly\":false,\"emailAnnouncements\":true,\"emailEvents\":true,\"emailTasks\":true,\"emailMembership\":true,\"emailIssues\":true}")
