@@ -1,6 +1,7 @@
 import {
   DEFAULT_ALLOWED_EMAIL_DOMAIN,
   INSTITUTIONAL_EMAIL_DOMAIN,
+  deriveRollNumber,
   getAllowedEmailDomains,
   isAllowedEmailDomain,
   signupSchema,
@@ -11,7 +12,6 @@ describe("signupSchema", () => {
     const parsed = signupSchema.safeParse({
       name: "Ananya Rao",
       email: "23s1000999@ds.study.iitm.ac.in",
-      rollNumber: "23s1000999",
       password: "SecurePass1",
     });
     expect(parsed.success).toBe(true);
@@ -24,7 +24,6 @@ describe("signupSchema", () => {
     const parsed = signupSchema.safeParse({
       name: "Ananya Rao",
       email: "23S1000999@DS.STUDY.IITM.AC.IN",
-      rollNumber: "23s1000999",
       password: "SecurePass1",
     });
     expect(parsed.success).toBe(true);
@@ -37,7 +36,6 @@ describe("signupSchema", () => {
     const parsed = signupSchema.safeParse({
       name: "Outside User",
       email: "student@gmail.com",
-      rollNumber: "23s1000888",
       password: "SecurePass1",
     });
     expect(parsed.success).toBe(false);
@@ -50,7 +48,6 @@ describe("signupSchema", () => {
     const parsed = signupSchema.safeParse({
       name: "Spoof User",
       email: "evil@ds.study.iitm.ac.in.evil.com",
-      rollNumber: "23s1000777",
       password: "SecurePass1",
     });
     expect(parsed.success).toBe(false);
@@ -60,7 +57,6 @@ describe("signupSchema", () => {
     const parsed = signupSchema.safeParse({
       name: "Ananya Rao",
       email: "23s1000999@ds.study.iitm.ac.in",
-      rollNumber: "23s1000999",
       password: "short",
     });
     expect(parsed.success).toBe(false);
@@ -69,22 +65,20 @@ describe("signupSchema", () => {
     }
   });
 
-  it("rejects missing name and roll number", () => {
+  it("rejects a missing name", () => {
     const missingName = signupSchema.safeParse({
       name: "  ",
       email: "23s1000999@ds.study.iitm.ac.in",
-      rollNumber: "23s1000999",
       password: "SecurePass1",
     });
     expect(missingName.success).toBe(false);
+  });
+});
 
-    const missingRoll = signupSchema.safeParse({
-      name: "Ananya Rao",
-      email: "23s1000999@ds.study.iitm.ac.in",
-      rollNumber: "",
-      password: "SecurePass1",
-    });
-    expect(missingRoll.success).toBe(false);
+describe("deriveRollNumber", () => {
+  it("takes everything before the @ as the roll number", () => {
+    expect(deriveRollNumber("21f1001234@ds.study.iitm.ac.in")).toBe("21f1001234");
+    expect(deriveRollNumber("23ds3000456@ds.study.iitm.ac.in")).toBe("23ds3000456");
   });
 });
 
@@ -97,9 +91,7 @@ describe("ALLOWED_EMAIL_DOMAINS", () => {
   });
 
   function accepts(email: string) {
-    return signupSchema.safeParse({
-      name: "Test", email, rollNumber: "23t0001", password: "SecurePass1",
-    }).success;
+    return signupSchema.safeParse({ name: "Test", email, password: "SecurePass1" }).success;
   }
 
   it("defaults to the institution's student domain", () => {
@@ -146,9 +138,7 @@ describe("ALLOWED_EMAIL_DOMAINS", () => {
 
   it("names every allowed domain in the error message", () => {
     process.env.ALLOWED_EMAIL_DOMAINS = "ds.study.iitm.ac.in,staff.iitm.ac.in";
-    const parsed = signupSchema.safeParse({
-      name: "Test", email: "a@gmail.com", rollNumber: "23t0001", password: "SecurePass1",
-    });
+    const parsed = signupSchema.safeParse({ name: "Test", email: "a@gmail.com", password: "SecurePass1" });
     expect(parsed.success).toBe(false);
     if (!parsed.success) {
       const message = parsed.error.issues.map((i) => i.message).join(" ");

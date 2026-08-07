@@ -90,23 +90,27 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [state, formAction] = useFormState(loginAction, initialLoginState);
   const callbackUrl = searchParams.get("callbackUrl") ?? "";
-
-  // Signup redirects here with ?verify=sent when verification is required, so
-  // the new account is told to check its inbox rather than silently landing on
-  // a login form that will refuse it.
-  const justSignedUp = searchParams.get("verify") === "sent";
   const needsVerification = state.code === "EMAIL_UNVERIFIED";
+  const justReset = searchParams.get("reset") === "success";
 
   return (
     <form className="space-y-4" action={formAction}>
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
-      {justSignedUp && (
+      {justReset && (
         <p className="rounded-xl border border-secondary/40 bg-secondary/[0.08] px-4 py-3 text-sm text-secondary">
-          Account created. Check <strong>your inbox</strong> for a verification link, then sign in.
+          Password updated. Sign in with your new password.
         </p>
       )}
       <Field label="Institutional email" name="email" placeholder="23s1000123@ds.study.iitm.ac.in" type="email" />
-      <Field label="Password" name="password" placeholder="••••••••" type="password" />
+      <div>
+        <Field label="Password" name="password" placeholder="••••••••" type="password" />
+        <Link
+          href="/forgot-password"
+          className="mt-1.5 inline-block text-xs text-secondary underline underline-offset-2 transition hover:text-white"
+        >
+          Forgot password?
+        </Link>
+      </div>
       <FormError message={state.error} />
       {needsVerification && <ResendVerification />}
       <SubmitButton label="Sign in" pendingLabel="Signing in..." />
@@ -165,7 +169,6 @@ function SignupForm() {
     <form className="space-y-4" action={formAction}>
       <Field label="Full name" name="name" placeholder="Ananya Rao" />
       <Field label="Institutional email" name="email" id="signup-email" placeholder="23s1000123@ds.study.iitm.ac.in" type="email" />
-      <Field label="Roll number" name="rollNumber" placeholder="23s1000123" />
       <Field label="Password" name="password" id="signup-password" placeholder="••••••••" type="password" />
       <FormError message={state.error} />
       <SubmitButton label="Create account" pendingLabel="Creating account..." />

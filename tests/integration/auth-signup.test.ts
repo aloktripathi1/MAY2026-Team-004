@@ -148,22 +148,17 @@ it("returns 409 for a duplicate email", async () => {
   });
 });
 
-it("returns 409 for a duplicate roll number", async () => {
-  const first = uniqueIdentity();
-  createdEmails.push(first.email);
-  const created = await client.post(SIGNUP_PATH, first);
-  expect(created.status).toBe(201);
+it("derives the roll number from the email's local part, ignoring any client-supplied value", async () => {
+  const base = uniqueIdentity();
+  const payload = { ...base, rollNumber: "not-the-real-roll-number" };
+  createdEmails.push(payload.email);
+  const res = await client.post(SIGNUP_PATH, payload);
+  const expected = { status: 201, "data.rollNumber": base.rollNumber };
 
-  const second = { ...first, name: "Duplicate Roll", email: `alt-${first.email}` };
-  createdEmails.push(second.email);
-  const res = await client.post(SIGNUP_PATH, second);
-  const expected = { status: 409, "error.code": "ROLL_EXISTS", userStory: USER_STORY };
-
-  reportCase("POST /api/auth/signup - duplicate roll number", { ...second, password: "***" }, expected, res, () => {
-    expect(res.status).toBe(409);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error.code).toBe("ROLL_EXISTS");
-    expect(res.body.userStory).toBe(USER_STORY);
+  reportCase("POST /api/auth/signup - roll number derived from email", { ...payload, password: "***" }, expected, res, () => {
+    expect(res.status).toBe(201);
+    expect(res.body.data.rollNumber).toBe(base.rollNumber);
+    expect(res.body.data.rollNumber).not.toBe(payload.rollNumber);
   });
 });
 
