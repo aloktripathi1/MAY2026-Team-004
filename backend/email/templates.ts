@@ -49,7 +49,9 @@ export type TemplateName =
   // Admin
   | "handoverConfirmation"
   | "roleChanged"
-  | "handoverBrief";
+  | "handoverBrief"
+  | "rolePromotion"
+  | "rolePromotionAccepted";
 
 function eventDateTime(date: Date, time: string): string {
   const day = date.toLocaleDateString("en-GB", {
@@ -672,4 +674,41 @@ export function handoverBrief(data: {
     manageUrl: data.manageUrl,
   });
   return { subject: `Handover brief: ${data.clubName}`, html, text, category: "membership" };
+}
+
+export function rolePromotion(data: {
+  recipientName: string;
+  clubName: string;
+  newRole: string;
+  dashboardUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: `You're now a ${data.newRole}`,
+    preview: `Promoted to ${data.newRole} for ${data.clubName}`,
+    paragraphs: [
+      `Hi ${data.recipientName}, the admins of ${data.clubName} have promoted you to ${data.newRole}.`,
+      `With this role, you now have more responsibilities and permissions to help manage the club. Visit your dashboard to see your new capabilities.`,
+    ],
+    button: { label: "Visit dashboard", url: data.dashboardUrl },
+    manageUrl: data.dashboardUrl,
+  });
+  return { subject: `Role update: ${data.newRole} in ${data.clubName}`, html, text, category: "membership" };
+}
+
+export function rolePromotionAccepted(data: {
+  recipientName: string;
+  clubName: string;
+  dashboardUrl: string;
+}): RenderedEmail {
+  const { html, text } = renderLayout({
+    heading: `Your new role is active`,
+    preview: `You're officially promoted`,
+    paragraphs: [
+      `Hi ${data.recipientName}, your new role in ${data.clubName} is now active!`,
+      `You have full access to your new responsibilities. Visit your dashboard to get started.`,
+    ],
+    button: { label: "Open dashboard", url: data.dashboardUrl },
+    manageUrl: data.dashboardUrl,
+  });
+  return { subject: `Welcome to your new role in ${data.clubName}`, html, text, category: "membership" };
 }

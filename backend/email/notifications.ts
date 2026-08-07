@@ -686,4 +686,55 @@ export async function notifyIssueReply(data: {
   });
 }
 
+export async function notifyRolePromotion(
+  userId: string,
+  clubId: string,
+  newRole: "EventCoordinator" | "Coordinator",
+): Promise<SendResult> {
+  const [user, club] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    prisma.club.findUnique({ where: { id: clubId } }),
+  ]);
+
+  if (!user || !club) return { status: "skipped", reason: "User or club not found" };
+
+  const roleLabel = newRole === "EventCoordinator" ? "Event Coordinator" : "Coordinator";
+
+  return sendEmail({
+    to: user.email,
+    template: "rolePromotion",
+    rendered: templates.rolePromotion({
+      recipientName: user.name,
+      clubName: club.name,
+      newRole: roleLabel,
+      dashboardUrl: emailLinks.dashboard(),
+    }),
+    dedupeKey: dedupeKey("rolePromotion", userId, clubId, newRole, minuteBucket()),
+  });
+}
+
+export async function notifyRolePromotionAccepted(
+  userId: string,
+  clubId: string,
+  newRole: "EventCoordinator" | "Coordinator",
+): Promise<SendResult> {
+  const [user, club] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    prisma.club.findUnique({ where: { id: clubId } }),
+  ]);
+
+  if (!user || !club) return { status: "skipped", reason: "User or club not found" };
+
+  return sendEmail({
+    to: user.email,
+    template: "rolePromotionAccepted",
+    rendered: templates.rolePromotionAccepted({
+      recipientName: user.name,
+      clubName: club.name,
+      dashboardUrl: emailLinks.dashboard(),
+    }),
+    dedupeKey: dedupeKey("rolePromotionAccepted", userId, clubId, minuteBucket()),
+  });
+}
+
 export type { Recipient };
