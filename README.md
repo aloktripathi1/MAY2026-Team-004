@@ -428,11 +428,26 @@ from an address outside the allowlist never receives a link, and would have no
 way to sign in — the gate would lock out exactly the people it's meant to
 onboard. Enable it in the same change that clears the allowlist.
 
-Accounts that predate the feature are backfilled as verified by migration
-`20260806160000_backfill_email_verified`, and `prisma/seed.ts` stamps the seeded
-demo accounts, so enabling the gate never strands an existing login. The
-resend endpoint answers identically for known and unknown addresses so it can't
-be used to enumerate accounts.
+Enabling the gate never strands an existing login. `prisma/seed.ts` stamps the
+seeded demo accounts, migration `20260806160000_backfill_email_verified` settles
+old rows for anyone deploying with `prisma migrate deploy` — **and the gate does
+not depend on either**.
+
+That last part matters because production deploys with `prisma db push`
+(`vercel.json`), which syncs schema structure and never executes migration SQL,
+so the backfill does not run there. Instead the gate distinguishes the two
+meanings of a null `emailVerified` by asking whether a verification token was
+ever issued for that account: signup always issues one before the account can
+sign in, so "no token, ever" identifies exactly the accounts that predate the
+feature. Those are let through and stamped on first sign-in, so it resolves once
+per account rather than on every attempt.
+
+It fails open in one rare case by design — if issuing the token itself failed,
+the account is admitted. Locking someone out because our own mail system broke
+is the worse of the two outcomes.
+
+The resend endpoint answers identically for known and unknown addresses so it
+can't be used to enumerate accounts.
 
 ### Preferences and unsubscribe
 

@@ -615,6 +615,54 @@ describe("email verification gate", () => {
     );
   });
 
+  /**
+   * Production deploys with `prisma db push` (vercel.json), which syncs schema
+   * structure and never runs migration SQL — so the emailVerified backfill
+   * migration does not execute there. The gate therefore cannot rely on it:
+   * it distinguishes "asked and ignored" from "never asked" by whether a
+   * verification token was ever issued.
+   */
+  it("treats an account that was never asked to verify as verified", async () => {
+    const legacy = await makeUser();
+    expect(legacy.emailVerified).toBeNull();
+
+    const tokens = await prisma.emailVerificationToken.count({ where: { userId: legacy.id } });
+
+    reportCase(
+      "legacy account has no verification token",
+      { userId: legacy.id },
+      { emailVerified: null, tokensEverIssued: 0 },
+      { emailVerified: legacy.emailVerified, tokensEverIssued: tokens },
+      () => {
+        // No token was ever issued, so the gate must not hold this account —
+        // it was never able to comply.
+        expect(tokens).toBe(0);
+      },
+    );
+  });
+
+  it("records a token for every account created since verification shipped", async () => {
+    const identity = uniqueIdentity("23w");
+    createdEmails.push(identity.email);
+
+    const res = await client.post("/api/auth/signup", identity);
+    expect(res.status).toBe(201);
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: identity.email } });
+    createdUserIds.push(user.id);
+    const tokens = await prisma.emailVerificationToken.count({ where: { userId: user.id } });
+
+    reportCase(
+      "new signup is asked to verify",
+      { email: identity.email },
+      { tokensEverIssued: ">=1" },
+      { tokensEverIssued: tokens },
+      // This is what makes the gate able to hold a new account: signup always
+      // issues a token before the account can ever sign in.
+      () => expect(tokens).toBeGreaterThanOrEqual(1),
+    );
+  });
+
   it("re-issues a link without revealing whether the account exists", async () => {
     const user = await makeUser();
 
