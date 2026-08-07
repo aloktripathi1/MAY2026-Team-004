@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getMockSession } from "@/backend/auth/mock-session";
 import { prisma } from "@/backend/db/prisma";
+import { memberVisibleEventWhere } from "@/backend/domain/workflow-rules";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";
@@ -34,6 +35,7 @@ export default async function VolunteerEventsPage({
   const now = new Date();
   const list = await prisma.event.findMany({
     where: {
+      ...memberVisibleEventWhere(),
       clubId: { in: clubIds },
       ...(tab === "upcoming"
         ? { status: { not: "past" }, date: { gte: now } }

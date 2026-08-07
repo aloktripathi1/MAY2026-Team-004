@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import { prisma } from "@/backend/db/prisma";
+import { memberVisibleEventWhere } from "@/backend/domain/workflow-rules";
 import { PageHeader } from "@/components/shell/AppShell";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { normalizeEventTags } from "@/lib/event-tags";
@@ -20,10 +21,15 @@ export default async function EventsPage({ searchParams }: { searchParams: { tab
   // which is set once and never transitions automatically (#89).
   const now = new Date();
   const list = await prisma.event.findMany({
-    where:
-      tab === "upcoming"
+    // Members only see events cleared to run — a pending one can't be joined
+    // anyway (decideCountMeInAction refuses it), so listing it advertises
+    // something nobody can register for.
+    where: {
+      ...memberVisibleEventWhere(),
+      ...(tab === "upcoming"
         ? { status: { not: "past" }, date: { gte: now } }
-        : { OR: [{ status: "past" }, { date: { lt: now } }] },
+        : { OR: [{ status: "past" }, { date: { lt: now } }] }),
+    },
     orderBy: { date: tab === "upcoming" ? "asc" : "desc" },
     include: { club: true, _count: { select: { countMeIns: true } } },
   });

@@ -4,6 +4,7 @@ import type { SessionMembership } from "@/backend/auth/session-cookies";
 import {
   buildEventSlug,
   decideCountMeInAction,
+  memberVisibleEventWhere,
   normalizeEventApproval,
   parseTagInput,
 } from "@/backend/domain/workflow-rules";
@@ -67,9 +68,19 @@ export async function createEvent(memberships: SessionMembership[], clubId: stri
   return { ok: true, event } as const;
 }
 
-export async function listEvents(filters: { clubId?: string; status?: string }) {
+/**
+ * Backs `GET /api/events`, which takes no session at all — so it must not expose
+ * events awaiting approval to the world. `includeUnapproved` exists for callers
+ * that have already established the caller may manage the club; the coordinator
+ * and admin pages query Prisma directly and are unaffected.
+ */
+export async function listEvents(
+  filters: { clubId?: string; status?: string },
+  options: { includeUnapproved?: boolean } = {},
+) {
   return prisma.event.findMany({
     where: {
+      ...(options.includeUnapproved ? {} : memberVisibleEventWhere()),
       ...(filters.clubId ? { clubId: filters.clubId } : {}),
       ...(filters.status ? { status: filters.status as "upcoming" | "live" | "past" } : {}),
     },

@@ -8,7 +8,7 @@ import { StatusPill } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { normalizeEventTags } from "@/lib/event-tags";
 import { formatEventDate } from "@/lib/format";
-import { isEventPast } from "@/backend/domain/workflow-rules";
+import { isApprovalVisibleToMembers, isEventPast } from "@/backend/domain/workflow-rules";
 import { CountMeInButton } from "./CountMeInButton";
 
 // The route segment is named [id] but links are built from the slug, so accept
@@ -31,6 +31,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function EventDetail({ params }: { params: { id: string } }) {
   const event = await getEvent(params.id);
   if (!event) notFound();
+
+  // Not listed to members, so not reachable by link either — otherwise the
+  // filter on the events page is cosmetic and a shared URL still exposes an
+  // event nobody can register for. Coordinators review their own pending events
+  // under /coordinator, and faculty under /faculty/approvals.
+  if (!isApprovalVisibleToMembers(event.approval)) notFound();
 
   const session = await requirePageSession();
   const [myCountMeIn, attendees, organizers] = await Promise.all([

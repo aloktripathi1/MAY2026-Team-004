@@ -7,6 +7,35 @@ export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 export const EVENT_APPROVALS = ["approved", "pending", "rejected"] as const;
 export type EventApproval = (typeof EVENT_APPROVALS)[number];
 
+/**
+ * Approval states an event may be in and still be shown to members.
+ *
+ * `notRequired` is included: it means the event never needed faculty sign-off,
+ * not that sign-off is outstanding. Most seeded events are in that state.
+ *
+ * `pending` and `rejected` are excluded. A pending event has not been cleared to
+ * run, and registration is refused for it anyway (see decideCountMeInAction), so
+ * listing it advertises something nobody can join. A rejected one may already
+ * have had its registrants told it was cancelled.
+ *
+ * Coordinator, admin and faculty surfaces deliberately do *not* use this — they
+ * exist to act on events awaiting approval.
+ */
+export const MEMBER_VISIBLE_APPROVALS = ["approved", "notRequired"] as const;
+
+/**
+ * Prisma `where` fragment for the rule above, so every surface filters alike.
+ * A function rather than a shared constant: Prisma needs a mutable array, and a
+ * fresh object per call can't be mutated by one query and surprise another.
+ */
+export function memberVisibleEventWhere() {
+  return { approval: { in: [...MEMBER_VISIBLE_APPROVALS] } };
+}
+
+export function isApprovalVisibleToMembers(approval: string): boolean {
+  return (MEMBER_VISIBLE_APPROVALS as readonly string[]).includes(approval);
+}
+
 export type EventCapacitySnapshot = {
   status: string;
   capacity: number;
