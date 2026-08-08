@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Sparkles, X, Send, CalendarDays, ListChecks, Megaphone, Users2 } from "lucide-react";
+import { Sparkles, X, ArrowUp, CalendarDays, ListChecks, Megaphone, Users2, Mic, SquareStop, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/backend/auth/roles";
 import {
@@ -115,10 +115,12 @@ function SourceTag({
   const meta = SOURCE_META[sourceType];
   const Icon = meta.icon;
   const content = (
-    <span className="inline-flex items-center gap-1.5 rounded-md bg-white/[0.06] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-secondary ring-1 ring-secondary/25">
-      <Icon className="h-3 w-3" />
-      {meta.label}
-      {sourceLabel && <span className="normal-case tracking-normal text-secondary/80">· {sourceLabel}</span>}
+    <span className="inline-flex max-w-full items-start gap-1.5 rounded-md bg-white/[0.06] px-2 py-1 font-mono text-[10px] font-semibold text-secondary ring-1 ring-secondary/25">
+      <Icon className="mt-0.5 h-3 w-3 shrink-0" />
+      <span className="min-w-0 uppercase tracking-[0.14em]">
+        {meta.label}
+        {sourceLabel && <span className="normal-case tracking-normal text-secondary/80"> · {sourceLabel}</span>}
+      </span>
     </span>
   );
   return sourceHref ? (
@@ -147,7 +149,15 @@ export function AskSangam({ role }: { role: AppRole }) {
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const maxDurationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const levelFrameRef = useRef<number | null>(null);
+  const barRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const hasOpenProposal = messages.some((m) =>
     m.proposals?.some((slot) => isOpenProposalState(slot.state)),
@@ -156,6 +166,72 @@ export function AskSangam({ role }: { role: AppRole }) {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
+
+  useEffect(() => {
+    return () => {
+      if (maxDurationTimeoutRef.current) clearTimeout(maxDurationTimeoutRef.current);
+      stopLevelMeter();
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        recorder.onstop = null;
+        recorder.stop();
+        recorder.stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+    // Cleanup only touches refs, so it only needs to run once on unmount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const BAR_COUNT = 5;
+
+  function resetBars() {
+    for (const bar of barRefs.current) {
+      if (bar) bar.style.transform = "scaleY(0.15)";
+    }
+  }
+
+  function stopLevelMeter() {
+    if (levelFrameRef.current) {
+      cancelAnimationFrame(levelFrameRef.current);
+      levelFrameRef.current = null;
+    }
+    analyserRef.current = null;
+    if (audioContextRef.current) {
+      void audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    resetBars();
+  }
+
+  function startLevelMeter(stream: MediaStream) {
+    const AudioContextCtor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const audioContext = new AudioContextCtor();
+    const source = audioContext.createMediaStreamSource(stream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 64;
+    source.connect(analyser);
+    audioContextRef.current = audioContext;
+    analyserRef.current = analyser;
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const bucketSize = Math.max(1, Math.floor(data.length / BAR_COUNT));
+
+    const tick = () => {
+      const currentAnalyser = analyserRef.current;
+      if (!currentAnalyser) return;
+      currentAnalyser.getByteFrequencyData(data);
+      for (let i = 0; i < BAR_COUNT; i++) {
+        let sum = 0;
+        for (let j = 0; j < bucketSize; j++) sum += data[i * bucketSize + j] ?? 0;
+        const avg = sum / bucketSize / 255;
+        const scale = Math.max(0.15, Math.min(1, avg * 1.8));
+        const bar = barRefs.current[i];
+        if (bar) bar.style.transform = `scaleY(${scale})`;
+      }
+      levelFrameRef.current = requestAnimationFrame(tick);
+    };
+    tick();
+  }
 
   async function ask(question: string) {
     const text = question.trim();
@@ -365,12 +441,9 @@ export function AskSangam({ role }: { role: AppRole }) {
 
     try {
       for (const actionIndex of pendingIndexes) {
-        // Capture latest slot selections from React state via updater side channel.
-        let slot: ProposalSlot | undefined;
-        setMessages((current) => {
-          slot = current[messageIndex]?.proposals?.[actionIndex];
-          return current;
-        });
+        // `pendingIndexes` was derived from this same snapshot and already
+        // filtered to state === "pending", so this is always defined.
+        const slot = snapshot.proposals[actionIndex];
         if (!slot || slot.state !== "pending") continue;
 
         const proposal = slot.action;
@@ -456,6 +529,79 @@ export function AskSangam({ role }: { role: AppRole }) {
       }
     } finally {
       setPending(false);
+    }
+  }
+
+  const MAX_RECORDING_MS = 60_000;
+
+  async function startRecording() {
+    if (voiceState !== "idle" || pending || hasOpenProposal) return;
+    setError(null);
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setError("Couldn't access the microphone. Check your browser's permission for this site.");
+      return;
+    }
+
+    const recorder = new MediaRecorder(stream);
+    audioChunksRef.current = [];
+    mediaRecorderRef.current = recorder;
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) audioChunksRef.current.push(event.data);
+    };
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      stopLevelMeter();
+      if (maxDurationTimeoutRef.current) {
+        clearTimeout(maxDurationTimeoutRef.current);
+        maxDurationTimeoutRef.current = null;
+      }
+      void transcribeRecording();
+    };
+
+    recorder.start();
+    setVoiceState("recording");
+    startLevelMeter(stream);
+    maxDurationTimeoutRef.current = setTimeout(() => stopRecording(), MAX_RECORDING_MS);
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  }
+
+  async function transcribeRecording() {
+    setVoiceState("transcribing");
+    try {
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      audioChunksRef.current = [];
+
+      if (audioBlob.size === 0) {
+        setError("Didn't catch that — try recording again.");
+        return;
+      }
+
+      const form = new FormData();
+      form.append("audio", audioBlob, "clip.webm");
+
+      const res = await fetch("/api/assistant/transcribe", { method: "POST", body: form });
+      const body = await res.json();
+
+      if (!res.ok || !body.success) {
+        setError(body?.error?.message ?? "Couldn't transcribe that. Please try again.");
+        return;
+      }
+
+      setInput((current) => (current.trim() ? `${current.trim()} ${body.data.text}` : body.data.text));
+    } catch {
+      setError("Couldn't reach the transcription service. Check your connection and try again.");
+    } finally {
+      setVoiceState("idle");
     }
   }
 
@@ -636,23 +782,69 @@ export function AskSangam({ role }: { role: AppRole }) {
                   event.preventDefault();
                   void ask(input);
                 }}
-                className="flex shrink-0 items-center gap-2 border-t border-white/10 p-4"
+                className="shrink-0 border-t border-white/10 p-4"
               >
-                <input
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  placeholder="Ask Sangam anything…"
-                  disabled={pending || hasOpenProposal}
-                  className="min-w-0 flex-1 rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-secondary/55 disabled:opacity-60"
-                />
-                <button
-                  type="submit"
-                  disabled={pending || hasOpenProposal || !input.trim()}
-                  aria-label="Send"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-secondary/40 bg-secondary/[0.14] text-secondary transition hover:bg-secondary/[0.22] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1.5 rounded-2xl border border-white/[0.12] bg-white/[0.035] py-1.5 pl-3.5 pr-1.5 transition focus-within:border-secondary/55">
+                  {voiceState === "recording" ? (
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5 py-1">
+                      <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-destructive" />
+                      <div className="flex h-4 flex-1 items-center gap-[3px]">
+                        {Array.from({ length: BAR_COUNT }).map((_, i) => (
+                          <div
+                            key={i}
+                            ref={(el) => {
+                              barRefs.current[i] = el;
+                            }}
+                            className="h-full w-1 shrink-0 origin-center rounded-full bg-destructive/70"
+                            style={{ transform: "scaleY(0.15)" }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      placeholder={
+                        hasOpenProposal
+                          ? "Accept or reject the pending action…"
+                          : voiceState === "transcribing"
+                            ? "Transcribing…"
+                            : "Ask Sangam anything…"
+                      }
+                      disabled={pending || hasOpenProposal || voiceState !== "idle"}
+                      className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-white outline-none placeholder:text-muted-foreground/60 disabled:opacity-60"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={voiceState === "recording" ? stopRecording : startRecording}
+                    disabled={pending || hasOpenProposal || voiceState === "transcribing"}
+                    aria-label={voiceState === "recording" ? "Stop recording" : "Record voice message"}
+                    className={cn(
+                      "grid h-9 w-9 shrink-0 place-items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-40",
+                      voiceState === "recording"
+                        ? "bg-destructive text-destructive-foreground"
+                        : "text-muted-foreground hover:text-secondary",
+                    )}
+                  >
+                    {voiceState === "recording" ? (
+                      <SquareStop className="h-4 w-4" />
+                    ) : voiceState === "transcribing" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mic className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={pending || hasOpenProposal || voiceState !== "idle" || !input.trim()}
+                    aria-label="Send"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-muted-foreground"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                </div>
               </form>
             </motion.div>
           </>
