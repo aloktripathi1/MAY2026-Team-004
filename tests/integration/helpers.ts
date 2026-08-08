@@ -8,11 +8,9 @@ export const LOGOUT_PATH = "/api/auth/logout";
 export const ME_PATH = "/api/auth/me";
 
 /**
- * Real, seeded team accounts (prisma/seed.ts) used in place of the old
- * "send no cookie, get the privileged demo persona" pattern the pytest
- * suite relied on. That anonymous fallback is gated behind
- * ALLOW_DEMO_SESSION and off by default (see #81/#72), so role-scoped
- * tests authenticate for real instead.
+ * Real, seeded team accounts (prisma/seed.ts) used for role-scoped tests.
+ * Anonymous requests must not receive a privileged session — authenticate
+ * for real instead.
  */
 export const SEEDED_ACCOUNTS = {
   /** Ananya Rao: Admin/CodeChef, Coordinator/E-Cell, Volunteer/Sarga, Member/Paradox, Faculty. */

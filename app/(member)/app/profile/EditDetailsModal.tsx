@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { Camera, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -45,6 +46,7 @@ export function EditDetailsModal({
   interests: string[];
   image: string | null;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(interests);
   const [imageDraft, setImageDraft] = useState<string | null>(image);
@@ -77,8 +79,11 @@ export function EditDetailsModal({
       isFirstRender.current = false;
       return;
     }
-    if (state.ok) setOpen(false);
-  }, [state]);
+    if (state.ok) {
+      setOpen(false);
+      router.refresh();
+    }
+  }, [state, router]);
 
   function toggleInterest(interest: string) {
     setSelected((current) =>

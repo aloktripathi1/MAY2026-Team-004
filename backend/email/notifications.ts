@@ -3,6 +3,7 @@ import { sendEmail, sendEmails, summarize, type SendEmailInput, type SendResult 
 import { emailLinks, manageUrlFor } from "@/backend/email/routes";
 import {
   clubAdminRecipients,
+  clubMemberRecipientsByIds,
   clubRecipients,
   dedupeRecipients,
   eventRegistrantRecipients,
@@ -593,7 +594,10 @@ export async function notifyAnnouncement(announcementId: string): Promise<Notify
   if (!announcement) return { ...EMPTY };
   if (announcement.priority !== "High") return { ...EMPTY };
 
-  const audience = await clubRecipients(announcement.club.id, announcement.audience);
+  const audience =
+    announcement.recipientUserIds.length > 0
+      ? await clubMemberRecipientsByIds(announcement.club.id, announcement.recipientUserIds)
+      : await clubRecipients(announcement.club.id, announcement.audience);
   const recipients = audience.filter((person) => {
     if (announcement.pinned) return true;
     return !parseNotificationPrefs(person.prefsJson).pinnedAnnouncementsOnly;

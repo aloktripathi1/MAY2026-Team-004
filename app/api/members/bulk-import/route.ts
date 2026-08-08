@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { bulkImportMembers } from "@/backend/domain/membership";
 import { requireClubAdminAccess } from "@/backend/domain/workflow-rules";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY });
   }

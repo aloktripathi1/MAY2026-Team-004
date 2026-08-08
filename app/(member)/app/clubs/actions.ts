@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { decideJoinRequestAction } from "@/backend/domain/workflow-rules";
 import { notifyMembershipApplied } from "@/backend/email/notifications";
 
 export async function toggleJoinRequestAction(clubId: string) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const existing = await prisma.membership.findUnique({

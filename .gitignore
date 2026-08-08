@@ -7,8 +7,8 @@ prisma/dev.db
 prisma/dev.db-journal
 *.tsbuildinfo
 *.md
-!docs/**/*.md
 !README.md
+docs/
 __pycache__/
 .pytest_cache/
 .venv/

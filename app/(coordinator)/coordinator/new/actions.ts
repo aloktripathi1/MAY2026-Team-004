@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { parseTagInput, buildEventSlug } from "@/backend/domain/workflow-rules";
@@ -23,7 +23,7 @@ const eventSchema = z.object({
 export type NewEventState = { error?: string; ok?: boolean };
 
 export async function createEventAction(_prevState: NewEventState, formData: FormData): Promise<NewEventState> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Coordinator");

@@ -39,8 +39,15 @@ export default async function AnnouncementHistoryPage() {
           <GlassCard key={a.id} className="p-4">
             <div className="mb-2 flex items-center gap-2 flex-wrap">
               {a.pinned && <Pin className="h-3 w-3 text-secondary" />}
-              {a.audience && a.audience !== "All" && (
-                <span className="text-mono-label !text-[10px] text-secondary/80">→ {a.audience}</span>
+              {a.recipientUserIds.length > 0 ? (
+                <span className="text-mono-label !text-[10px] text-secondary/80">
+                  → {a.recipientUserIds.length} people
+                </span>
+              ) : (
+                a.audience &&
+                a.audience !== "All" && (
+                  <span className="text-mono-label !text-[10px] text-secondary/80">→ {a.audience}</span>
+                )
               )}
               <span className={`text-mono-label !text-[10px] px-2 py-0.5 rounded ${priorityColors[a.priority] || priorityColors.Med}`}>
                 {a.priority === "Med" ? "Medium" : a.priority}

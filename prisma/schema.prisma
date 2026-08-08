@@ -195,6 +195,8 @@ model Announcement {
   pinned    Boolean  @default(false)
   audience  AnnouncementAudience @default(All)
   priority  Priority @default(Med)
+  /// When non-empty, email/visibility targets these club members instead of audience.
+  recipientUserIds String[] @default([])
 
   club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)

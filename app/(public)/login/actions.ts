@@ -16,7 +16,6 @@ export type LoginState = { error?: string; code?: "EMAIL_UNVERIFIED" };
 /**
  * Form-based login (existing UI). Shares validation + auth with
  * POST /api/auth/login. Keeps the same user-facing error strings.
- * Mock/demo session remains in lib/mock-session.ts and [...nextauth].
  */
 export async function loginAction(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const parsed = loginSchema.safeParse({

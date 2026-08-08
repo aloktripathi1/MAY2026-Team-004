@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { CLUB_CATEGORIES, submitClubRequest } from "@/backend/domain/club-requests";
 import { uploadClubPhoto } from "@/backend/storage/club-photo";
 
@@ -30,7 +30,7 @@ export async function submitClubRequestAction(
   _prevState: ClubRequestState,
   formData: FormData,
 ): Promise<ClubRequestState> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const parsed = schema.safeParse({

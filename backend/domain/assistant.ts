@@ -1,8 +1,8 @@
 import { z } from "zod/v4";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
-import { runTaskToolAgent } from "@/backend/assistant/agent/run-task-agent";
-import type { AppRole } from "@/backend/auth/roles";
+import { runWriteToolAgentForQuestion } from "@/backend/assistant/agent/run-write-agent";
+import { membershipsForAppRole, type AppRole } from "@/backend/auth/roles";
 import { formatEventDate, formatTaskDue } from "@/lib/format";
 import { GenAiError, structuredCompletion, textCompletion } from "@/lib/genai";
 import type { AssistantAnswer, AssistantSessionUser, AssistantSourceType } from "@/backend/domain/assistant-types";
@@ -21,7 +21,33 @@ const FALLBACK_ANSWER: AssistantAnswer = {
 
 const UNSUPPORTED_ACTION_ANSWER: AssistantAnswer = {
   answer:
-    "I can't make that kind of change. I can look up your events, tasks, announcements, and membership status, and I can update the status of your own tasks (or assign tasks, if you coordinate a club). Anything else — creating or cancelling events, posting announcements, approving members, changing roles — needs to be done from the relevant dashboard page directly.",
+    "I can't make that kind of change. I can look up your events, tasks, announcements, and membership status — and from the right role view I can update task status (volunteer/coordinator), assign or bulk-assign tasks (coordinator), or draft announcements (admin). Creating or cancelling events, approving members, and changing roles still need the relevant dashboard page.",
+  sourceType: null,
+};
+
+const TASK_STATUS_WRONG_SHELL: AssistantAnswer = {
+  answer:
+    "Updating task status isn't available in this role view. Switch to Volunteer for your own tasks, or Coordinator for the club board.",
+  sourceType: null,
+};
+
+const TASK_ASSIGN_WRONG_SHELL: AssistantAnswer = {
+  answer: "Assigning tasks is only available in the Coordinator view.",
+  sourceType: null,
+};
+
+const BULK_WRITE_WRONG_SHELL: AssistantAnswer = {
+  answer: "Bulk task assignment is only available in the Coordinator view.",
+  sourceType: null,
+};
+
+const ANNOUNCE_WRITE_WRONG_SHELL: AssistantAnswer = {
+  answer: "Posting announcements is only available in the Admin",
+  sourceType: null,
+};
+
+const ROSTER_WRONG_SHELL: AssistantAnswer = {
+  answer: "Listing club volunteers and task load is only available in the Coordinator view.",
   sourceType: null,
 };
 
@@ -30,25 +56,19 @@ const classificationSchema = z.object({
     "event_lookup",
     "task_lookup",
     "task_action",
+    "task_assign",
+    "bulk_task_assign",
     "announcement_lookup",
+    "announcement_action",
     "membership_status",
+    "club_roster_lookup",
     "unsupported_action",
     "unrelated",
   ]),
   entities: z
     .object({
-      // A specific event, club, or topic the question names — applies across
-      // all four intents (a named event for event/task lookups, a named
-      // club for membership/announcement lookups, a topic keyword for
-      // announcements). Omitted for generic questions like "what's on my
-      // task list" that don't name anything specific.
       subject: z.string().nullable().optional(),
-      // Only meaningful for event_lookup: whether the question is asking
-      // about events that already happened vs. ones coming up. Defaults to
-      // "upcoming" behavior when omitted.
       timeframe: z.enum(["upcoming", "past"]).nullable().optional(),
-      // True for "how many ..." style questions, so the handler runs a real
-      // count aggregate instead of just describing a capped sample list.
       wantsCount: z.boolean().nullable().optional(),
     })
     .default({}),
@@ -56,23 +76,30 @@ const classificationSchema = z.object({
 
 type Classification = z.infer<typeof classificationSchema>;
 
-const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A assistant embedded in a student clubs platform. It can answer questions about the requesting user's own events, tasks, announcements, or club memberships, and can propose task mutations (status updates / assigns) via a separate tool path.
+const CLASSIFY_SYSTEM_PROMPT = `You are the intent classifier for "Ask Sangam", a Q&A and action assistant embedded in a student clubs platform. It can answer questions about the requesting user's own events, tasks, announcements, or club memberships. It can also answer coordinator questions about the club volunteer roster and who has how many open tasks. It can also propose certain writes that the user must Accept in the UI: task status updates (volunteer/coordinator), single and bulk task assignment (coordinator only), and posting announcements (admin only). Volunteers cannot assign or bulk-assign. Admins cannot change tasks.
+
+Ignore self-labels in the question like "as admin", "as coordinator", or "as volunteer" when classifying — classify by the action or information they want, not the role word they used.
 
 Classify the user's question into exactly one intent:
 - "event_lookup": questions about events, schedules, "next event", a specific event by name, registration/capacity status, or anything happening/coming up in a given timeframe ("what's happening this week", "what's on today", "anything coming up soon"). These generic timeframe questions ARE event_lookup even though they don't name a specific event — treat "this week" / "today" / "soon" as a timeframe signal, not a reason to call it unrelated.
-- "task_lookup": READ-ONLY questions about the user's own assigned tasks, to-dos, or volunteer shifts ("what's on my task list", "what tasks do I have", "is my poster task still open"). Do NOT use this when the user wants to change something.
-- "task_action": the user wants to CHANGE a task — mark/set status (todo/doing/done), complete a task, assign a task to someone, or create an assignment. Examples: "mark my poster task as done", "set the check-in task to doing", "assign setup duty to Riya for Winter Fest".
-- "announcement_lookup": questions about club announcements, news, or updates.
+- "task_lookup": READ-ONLY questions about the user's own assigned tasks, to-dos, or volunteer shifts ("what's on my task list", "what tasks do I have", "is my poster task still open"). Do NOT use this when the user wants to change something. Do NOT use this for club-wide volunteer lists or who-has-the-most todo/doing/done/open tasks across the club (use club_roster_lookup).
+- "task_action": the user wants to CHANGE a task's STATUS only — mark/set status to todo/doing/done — e.g. "mark my poster task as done", "change the first task status to doing", "mark Booth setup as doing". NOT assign, NOT bulk.
+- "task_assign": the user wants to CREATE/ASSIGN ONE task to one person — e.g. "assign booth setup to Sai for Test Event 1", "assign check-in to Pardhiv for Test Event 1". Not bulk/multi-person. Coordinator shell only.
+- "bulk_task_assign": the user wants to ASSIGN multiple tasks / assign tasks to several people / expand "all volunteers" into assignments — e.g. "assign poster to Soham and booth to Sai for TechFest", "give all volunteers check-in duty for Winter Fest". Coordinator shell only.
+- "announcement_lookup": READ-ONLY questions about club announcements, news, or updates.
+- "announcement_action": the user wants to DRAFT or POST an announcement — e.g. "draft an announcement about the hackathon for all volunteers", "post a high priority notice that rehearsal is cancelled". Admin shell only.
 - "membership_status": questions about the user's own club memberships, roles, or membership status.
-- "unsupported_action": the user wants to CREATE, DELETE, CANCEL, or otherwise CHANGE something that this assistant has no tool for — creating or cancelling an event, posting an announcement, approving/rejecting a membership request, changing their own or someone else's role, deleting an account, editing club/event details. The only mutations this assistant can actually perform are task status changes and task assignment (that's "task_action"); every other request to create/change/delete/approve/cancel something is "unsupported_action", not "unrelated" — the user has a real, valid intent to act, this app just can't do it through chat.
-- "unrelated": the question is NOT about any of the above and is NOT a request to change/create/delete anything — general knowledge, small talk, greetings, or topics this app has no data for. Use this whenever the question doesn't genuinely fit one of the categories above. Do not force a fit just because a keyword loosely overlaps.
+- "club_roster_lookup": READ-ONLY questions about the club's Active Volunteer roster or task-load by status across assignees — e.g. "list active volunteers", "who are our volunteers", "how many volunteers do we have", "who has the most open tasks", "who has the most done/closed tasks", "who has the most todo/doing tasks", "who is busiest on the board". Not the asker's own memberships (membership_status) and not "my tasks" (task_lookup).
+- "unsupported_action": the user wants to CREATE, DELETE, CANCEL, UPDATE, or otherwise CHANGE something this assistant has no tool for — creating or cancelling an event, approving/rejecting a membership request, changing roles, deleting an account, editing club/event details. Task status, single assign, bulk assign, and announcement post are NOT unsupported_action (use the matching write intent even if the user may be in the wrong shell — the app will refuse by role).
+- "unrelated": the question is NOT about any of the above and is NOT a request to change/create/delete anything — general knowledge, small talk, greetings, or topics this app has no data for.
 
 Entity extraction (all optional, applies across intents where relevant):
-- subject: a specific, real proper-noun event, club, or topic the question names (e.g. "tasks for the Winter Fest", "announcement about the hackathon", "am I a member of Paradox"). Do NOT extract generic self-referencing phrases like "my next event", "my club", "this event", or "current tasks" as a subject — those aren't names of anything, they're just how the person refers to their own stuff. Omit subject entirely for those and for generic questions ("what's on my task list").
-- timeframe: for event_lookup only — "past" if the question asks about events that already happened ("what events did we run", "past events"), "upcoming" if it asks about what's coming up. Omit if ambiguous or not about events.
-- wantsCount: true if the question is asking "how many" of something rather than asking for details about specific ones.
+- subject: a specific, real proper-noun event, club, or topic the question names. Do NOT extract generic self-referencing phrases like "my next event", "my club", "this event", or "current tasks" as a subject.
+- timeframe: for event_lookup only — "past" or "upcoming". Omit if ambiguous.
+- wantsCount: true if the question is asking "how many" of something.
 
 Return ONLY the structured JSON output. No prose, no markdown, no explanation.`;
+
 
 const GENERATE_SYSTEM_PROMPT = `You are "Ask Sangam", answering a user's question using ONLY the JSON data provided below.
 
@@ -339,6 +366,19 @@ async function handleAnnouncementLookup(
   // generic latest announcements just because some exist.
   if (announcements.length === 0) return NO_DATA_ANSWER;
 
+  const adminClubIds = new Set(
+    user.memberships.filter((m) => m.role === "Admin").map((m) => m.clubId),
+  );
+  announcements = announcements.filter((a) => {
+    if (!a.recipientUserIds || a.recipientUserIds.length === 0) return true;
+    return (
+      a.recipientUserIds.includes(user.id) ||
+      a.authorId === user.id ||
+      adminClubIds.has(a.clubId)
+    );
+  });
+  if (announcements.length === 0) return NO_DATA_ANSWER;
+
   // "audience: All" announcements are intentionally interleaved from clubs
   // the requester isn't in (institution-wide notices) — without an explicit
   // flag, the generation model has no way to tell that apart from a scoping
@@ -400,6 +440,139 @@ async function handleMembershipStatus(
   });
 }
 
+/** Clubs the user may manage as Coordinator for roster / open-task aggregation reads. */
+function coordinatorClubIdsForRoster(user: AssistantSessionUser, activeRole?: AppRole): string[] {
+  if (activeRole && activeRole !== "coordinator") return [];
+  const memberships = activeRole
+    ? membershipsForAppRole(user.memberships, "coordinator")
+    : user.memberships.filter((m) => m.role === "Coordinator");
+  return memberships.map((m) => m.clubId);
+}
+
+/**
+ * Coordinator read path for Active Volunteer roster + per-status task load.
+ * Mirrors list_club_volunteers scoping (Active Volunteer memberships on managed clubs).
+ */
+async function handleClubRosterLookup(
+  user: AssistantSessionUser,
+  question: string,
+  entities: Classification["entities"],
+  activeRole?: AppRole,
+): Promise<AssistantAnswer> {
+  if (activeRole && activeRole !== "coordinator") return ROSTER_WRONG_SHELL;
+
+  let clubIds = coordinatorClubIdsForRoster(user, activeRole);
+  if (clubIds.length === 0) return NO_DATA_ANSWER;
+
+  if (entities.subject) {
+    const subject = entities.subject.toLowerCase();
+    const matched = user.memberships.filter(
+      (m) =>
+        clubIds.includes(m.clubId) &&
+        (m.clubName.toLowerCase().includes(subject) || m.clubSlug.toLowerCase().includes(subject)),
+    );
+    if (matched.length === 0) return NO_DATA_ANSWER;
+    clubIds = matched.map((m) => m.clubId);
+  }
+
+  const volunteerWhere: Prisma.MembershipWhereInput = {
+    clubId: { in: clubIds },
+    status: "Active",
+    role: "Volunteer",
+  };
+  trace("CLUB ROSTER PRISMA WHERE", volunteerWhere);
+
+  const [volunteers, volunteerCount, taskStatusGroups] = await Promise.all([
+    prisma.membership.findMany({
+      where: volunteerWhere,
+      include: {
+        user: { select: { id: true, name: true } },
+        club: { select: { name: true } },
+      },
+      orderBy: { user: { name: "asc" } },
+      take: 40,
+    }),
+    entities.wantsCount ? prisma.membership.count({ where: volunteerWhere }) : Promise.resolve(null),
+    prisma.task.groupBy({
+      by: ["assigneeId", "status"],
+      where: { event: { clubId: { in: clubIds } } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const assigneeIds = [...new Set(taskStatusGroups.map((g) => g.assigneeId))];
+  const assignees =
+    assigneeIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: assigneeIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+  const nameById = new Map(assignees.map((u) => [u.id, u.name]));
+
+  type StatusCounts = { todo: number; doing: number; done: number; open: number };
+  const loadByAssignee = new Map<string, StatusCounts>();
+  for (const row of taskStatusGroups) {
+    const current = loadByAssignee.get(row.assigneeId) ?? { todo: 0, doing: 0, done: 0, open: 0 };
+    const n = row._count._all;
+    if (row.status === "todo") {
+      current.todo += n;
+      current.open += n;
+    } else if (row.status === "doing") {
+      current.doing += n;
+      current.open += n;
+    } else if (row.status === "done") {
+      current.done += n;
+    }
+    loadByAssignee.set(row.assigneeId, current);
+  }
+
+  const taskLoadByAssignee = [...loadByAssignee.entries()]
+    .map(([assigneeId, counts]) => ({
+      name: nameById.get(assigneeId) ?? "Unknown",
+      todo: counts.todo,
+      doing: counts.doing,
+      done: counts.done,
+      open: counts.open,
+    }))
+    .sort((a, b) => b.open - a.open || b.done - a.done)
+    .slice(0, 20);
+
+  trace(
+    "CLUB ROSTER RAW QUERY RESULT",
+    volunteers.map((m) => ({ userId: m.userId, name: m.user.name, club: m.club.name })),
+  );
+  if (volunteerCount !== null) trace("CLUB ROSTER COUNT", { volunteerCount });
+  trace("CLUB TASK LOAD BY STATUS", taskLoadByAssignee);
+
+  if (volunteers.length === 0 && taskLoadByAssignee.length === 0) return NO_DATA_ANSWER;
+
+  const volunteerList = volunteers.map((m) => ({
+    name: m.user.name,
+    club: m.club.name,
+  }));
+
+  const data =
+    volunteerCount !== null
+      ? {
+          totalActiveVolunteers: volunteerCount,
+          sampleOfActiveVolunteers: volunteerList,
+          taskLoadByAssignee,
+          note: "open = todo + doing; use done for closed/completed questions",
+        }
+      : {
+          activeVolunteers: volunteerList,
+          taskLoadByAssignee,
+          note: "open = todo + doing; use done for closed/completed questions",
+        };
+
+  return generateAnswer(question, data, {
+    sourceType: "membership",
+    sourceLabel: volunteers[0]?.club.name ?? taskLoadByAssignee[0]?.name,
+    sourceHref: "/coordinator/volunteers",
+  });
+}
+
 export async function answerAssistantQuery(
   user: AssistantSessionUser,
   question: string,
@@ -419,12 +592,37 @@ export async function answerAssistantQuery(
         return await handleEventLookup(user, question, classification.entities);
       case "task_lookup":
         return await handleTaskLookup(user, question, classification.entities);
-      case "task_action":
-        return await runTaskToolAgent(user, question, options?.activeRole);
+      case "task_action": {
+        const role = options?.activeRole;
+        if (role && role !== "volunteer" && role !== "coordinator") {
+          return TASK_STATUS_WRONG_SHELL;
+        }
+        return await runWriteToolAgentForQuestion(user, question, options?.activeRole);
+      }
+      case "task_assign": {
+        if (options?.activeRole && options.activeRole !== "coordinator") {
+          return TASK_ASSIGN_WRONG_SHELL;
+        }
+        return await runWriteToolAgentForQuestion(user, question, options?.activeRole);
+      }
+      case "bulk_task_assign": {
+        if (options?.activeRole && options.activeRole !== "coordinator") {
+          return BULK_WRITE_WRONG_SHELL;
+        }
+        return await runWriteToolAgentForQuestion(user, question, options?.activeRole);
+      }
+      case "announcement_action": {
+        if (options?.activeRole && options.activeRole !== "admin") {
+          return ANNOUNCE_WRITE_WRONG_SHELL;
+        }
+        return await runWriteToolAgentForQuestion(user, question, options?.activeRole);
+      }
       case "announcement_lookup":
         return await handleAnnouncementLookup(user, question, classification.entities);
       case "membership_status":
         return await handleMembershipStatus(user, question, classification.entities);
+      case "club_roster_lookup":
+        return await handleClubRosterLookup(user, question, classification.entities, options?.activeRole);
       case "unsupported_action":
         return UNSUPPORTED_ACTION_ANSWER;
       case "unrelated":

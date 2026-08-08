@@ -1,4 +1,4 @@
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAuthCookieUserId } from "@/backend/auth/session-cookies";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
 import { transcribeAudio, GroqError } from "@/lib/groq";
 
@@ -9,8 +9,8 @@ const USER_STORY = "Ask Sangam";
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: Request) {
-  const session = await getMockSession();
-  if (!session?.user) {
+  const userId = getAuthCookieUserId();
+  if (!userId) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY });
   }
 

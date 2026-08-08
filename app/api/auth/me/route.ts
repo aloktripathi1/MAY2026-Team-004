@@ -12,8 +12,7 @@ const USER_STORY = "1.1";
  * GET /api/auth/me — return the current user and all held roles/memberships.
  *
  * Production path only: requires a real, signed session cookie from
- * signup/login. Does NOT use the demo persona fallback (see
- * backend/auth/mock-session.ts) — anonymous or tampered requests always get 401.
+ * signup/login. Anonymous or tampered requests always get 401.
  */
 export async function GET() {
   const userId = getAuthCookieUserId();

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { resolveSurfaceMembership } from "@/backend/auth/roles";
 
 /**
@@ -7,7 +7,7 @@ import { resolveSurfaceMembership } from "@/backend/auth/roles";
  * parallel, so a layout redirect alone cannot protect a child dereference.
  */
 export async function requirePageSession() {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) redirect("/login");
   return session;
 }

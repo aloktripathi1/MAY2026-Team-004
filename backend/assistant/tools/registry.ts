@@ -1,4 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { ANNOUNCEMENT_TOOLS } from "@/backend/assistant/tools/announcement-tools";
+import { BULK_TASK_TOOLS } from "@/backend/assistant/tools/bulk-task-tools";
 import { TASK_TOOLS } from "@/backend/assistant/tools/task-tools";
 import type { AssistantTool, ToolActor, ToolExecuteResult } from "@/backend/assistant/tools/types";
 
@@ -11,26 +13,22 @@ function register(tool: AssistantTool) {
   toolsByName.set(tool.name, tool);
 }
 
-for (const tool of TASK_TOOLS) {
+for (const tool of [...TASK_TOOLS, ...BULK_TASK_TOOLS, ...ANNOUNCEMENT_TOOLS]) {
   register(tool as AssistantTool);
 }
 
-/** Look up a registered tool by name. */
 export function getTool(name: string): AssistantTool | undefined {
   return toolsByName.get(name);
 }
 
-/** All registered tools (for tests). */
 export function listRegisteredTools(): AssistantTool[] {
   return [...toolsByName.values()];
 }
 
-/** Tools available to this actor (role-gated). */
 export function toolsForActor(actor: ToolActor): AssistantTool[] {
   return [...toolsByName.values()].filter((tool) => (tool.isAvailable ? tool.isAvailable(actor) : true));
 }
 
-/** Anthropic Messages API tool definitions for the given actor. */
 export function toAnthropicTools(actor: ToolActor): Anthropic.Messages.Tool[] {
   return toolsForActor(actor).map((tool) => ({
     name: tool.name,
@@ -39,20 +37,13 @@ export function toAnthropicTools(actor: ToolActor): Anthropic.Messages.Tool[] {
   }));
 }
 
-/**
- * Validate args and execute a tool. Used by the confirm API for writes and by
- * the agent loop for auto-run reads. Does not enforce requiresConfirmation —
- * callers decide when execution is allowed.
- */
 export async function executeTool(
   name: string,
   actor: ToolActor,
   rawArgs: unknown,
 ): Promise<ToolExecuteResult> {
   const tool = toolsByName.get(name);
-  if (!tool) {
-    throw new Error(`Unknown tool: ${name}`);
-  }
+  if (!tool) throw new Error(`Unknown tool: ${name}`);
   if (tool.isAvailable && !tool.isAvailable(actor)) {
     throw new Error(`Tool not available for this user: ${name}`);
   }
@@ -60,16 +51,13 @@ export async function executeTool(
   return tool.execute(actor, args);
 }
 
-/** Parse and preview a tool call without executing (for proposals). */
 export function previewToolCall(
   name: string,
   actor: ToolActor,
   rawArgs: unknown,
 ): { args: unknown; argsPreview: Record<string, string>; summary: string; tool: AssistantTool } {
   const tool = toolsByName.get(name);
-  if (!tool) {
-    throw new Error(`Unknown tool: ${name}`);
-  }
+  if (!tool) throw new Error(`Unknown tool: ${name}`);
   if (tool.isAvailable && !tool.isAvailable(actor)) {
     throw new Error(`Tool not available for this user: ${name}`);
   }

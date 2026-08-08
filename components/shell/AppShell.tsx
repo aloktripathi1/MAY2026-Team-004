@@ -246,7 +246,7 @@ export function AppShell({
         </main>
       </div>
 
-      <AskSangam role={role} />
+      <AskSangam key={role} role={role} />
     </div>
   );
 }

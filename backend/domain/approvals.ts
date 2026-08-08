@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { prisma } from "@/backend/db/prisma";
 import { setEventApprovalByFaculty } from "@/backend/domain/events";
 import { updateMembershipRole } from "@/backend/domain/membership";
@@ -14,13 +14,13 @@ import {
 import { notifyEventApprovalDecision, notifyMembershipDecision } from "@/backend/email/notifications";
 
 async function requireAdminForClub(clubId: string) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireClubAdminAccess(session.user.memberships, clubId);
 }
 
 async function requireFaculty() {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
   requireFacultyAccess(session.user.isFaculty);
 }
@@ -48,7 +48,7 @@ export async function setMembershipRoleAction(
   membershipId: string,
   role: "Member" | "Volunteer" | "Coordinator",
 ) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
 
   const result = await updateMembershipRole(session.user.memberships, membershipId, role);

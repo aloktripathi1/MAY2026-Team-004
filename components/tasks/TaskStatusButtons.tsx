@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { updateTaskStatusAction } from "@/backend/domain/tasks";
+import { useRouter } from "next/navigation";
+import { updateTaskStatusAction } from "@/backend/domain/task-actions";
 
 const statuses = ["todo", "doing", "done"] as const;
 
@@ -14,6 +15,7 @@ export function TaskStatusButtons({
   status: string;
   onStatusChange?: (status: string) => void;
 }) {
+  const router = useRouter();
   const [currentStatus, setCurrentStatus] = useState(status);
   const [pending, startTransition] = useTransition();
 
@@ -23,9 +25,14 @@ export function TaskStatusButtons({
 
   function set(s: string) {
     startTransition(async () => {
-      await updateTaskStatusAction(taskId, s);
-      setCurrentStatus(s);
-      onStatusChange?.(s);
+      try {
+        await updateTaskStatusAction(taskId, s);
+        setCurrentStatus(s);
+        onStatusChange?.(s);
+        router.refresh();
+      } catch (error) {
+        console.error("[TaskStatusButtons]", error);
+      }
     });
   }
 

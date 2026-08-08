@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
@@ -26,6 +27,7 @@ export function AssignTaskModal({
   assigneeName: string;
   events: Event[];
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [state, formAction] = useFormState(assignTaskAction, {});
   const isFirstRender = useRef(true);
@@ -35,8 +37,11 @@ export function AssignTaskModal({
       isFirstRender.current = false;
       return;
     }
-    if (state.ok) setIsOpen(false);
-  }, [state]);
+    if (state.ok) {
+      setIsOpen(false);
+      router.refresh();
+    }
+  }, [state, router]);
 
   return (
     <>

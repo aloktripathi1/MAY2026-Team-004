@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/AppShell";
 import { accessibleAppRoles, resolveSurfaceMembership } from "@/backend/auth/roles";
 
 export default async function CoordinatorLayout({ children }: { children: ReactNode }) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) redirect("/login");
 
   // Same resolution the pages use, so the shell can't name one club while the

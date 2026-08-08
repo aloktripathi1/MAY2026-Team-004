@@ -1,4 +1,4 @@
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { applyToJoinClub, listClubMembers } from "@/backend/domain/membership";
 import { requireClubAdminAccess } from "@/backend/domain/workflow-rules";
 import { jsonError, jsonSuccess } from "@/backend/api/http";
@@ -8,7 +8,7 @@ const USER_STORY_LIST = "1.2";
 const USER_STORY_JOIN = "1.3";
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY_LIST });
   }
@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 }
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) {
     return jsonError("UNAUTHENTICATED", "Authentication required.", { status: 401, userStory: USER_STORY_JOIN });
   }

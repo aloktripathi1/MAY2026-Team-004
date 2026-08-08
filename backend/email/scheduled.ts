@@ -258,10 +258,16 @@ export async function runAnnouncementDigest(now = new Date(), windowHours = 24):
 
   for (const announcement of announcements) {
     const eligibleRoles = AUDIENCE_ROLES[announcement.audience];
+    const targeted = announcement.recipientUserIds.length > 0;
+    const targetedIds = targeted ? new Set(announcement.recipientUserIds) : null;
 
     for (const membership of memberships) {
       if (membership.clubId !== announcement.clubId) continue;
-      if (!eligibleRoles.includes(membership.role)) continue;
+      if (targetedIds) {
+        if (!targetedIds.has(membership.userId)) continue;
+      } else if (!eligibleRoles.includes(membership.role)) {
+        continue;
+      }
       if (membership.userId === announcement.authorId) continue;
 
       const prefs = parseNotificationPrefs(membership.user.notificationPrefs);

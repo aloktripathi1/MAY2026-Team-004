@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
-import { updateTaskStatusAction } from "@/backend/domain/tasks";
+import { updateTaskStatusAction } from "@/backend/domain/task-actions";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
 import { formatTaskDue, formatTaskStatus } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function TaskAssigneeRow({
   eventTitle: string;
   onStatusChange?: (status: "todo" | "doing" | "done") => void;
 }) {
+  const router = useRouter();
   const [currentStatus, setCurrentStatus] = useState(status);
   const [pending, startTransition] = useTransition();
   const done = currentStatus === "done";
@@ -51,7 +53,12 @@ export function TaskAssigneeRow({
     setCurrentStatus(next);
     onStatusChange?.(next);
     startTransition(async () => {
-      await updateTaskStatusAction(taskId, next);
+      try {
+        await updateTaskStatusAction(taskId, next);
+        router.refresh();
+      } catch (error) {
+        console.error("[TaskAssigneeRow]", error);
+      }
     });
   }
 

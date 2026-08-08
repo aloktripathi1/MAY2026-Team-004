@@ -10,8 +10,7 @@ export type SignupState = { error?: string; ok?: boolean };
 
 /**
  * Form-based signup (existing UI). Shares validation + create logic with
- * POST /api/auth/signup. Demo session flow remains in
- * backend/auth/mock-session.ts and app/api/auth/[...nextauth].
+ * POST /api/auth/signup.
  */
 export async function signupAction(_prevState: SignupState, formData: FormData): Promise<SignupState> {
   const parsed = signupSchema.safeParse({

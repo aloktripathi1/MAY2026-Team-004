@@ -2,20 +2,27 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X, ArrowUp, CalendarDays, ListChecks, Megaphone, Users2, Mic, SquareStop, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/backend/auth/roles";
+import {
+  askSangamConfirmAction,
+  askSangamQueryAction,
+} from "@/backend/assistant/actions";
+import type { AssistantProposedAction } from "@/backend/domain/assistant-types";
 import { ToolProposalCard, type ProposalCardState } from "@/components/shared/ToolProposalCard";
+import { Btn } from "@/components/ui/primitives";
 
 type SourceType = "event" | "task" | "announcement" | "membership";
 
-type ProposedAction = {
-  toolName: string;
-  summary: string;
-  argsPreview: Record<string, string>;
-  token: string;
-  status: "pending";
+type ProposalSlot = {
+  action: AssistantProposedAction;
+  state: ProposalCardState;
+  error?: string | null;
+  selectedChoiceId?: string | null;
+  selectedGroupChoices?: Record<string, string>;
 };
 
 type Message = {
@@ -24,33 +31,62 @@ type Message = {
   sourceType?: SourceType | null;
   sourceLabel?: string;
   sourceHref?: string;
-  proposedAction?: ProposedAction;
-  proposalState?: ProposalCardState;
-  proposalError?: string | null;
+  proposals?: ProposalSlot[];
+  batchError?: string | null;
 };
 
+function isOpenProposalState(state: ProposalCardState | undefined): boolean {
+  return !state || state === "pending" || state === "accepting" || state === "rejecting";
+}
+
+function resolveSelectedChoiceId(slot: ProposalSlot): string | null {
+  const proposal = slot.action;
+  if (!proposal.choices?.length) return null;
+  if (proposal.choiceGroups?.length) {
+    const parts: string[] = [];
+    for (const group of proposal.choiceGroups) {
+      const selected = slot.selectedGroupChoices?.[group.id];
+      if (!selected) return null;
+      parts.push(selected);
+    }
+    return parts.join("__");
+  }
+  return slot.selectedChoiceId ?? null;
+}
+
+function slotNeedsChoice(slot: ProposalSlot): boolean {
+  return Boolean(slot.action.choices && slot.action.choices.length > 0);
+}
+
+function slotHasChoiceSelected(slot: ProposalSlot): boolean {
+  if (!slotNeedsChoice(slot)) return true;
+  return Boolean(resolveSelectedChoiceId(slot));
+}
+
+/** Role-scoped examples grounded in current Test Club 1 DB + shell capabilities. */
 const EXAMPLE_QUESTIONS: Record<AppRole, string[]> = {
   member: [
+    "Which clubs am I a member of?",
     "When's my next event?",
     "What are the latest announcements?",
-    "Which clubs am I a member of?",
-  ],
-  coordinator: [
-    "What's on my task list?",
-    "Mark my first open task as done",
-    "Set my first open task to doing",
-    "Are any of our events still pending approval?",
-  ],
-  admin: [
-    "What's on my task list?",
-    "Mark my first open task as done",
-    "How many pending approvals do I have?",
   ],
   volunteer: [
+    'Mark "Setup PA System" as doing',
     "What tasks am I assigned?",
-    "How many open tasks do I have?",
-    "Mark my first open task as done",
-    "Set my first open task to doing",
+    "When's my next event?",
+    "What are the latest announcements?",
+  ],
+  coordinator: [
+    'Mark "Setup PA System" as doing',
+    "Assign booth setup to Pardhiv Nukasani for Test Event 1",
+    'Mark "Independence Day Function Approval" as doing, also assign check-in to Pardhiv Nukasani for Test Event 1',
+    "List active volunteers",
+    "Who has the most open tasks?",
+  ],
+  admin: [
+    'Draft an announcement titled "Team sync" saying sync is Friday at 5pm for all members',
+    'Draft an announcement titled "Volunteer note" saying check the board for Pardhiv Nukasani',
+    "What are the latest announcements?",
   ],
   faculty: [
     "How many events are awaiting my approval?",
@@ -66,7 +102,15 @@ const SOURCE_META: Record<SourceType, { label: string; icon: typeof CalendarDays
   membership: { label: "Membership", icon: Users2 },
 };
 
-function SourceTag({ sourceType, sourceLabel, sourceHref }: { sourceType?: SourceType | null; sourceLabel?: string; sourceHref?: string }) {
+function SourceTag({
+  sourceType,
+  sourceLabel,
+  sourceHref,
+}: {
+  sourceType?: SourceType | null;
+  sourceLabel?: string;
+  sourceHref?: string;
+}) {
   if (!sourceType) return null;
   const meta = SOURCE_META[sourceType];
   const Icon = meta.icon;
@@ -88,7 +132,18 @@ function SourceTag({ sourceType, sourceLabel, sourceHref }: { sourceType?: Sourc
   );
 }
 
+function toProposalSlots(actions: AssistantProposedAction[]): ProposalSlot[] {
+  return actions.map((action) => ({
+    action,
+    state: "pending" as const,
+    selectedGroupChoices: action.defaultGroupSelections
+      ? { ...action.defaultGroupSelections }
+      : undefined,
+  }));
+}
+
 export function AskSangam({ role }: { role: AppRole }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -104,8 +159,8 @@ export function AskSangam({ role }: { role: AppRole }) {
   const levelFrameRef = useRef<number | null>(null);
   const barRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const hasOpenProposal = messages.some(
-    (m) => m.proposedAction && (!m.proposalState || m.proposalState === "pending" || m.proposalState === "accepting" || m.proposalState === "rejecting"),
+  const hasOpenProposal = messages.some((m) =>
+    m.proposals?.some((slot) => isOpenProposalState(slot.state)),
   );
 
   useEffect(() => {
@@ -188,19 +243,21 @@ export function AskSangam({ role }: { role: AppRole }) {
     setPending(true);
 
     try {
-      const res = await fetch("/api/assistant/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text, role }),
-      });
-      const body = await res.json();
-
-      if (!res.ok || !body.success) {
-        setError(body?.error?.message ?? "Ask Sangam couldn't answer that just now.");
+      const result = await askSangamQueryAction({ query: text, role });
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
 
-      const { answer, sourceType, sourceLabel, sourceHref, proposedAction } = body.data;
+      const { answer, sourceType, sourceLabel, sourceHref, proposedAction, proposedActions } =
+        result.data;
+      const actions =
+        proposedActions && proposedActions.length > 0
+          ? proposedActions
+          : proposedAction
+            ? [proposedAction]
+            : [];
+
       setMessages((current) => [
         ...current,
         {
@@ -209,8 +266,7 @@ export function AskSangam({ role }: { role: AppRole }) {
           sourceType,
           sourceLabel,
           sourceHref,
-          proposedAction: proposedAction ?? undefined,
-          proposalState: proposedAction ? "pending" : undefined,
+          proposals: actions.length > 0 ? toProposalSlots(actions) : undefined,
         },
       ]);
     } catch {
@@ -220,66 +276,259 @@ export function AskSangam({ role }: { role: AppRole }) {
     }
   }
 
-  async function confirmProposal(messageIndex: number, decision: "accept" | "reject") {
-    const message = messages[messageIndex];
-    if (!message?.proposedAction) return;
-
+  function updateSlot(
+    messageIndex: number,
+    actionIndex: number,
+    patch: Partial<ProposalSlot>,
+  ) {
     setMessages((current) =>
-      current.map((m, i) =>
-        i === messageIndex
-          ? { ...m, proposalState: decision === "accept" ? "accepting" : "rejecting", proposalError: null }
-          : m,
-      ),
+      current.map((m, i) => {
+        if (i !== messageIndex || !m.proposals) return m;
+        return {
+          ...m,
+          batchError: null,
+          proposals: m.proposals.map((slot, j) => (j === actionIndex ? { ...slot, ...patch } : slot)),
+        };
+      }),
     );
-    setError(null);
+  }
+
+  async function decide(messageIndex: number, actionIndex: number, decision: "accept" | "reject") {
+    const message = messages[messageIndex];
+    const slot = message?.proposals?.[actionIndex];
+    if (!slot || pending) return;
+    if (!isOpenProposalState(slot.state) || slot.state === "accepting" || slot.state === "rejecting") {
+      return;
+    }
+
+    const proposal = slot.action;
+    const choiceTokens = proposal.choices?.map((c) => c.token) ?? [];
+    const selectedChoiceId = resolveSelectedChoiceId(slot);
+    const selectedToken =
+      proposal.choices && proposal.choices.length > 0
+        ? proposal.choices.find((c) => c.id === selectedChoiceId)?.token
+        : proposal.token;
+
+    if (decision === "accept" && !selectedToken) {
+      updateSlot(messageIndex, actionIndex, {
+        error: proposal.choiceGroups?.length
+          ? "Select who should receive this and when it should send."
+          : "Select an option first.",
+      });
+      return;
+    }
+
+    updateSlot(messageIndex, actionIndex, {
+      state: decision === "accept" ? "accepting" : "rejecting",
+      error: null,
+    });
 
     try {
-      const res = await fetch("/api/assistant/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, token: message.proposedAction.token }),
-      });
-      const body = await res.json();
+      if (decision === "reject" && choiceTokens.length > 0) {
+        for (const token of choiceTokens) {
+          await askSangamConfirmAction({ decision: "reject", token });
+        }
+        setMessages((current) => {
+          const next = current.map((m, i) => {
+            if (i !== messageIndex || !m.proposals) return m;
+            return {
+              ...m,
+              proposals: m.proposals.map((s, j) =>
+                j === actionIndex ? { ...s, state: "rejected" as const } : s,
+              ),
+            };
+          });
+          return [
+            ...next,
+            {
+              role: "assistant" as const,
+              text: "Okay — I won't make that change.",
+              sourceType: null,
+            },
+          ];
+        });
+        return;
+      }
 
-      if (!res.ok || !body.success) {
+      const result = await askSangamConfirmAction({
+        decision,
+        token: selectedToken!,
+      });
+      if (!result.ok) {
+        updateSlot(messageIndex, actionIndex, { state: "pending", error: result.error });
+        return;
+      }
+
+      if (decision === "accept" && choiceTokens.length > 0) {
+        for (const token of choiceTokens) {
+          if (token !== selectedToken) {
+            void askSangamConfirmAction({ decision: "reject", token });
+          }
+        }
+      }
+
+      setMessages((current) => {
+        const next = current.map((m, i) => {
+          if (i !== messageIndex || !m.proposals) return m;
+          return {
+            ...m,
+            proposals: m.proposals.map((s, j) =>
+              j === actionIndex
+                ? {
+                    ...s,
+                    state: decision === "accept" ? ("accepted" as const) : ("rejected" as const),
+                  }
+                : s,
+            ),
+          };
+        });
+        return [
+          ...next,
+          {
+            role: "assistant" as const,
+            text: result.data.answer,
+            sourceType: result.data.sourceType,
+            sourceLabel: result.data.sourceLabel,
+            sourceHref: result.data.sourceHref,
+          },
+        ];
+      });
+
+      if (decision === "accept") {
+        router.refresh();
+      }
+    } catch {
+      updateSlot(messageIndex, actionIndex, {
+        state: "pending",
+        error: "Couldn't reach Ask Sangam. Try again.",
+      });
+    }
+  }
+
+  /**
+   * Batch confirm that stops Accept all on first failure (per plan).
+   * Reject all continues through all pending cards.
+   */
+  async function decideAllBatched(messageIndex: number, decision: "accept" | "reject") {
+    const snapshot = messages[messageIndex];
+    if (!snapshot?.proposals || snapshot.proposals.length < 2 || pending) return;
+
+    const pendingIndexes = snapshot.proposals
+      .map((slot, index) => ({ slot, index }))
+      .filter(({ slot }) => slot.state === "pending")
+      .map(({ index }) => index);
+
+    if (pendingIndexes.length === 0) return;
+
+    if (decision === "accept") {
+      const missingChoice = pendingIndexes.some(
+        (i) => !slotHasChoiceSelected(snapshot.proposals![i]!),
+      );
+      if (missingChoice) {
         setMessages((current) =>
           current.map((m, i) =>
-            i === messageIndex
-              ? {
-                  ...m,
-                  proposalState: "pending",
-                  proposalError: body?.error?.message ?? "Couldn't complete that action.",
-                }
-              : m,
+            i === messageIndex ? { ...m, batchError: "Select options on each card first." } : m,
           ),
         );
         return;
       }
+    }
 
-      const { answer, sourceType, sourceLabel, sourceHref } = body.data;
-      setMessages((current) => {
-        const next = current.map((m, i) =>
-          i === messageIndex
-            ? { ...m, proposalState: decision === "accept" ? ("accepted" as const) : ("rejected" as const), proposalError: null }
-            : m,
-        );
-        next.push({
-          role: "assistant",
-          text: answer,
-          sourceType,
-          sourceLabel,
-          sourceHref,
+    setPending(true);
+    setMessages((current) =>
+      current.map((m, i) => (i === messageIndex ? { ...m, batchError: null } : m)),
+    );
+
+    try {
+      for (const actionIndex of pendingIndexes) {
+        // `pendingIndexes` was derived from this same snapshot and already
+        // filtered to state === "pending", so this is always defined.
+        const slot = snapshot.proposals[actionIndex];
+        if (!slot || slot.state !== "pending") continue;
+
+        const proposal = slot.action;
+        const choiceTokens = proposal.choices?.map((c) => c.token) ?? [];
+        const selectedChoiceId = resolveSelectedChoiceId(slot);
+        const selectedToken =
+          proposal.choices && proposal.choices.length > 0
+            ? proposal.choices.find((c) => c.id === selectedChoiceId)?.token
+            : proposal.token;
+
+        if (decision === "accept" && !selectedToken) {
+          updateSlot(messageIndex, actionIndex, {
+            error: "Select an option first.",
+          });
+          break;
+        }
+
+        updateSlot(messageIndex, actionIndex, {
+          state: decision === "accept" ? "accepting" : "rejecting",
+          error: null,
         });
-        return next;
-      });
-    } catch {
-      setMessages((current) =>
-        current.map((m, i) =>
-          i === messageIndex
-            ? { ...m, proposalState: "pending", proposalError: "Couldn't reach Ask Sangam. Try again." }
-            : m,
-        ),
-      );
+
+        try {
+          if (decision === "reject" && choiceTokens.length > 0) {
+            for (const token of choiceTokens) {
+              await askSangamConfirmAction({ decision: "reject", token });
+            }
+            updateSlot(messageIndex, actionIndex, { state: "rejected" });
+            setMessages((current) => [
+              ...current,
+              {
+                role: "assistant" as const,
+                text: "Okay — I won't make that change.",
+                sourceType: null,
+              },
+            ]);
+            continue;
+          }
+
+          const result = await askSangamConfirmAction({
+            decision,
+            token: selectedToken!,
+          });
+
+          if (!result.ok) {
+            updateSlot(messageIndex, actionIndex, { state: "pending", error: result.error });
+            if (decision === "accept") break;
+            continue;
+          }
+
+          if (decision === "accept" && choiceTokens.length > 0) {
+            for (const token of choiceTokens) {
+              if (token !== selectedToken) {
+                void askSangamConfirmAction({ decision: "reject", token });
+              }
+            }
+          }
+
+          updateSlot(messageIndex, actionIndex, {
+            state: decision === "accept" ? "accepted" : "rejected",
+          });
+          setMessages((current) => [
+            ...current,
+            {
+              role: "assistant" as const,
+              text: result.data.answer,
+              sourceType: result.data.sourceType,
+              sourceLabel: result.data.sourceLabel,
+              sourceHref: result.data.sourceHref,
+            },
+          ]);
+
+          if (decision === "accept") {
+            router.refresh();
+          }
+        } catch {
+          updateSlot(messageIndex, actionIndex, {
+            state: "pending",
+            error: "Couldn't reach Ask Sangam. Try again.",
+          });
+          if (decision === "accept") break;
+        }
+      }
+    } finally {
+      setPending(false);
     }
   }
 
@@ -407,14 +656,15 @@ export function AskSangam({ role }: { role: AppRole }) {
                 {messages.length === 0 ? (
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Ask about your events, tasks, approvals, announcements, or club memberships — I&apos;ll answer based on your role. Task changes need your Accept.
+                      Ask about your events, tasks, approvals, announcements, or club memberships — I&apos;ll
+                      answer based on your role.
                     </p>
                     <div className="mt-4 space-y-2">
                       {EXAMPLE_QUESTIONS[role].map((question) => (
                         <button
                           key={question}
                           type="button"
-                          onClick={() => ask(question)}
+                          onClick={() => void ask(question)}
                           disabled={pending || hasOpenProposal}
                           className="block w-full rounded-xl border border-white/[0.12] bg-white/[0.035] px-3.5 py-2.5 text-left text-sm text-white/[0.85] transition hover:border-secondary/35 hover:bg-white/[0.06] hover:text-secondary disabled:opacity-50"
                         >
@@ -425,34 +675,96 @@ export function AskSangam({ role }: { role: AppRole }) {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {messages.map((message, index) => (
-                      <div key={index} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+                    {messages.map((message, index) => {
+                      const pendingCount =
+                        message.proposals?.filter((s) => s.state === "pending").length ?? 0;
+                      const showBatch =
+                        (message.proposals?.length ?? 0) > 1 && pendingCount > 0;
+
+                      return (
                         <div
-                          className={cn(
-                            "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                            message.role === "user"
-                              ? "bg-secondary/[0.16] text-white ring-1 ring-secondary/30"
-                              : "border border-white/[0.1] bg-white/[0.035] text-white/[0.9]",
-                          )}
+                          key={index}
+                          className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
                         >
-                          {message.text}
-                          {message.role === "assistant" && (
-                            <SourceTag sourceType={message.sourceType} sourceLabel={message.sourceLabel} sourceHref={message.sourceHref} />
-                          )}
-                          {message.role === "assistant" && message.proposedAction && (
-                            <ToolProposalCard
-                              toolName={message.proposedAction.toolName}
-                              summary={message.proposedAction.summary}
-                              argsPreview={message.proposedAction.argsPreview}
-                              state={message.proposalState ?? "pending"}
-                              error={message.proposalError}
-                              onAccept={() => void confirmProposal(index, "accept")}
-                              onReject={() => void confirmProposal(index, "reject")}
-                            />
-                          )}
+                          <div
+                            className={cn(
+                              "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                              message.role === "user"
+                                ? "bg-secondary/[0.16] text-white ring-1 ring-secondary/30"
+                                : "border border-white/[0.1] bg-white/[0.035] text-white/[0.9]",
+                            )}
+                          >
+                            {message.text}
+                            {message.role === "assistant" && (
+                              <SourceTag
+                                sourceType={message.sourceType}
+                                sourceLabel={message.sourceLabel}
+                                sourceHref={message.sourceHref}
+                              />
+                            )}
+                            {message.role === "assistant" &&
+                              message.proposals?.map((slot, actionIndex) => (
+                                <ToolProposalCard
+                                  key={`${index}-${actionIndex}-${slot.action.toolName}`}
+                                  toolName={slot.action.toolName}
+                                  summary={slot.action.summary}
+                                  argsPreview={slot.action.argsPreview}
+                                  choices={slot.action.choices}
+                                  choicePrompt={slot.action.choicePrompt}
+                                  choiceGroups={slot.action.choiceGroups}
+                                  selectedChoiceId={slot.selectedChoiceId}
+                                  onSelectChoice={(choiceId) =>
+                                    updateSlot(index, actionIndex, {
+                                      selectedChoiceId: choiceId,
+                                      error: null,
+                                    })
+                                  }
+                                  selectedGroupChoices={slot.selectedGroupChoices}
+                                  onSelectGroupChoice={(groupId, optionId) =>
+                                    updateSlot(index, actionIndex, {
+                                      selectedGroupChoices: {
+                                        ...(slot.selectedGroupChoices ?? {}),
+                                        [groupId]: optionId,
+                                      },
+                                      error: null,
+                                    })
+                                  }
+                                  state={slot.state}
+                                  error={slot.error}
+                                  onAccept={() => void decide(index, actionIndex, "accept")}
+                                  onReject={() => void decide(index, actionIndex, "reject")}
+                                />
+                              ))}
+                            {showBatch && (
+                              <div className="mt-2 space-y-2">
+                                {message.batchError && (
+                                  <p className="text-xs text-destructive">{message.batchError}</p>
+                                )}
+                                <div className="flex gap-2">
+                                  <Btn
+                                    type="button"
+                                    size="sm"
+                                    disabled={pending}
+                                    onClick={() => void decideAllBatched(index, "accept")}
+                                  >
+                                    Accept all
+                                  </Btn>
+                                  <Btn
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={pending}
+                                    onClick={() => void decideAllBatched(index, "reject")}
+                                  >
+                                    Reject all
+                                  </Btn>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {pending && (
                       <div className="flex justify-start">
                         <div className="rounded-2xl border border-white/[0.1] bg-white/[0.035] px-4 py-2.5 text-sm text-muted-foreground">

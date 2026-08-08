@@ -19,6 +19,7 @@ Sangam is a community and society management platform: a single source of truth 
 - [API docs](#api-docs-openapi--swagger)
 - [Testing](#testing)
 - [Email notifications](#email-notifications)
+- [Ask Sangam](#ask-sangam)
 - [Project structure](#project-structure)
 - [Data model](#data-model)
 - [Deployment](#deployment)
@@ -35,7 +36,7 @@ Sangam is a community and society management platform: a single source of truth 
 - **Announcements**: audience-targeted broadcasts instead of blanket messages.
 - **Email notifications**: transactional and activity email through [Resend](https://resend.com/) — signup verification, membership and approval decisions, registration confirmations, schedule changes, task assignments, and daily reminder/digest sweeps — with per-category opt-outs and one-click unsubscribe. See [Email notifications](#email-notifications).
 - **Transparency & metrics**: admin-facing club health and activity reporting.
-- **Ask Sangam**: an in-app assistant (`POST /api/assistant/query`) for natural-language questions about club data.
+- **Ask Sangam**: gold sparkles drawer — grounded Q&A plus confirmable writes (task status, assign/bulk, announcements). Capabilities follow the shell you’re in; nothing mutates until you Accept. See [Ask Sangam](#ask-sangam).
 - **Signed session auth**: custom httpOnly-cookie sessions with server-side role checks on every protected route, no client-trusted state.
 
 ---
@@ -108,8 +109,8 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 |---|---|
 | `DATABASE_URL` | Postgres connection string, local or Neon. |
 | `AUTH_SECRET` | Signs the session cookie. Required in production; the app refuses to start signing sessions without it. Falls back to a fixed insecure value in development. Generate one with `openssl rand -hex 32`. |
-| `ALLOW_DEMO_SESSION` | Optional, development only. Enables the login page's role-preview shortcut, a privileged session with no sign-in required. Never set this in production; protected routes fall back to it only when it's explicitly on. |
-| `ANTHROPIC_API_KEY` | Powers Ask Sangam (`POST /api/assistant/query`) via `lib/genai.ts`. Get a key at [console.anthropic.com](https://console.anthropic.com/). |
+| `ASSISTANT_ACTION_SECRET` | HMAC for Ask Sangam Server Action request envelopes (`backend/assistant/security/request-signing.ts`). Required for query/confirm actions. |
+| `ANTHROPIC_API_KEY` | Powers Ask Sangam via `lib/genai.ts`. Get a key at [console.anthropic.com](https://console.anthropic.com/). |
 | `RESEND_API_KEY` | Powers email notifications via `backend/email/`. Get a key at [resend.com/api-keys](https://resend.com/api-keys). |
 | `EMAIL_ENABLED` | Master switch for real delivery. Unset or `false` puts the mailer in dry-run. Real sends need this **and** `RESEND_API_KEY`. |
 | `EMAIL_FROM` | Sender identity — `Sangam <no-reply@sangam-club.com>` once the domain is verified. Defaults to Resend's `onboarding@resend.dev` test sender. |
@@ -302,17 +303,21 @@ npm run test:integration
 
 Optional env var: `SANGAM_BASE_URL` (defaults to `http://localhost:3000`).
 
-Leave `ALLOW_DEMO_SESSION` unset when running this suite — it asserts that anonymous requests are
-refused rather than handed the privileged demo persona, so switching the shortcut on fails those
-cases by design.
-
-Role-scoped endpoints (coordinator, admin, faculty) authenticate as the matching seeded team account from [Demo accounts](#demo-accounts) rather than relying on the `ALLOW_DEMO_SESSION` shortcut, so the suite exercises the same session and authorization path a real user would hit. It also covers the concurrency fix behind event registration (ten genuinely simultaneous requests for one capacity slot, asserting exactly one winner) and the security-relevant paths: anonymous access to every protected route and API, a forged session cookie, cross-role authorization, and 404s for missing dynamic pages.
+Role-scoped endpoints (coordinator, admin, faculty) authenticate as the matching seeded team account from [Demo accounts](#demo-accounts), so the suite exercises the same session and authorization path a real user would hit. It also covers the concurrency fix behind event registration (ten genuinely simultaneous requests for one capacity slot, asserting exactly one winner) and the security-relevant paths: anonymous access to every protected route and API, a forged session cookie, cross-role authorization, and 404s for missing dynamic pages.
 
 Email is covered in both suites. `tests/unit/backend/email/` renders every template (escaping,
 plain-text twin, category) and checks the token, config and audience logic; `tests/integration/email.test.ts`
 drives the real send path against the database in dry-run — idempotency, preference opt-outs,
 transactional mail ignoring opt-outs, the sweeps, verification single-use, unsubscribe
 GET-vs-POST, and cron auth. Nothing is delivered: see [Dry-run is the default](#dry-run-is-the-default).
+
+### Ask Sangam write tests (live Claude + DB)
+
+Confirmable writes — bulk/single assign, task status, role-audience and targeted announcements, and wrong-shell refuses. Hits real Claude (`ANTHROPIC_API_KEY`) and Postgres; fixtures are cleaned up afterward. Needs a seeded database (`npm run db:push && npm run db:seed`); the Next.js app does not need to be running for these files.
+
+```bash
+npm run test:integration -- --testPathPatterns="assistant-tools|assistant-write"
+```
 
 Written test-case docs, in the course-required format, live under `docs/test-cases/`.
 
@@ -561,6 +566,80 @@ need a background job before they can notify.
 
 ---
 
+## Ask Sangam
+
+The gold sparkles button opens a drawer that answers from your club data and can propose writes.
+Those writes never hit the database until you **Accept** on the proposal card. **Reject** cancels
+cleanly (“Okay — I won't make that change.”). Multi-write asks (joined with `also`) can show
+**several** cards at once, plus **Accept all** / **Reject all**.
+
+What you can *do* depends on the **dashboard shell** you’re browsing — not on phrases like
+“as admin” in the chat. Switch roles in the sidebar if you need a different toolkit.
+
+### Who can do what
+
+| Shell | Can ask / read | Can propose (Accept required) | Cannot do here |
+|---|---|---|---|
+| **Member** (`/app`) | Next events, announcements, own club memberships | — | Tasks, assign, bulk, roster, post announcements |
+| **Volunteer** (`/volunteer`) | Same as Member + **own** open tasks | Mark **your** tasks `todo` / `doing` / `done` | Assign / bulk, club roster load, post announcements |
+| **Coordinator** (`/coordinator`) | Events & announcements in scope + **club volunteer roster** + who has the most todo / doing / done / open tasks | Board task status · single assign · bulk assign · multi-ask (`also`) with N confirm cards | Post announcements (Admin only) |
+| **Admin** (`/admin`) | Announcements + club context | Draft / post announcements (role audience **or** named people + timing picker) | Task status, assign, bulk, roster aggregation |
+| **Faculty** (`/faculty`) | Approvals / upcoming events / announcements | — | Writes (tasks, assign, announcements) |
+
+Wrong-shell asks get a short refuse (e.g. bulk assign as Volunteer, announcement as Coordinator,
+roster as Volunteer). Access follows the shell you opened, not self-labels in the prompt.
+
+### Try one from each write shell
+
+Use names and titles you actually see on the board (example chips in the drawer match the
+current DB when possible). After Accept, the page soft-refreshes.
+
+**Volunteer** (`/volunteer`)
+
+```text
+Mark "Setup PA System" as doing
+```
+
+**Coordinator** (`/coordinator`)
+
+```text
+List active volunteers
+Assign booth setup to Pardhiv Nukasani for Test Event 1
+Mark "Independence Day Function Approval" as doing, also assign check-in to Pardhiv Nukasani for Test Event 1
+```
+
+**Admin** (`/admin`)
+
+```text
+Draft an announcement titled "Team sync" saying sync is Friday at 5pm for all members
+```
+
+On announcements you’ll pick **who** (All / Volunteers / Coordinators, or a named person if you
+asked for one) and **when** (Send now vs digest), then Accept.
+
+### How a write feels
+
+1. You ask (or tap an example chip).  
+2. One or more proposal cards appear — Accept is disabled until any required pickers are chosen.  
+3. Accept runs the domain write and refreshes boards / lists. Reject burns the pending tokens.
+   With several cards, you can confirm each one or use **Accept all** / **Reject all**.
+
+Ambiguous **tasks** (two “Booth setup” rows) use an on-card picker — not a chat follow-up. Ambiguous
+**people** for assign still clarify in chat before a proposal.
+
+Assign and announcement Accepts can email through the normal mailer (`taskAssigned`,
+`announcementNew` / digest). That only leaves the app when `EMAIL_ENABLED=true` and
+`RESEND_API_KEY` are set — otherwise you’ll see `[email:dry-run]` in the server log.
+
+### Under the hood (short)
+
+UI → Server Actions (`askSangamQueryAction` / `askSangamConfirmAction`) → classifier → write agent
++ tool registry → signed pending token(s) → Accept → domain + `revalidatePath`. Legacy
+`/api/assistant/*` returns **410**.
+
+
+---
+
 ## Project structure
 
 ```
@@ -597,7 +676,7 @@ components/
 
 backend/                  server-only code, never imported by client components
   auth/
-    mock-session.ts        the demo/role-preview session, see Environment variables above
+    app-session.ts         resolves the signed session cookie to the current user (no anonymous fallback)
     session-cookies.ts     signs and verifies the real session cookie
     authenticate-user.ts, create-user.ts, get-current-user.ts   auth domain logic shared
                             by both the REST routes (app/api/auth/*) and the form actions
@@ -661,7 +740,7 @@ login gate, since that would lock out every account created before this feature.
 
 ## Deployment
 
-Production runs on Vercel, built from `main`. The database is Neon Postgres, connected through the Vercel Postgres integration, which manages `DATABASE_URL` automatically. `AUTH_SECRET` is set directly in the Vercel project's environment variables. `ALLOW_DEMO_SESSION` is intentionally left unset in production, so the role-preview shortcut never activates there.
+Production runs on Vercel, built from `main`. The database is Neon Postgres, connected through the Vercel Postgres integration, which manages `DATABASE_URL` automatically. `AUTH_SECRET` is set directly in the Vercel project's environment variables. Sessions require a signed cookie from login/signup — there is no anonymous demo persona.
 
 To point production at a fresh database: `npx prisma db push --schema=prisma/schema.prisma` against the new `DATABASE_URL`, then `npx tsx prisma/seed.ts` to load clubs, events, and the demo accounts.
 

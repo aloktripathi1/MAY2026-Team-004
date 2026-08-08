@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { IssueStatus, Priority } from "@prisma/client";
 import { prisma } from "@/backend/db/prisma";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { notifyIssueStatusChanged } from "@/backend/email/notifications";
 
@@ -17,7 +17,7 @@ function isAuthorizedForIssue(adminClubIds: Set<string>, issueClubId: string | n
 }
 
 export async function assignIssuesAction(issueIds: string[], assigneeId: string | null): Promise<AssignResult> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");
@@ -55,7 +55,7 @@ export async function assignIssuesAction(issueIds: string[], assigneeId: string 
  * notifications (#113), which need a real transition to fire on.
  */
 export async function updateIssueStatusAction(issueId: string, status: string): Promise<AssignResult> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");
@@ -87,7 +87,7 @@ export async function updateIssueStatusAction(issueId: string, status: string): 
 }
 
 export async function updateIssuePriorityAction(issueId: string, priority: string): Promise<AssignResult> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");

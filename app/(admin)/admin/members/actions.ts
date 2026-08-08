@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/backend/db/prisma";
-import { getMockSession } from "@/backend/auth/mock-session";
+import { getAppSession } from "@/backend/auth/app-session";
 import { getPrimaryClubMembership } from "@/backend/auth/roles";
 import { institutionalEmailSchema } from "@/backend/auth/signup-schema";
 import { notifyMembershipDecision, notifyRoleChanged } from "@/backend/email/notifications";
@@ -25,7 +25,7 @@ type ResolveAdminClubResult =
   | { ok: false; error: string };
 
 async function resolveAdminClub(): Promise<ResolveAdminClubResult> {
-  const session = await getMockSession();
+  const session = await getAppSession();
   if (!session?.user) return { ok: false, error: "Not authenticated" };
 
   const membership = getPrimaryClubMembership(session, "Admin");

@@ -11,10 +11,8 @@
  *   npm run test:integration
  *
  * Role-scoped endpoints (list/update members, bulk import) are exercised by
- * logging in as the seeded Admin account (Vishal, Admin of CodeChef only),
- * not by sending an anonymous request and relying on the old privileged
- * demo-persona fallback — that fallback is gated behind ALLOW_DEMO_SESSION
- * and off by default (see #81/#72).
+ * logging in as the seeded Admin account (Vishal, Admin of CodeChef only).
+ * Anonymous requests must not receive a privileged session.
  */
 import { prisma } from "@/backend/db/prisma";
 import { deleteMembershipsByIds, deleteUsersByEmails } from "./db-cleanup";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { TaskAssigneeRow } from "@/components/tasks/TaskAssigneeRow";
 
@@ -27,6 +27,13 @@ function sortByDue(a: AssignedTask, b: AssignedTask) {
 export function AssignedTasksBoard({ initialTasks }: { initialTasks: AssignedTask[] }) {
   const reduceMotion = useReducedMotion();
   const [tasks, setTasks] = useState(initialTasks);
+
+  const tasksSignature = initialTasks
+    .map((t) => `${t.id}:${t.status}:${t.title}`)
+    .join("|");
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [tasksSignature, initialTasks]);
 
   const active = useMemo(() => tasks.filter((t) => t.status !== "done").sort(sortByDue), [tasks]);
 
