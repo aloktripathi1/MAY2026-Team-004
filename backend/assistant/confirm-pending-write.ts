@@ -60,7 +60,9 @@ export async function confirmPendingWrite(params: {
     return {
       ok: true,
       data: {
-        answer: `${executed.summary} You can confirm it on the related board.`,
+        answer: verified.payload.deferredNote
+          ? `${executed.summary} You can confirm it on the related board. When you're ready, ask me to ${verified.payload.deferredNote}.`
+          : `${executed.summary} You can confirm it on the related board.`,
         sourceType,
         sourceLabel: executed.sourceLabel,
         sourceHref: executed.sourceHref,

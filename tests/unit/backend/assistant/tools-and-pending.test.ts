@@ -3,7 +3,16 @@ import {
   signPendingAction,
   verifyPendingAction,
 } from "@/backend/assistant/agent/pending-action";
-import { buildWriteProposal, toToolActor } from "@/backend/assistant/agent/run-write-agent";
+import {
+  appendDeferredWriteNote,
+  buildWriteProposal,
+  composePendingWriteAnswer,
+  extractDeferredWriteRequest,
+  mergeMultiWriteAnswers,
+  splitMultiWriteRequests,
+  toToolActor,
+  writeAgentSystemPrompt,
+} from "@/backend/assistant/agent/run-write-agent";
 import {
   canonicalizeAssistantPayload,
   signAssistantRequestBody,
@@ -77,6 +86,105 @@ const adminActor: ToolActor = {
 
 beforeEach(() => {
   clearConsumedPendingActionsForTests();
+});
+
+describe("write agent answer composition", () => {
+  it("keeps the default confirm copy when the model sent no companion text", () => {
+    expect(composePendingWriteAnswer("")).toBe("I can do that — please confirm below.");
+    expect(composePendingWriteAnswer("   ")).toBe("I can do that — please confirm below.");
+  });
+
+  it("appends a deferred-request note after the default confirm copy", () => {
+    expect(
+      composePendingWriteAnswer("I'll ask about updating Booth setup after you confirm this one."),
+    ).toBe(
+      "I can do that — please confirm below. I'll ask about updating Booth setup after you confirm this one.",
+    );
+  });
+
+  it("uses the model text as the full answer when it already frames confirmation", () => {
+    const text =
+      "I can mark Poster as done — please confirm below. After that, ask me again to update Booth setup.";
+    expect(composePendingWriteAnswer(text)).toBe(text);
+  });
+
+  it("tells the write agent to trust the shell role", () => {
+    const prompt = writeAgentSystemPrompt("coordinator");
+    expect(prompt).toMatch(/coordinator/i);
+    expect(prompt).toMatch(/Trust this shell/i);
+    expect(prompt).toMatch(/do NOT say they lack access/i);
+  });
+
+  it("splits multi-write asks into N segments", () => {
+    expect(splitMultiWriteRequests("Mark A as doing")).toEqual(["Mark A as doing"]);
+    expect(
+      splitMultiWriteRequests(
+        'Mark "Independence Day Function Approval" as doing, also assign check-in to Pardhiv Nukasani for Test Event 1',
+      ),
+    ).toEqual([
+      'Mark "Independence Day Function Approval" as doing',
+      "assign check-in to Pardhiv Nukasani for Test Event 1",
+    ]);
+    expect(
+      splitMultiWriteRequests("Mark A as done, also mark B as doing, also assign C to Pardhiv for Test Event 1"),
+    ).toEqual(["Mark A as done", "mark B as doing", "assign C to Pardhiv for Test Event 1"]);
+  });
+
+  it("extracts deferred text from also-joined multi-writes", () => {
+    expect(
+      extractDeferredWriteRequest(
+        'Mark "Independence Day Function Approval" as doing, also assign check-in to Pardhiv Nukasani for Test Event 1',
+      ),
+    ).toBe("assign check-in to Pardhiv Nukasani for Test Event 1");
+  });
+
+  it("appends a deferred note when the model omitted companion text", () => {
+    expect(
+      appendDeferredWriteNote(
+        "I can do that — please confirm below.",
+        "assign check-in to Pardhiv Nukasani for Test Event 1",
+      ),
+    ).toBe(
+      "I can do that — please confirm below. After you confirm, ask me again to assign check-in to Pardhiv Nukasani for Test Event 1.",
+    );
+  });
+
+  it("merges N write answers into proposedActions", () => {
+    const merged = mergeMultiWriteAnswers([
+      {
+        answer: "I can do that — please confirm below.",
+        sourceType: "task",
+        sourceHref: "/coordinator/volunteers",
+        proposedAction: {
+          toolName: "update_task_status",
+          summary: "Mark A as doing",
+          argsPreview: { status: "doing" },
+          token: "t1",
+          status: "pending",
+        },
+      },
+      {
+        answer: "I can do that — please confirm below.",
+        sourceType: "task",
+        sourceHref: "/coordinator/volunteers",
+        proposedAction: {
+          toolName: "assign_task",
+          summary: "Assign check-in",
+          argsPreview: { title: "check-in" },
+          token: "t2",
+          status: "pending",
+        },
+      },
+      {
+        answer: "Which Pardhiv did you mean?",
+        sourceType: null,
+      },
+    ]);
+    expect(merged.proposedActions).toHaveLength(2);
+    expect(merged.proposedAction?.token).toBe("t1");
+    expect(merged.answer).toMatch(/confirm each of the 2 actions/i);
+    expect(merged.answer).toMatch(/Which Pardhiv/);
+  });
 });
 
 describe("assistant tool registry", () => {

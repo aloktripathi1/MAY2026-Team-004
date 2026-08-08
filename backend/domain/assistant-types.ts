@@ -55,6 +55,11 @@ export type AssistantAnswer = {
   sourceHref?: string;
   /** Present when the write agent proposed a mutation that needs Accept/Reject. */
   proposedAction?: AssistantProposedAction;
+  /**
+   * When the user asked for multiple writes in one message, one entry per proposed write.
+   * `proposedAction` mirrors the first entry for backward compatibility.
+   */
+  proposedActions?: AssistantProposedAction[];
 };
 
 export type AssistantSessionUser = {

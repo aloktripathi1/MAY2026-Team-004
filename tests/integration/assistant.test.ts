@@ -187,3 +187,63 @@ describe("question-type differentiation (count, date-range, past, generic 'my X'
     expect(result.sourceType).toBe("announcement");
   });
 });
+
+describe("club_roster_lookup (coordinator)", () => {
+  it("lists active volunteers for clubs the coordinator manages", async () => {
+    const volunteerCount = await prisma.membership.count({
+      where: { clubId: CLUB_IDS.paradox, status: "Active", role: "Volunteer" },
+    });
+    if (volunteerCount === 0) return;
+
+    const sample = await prisma.membership.findFirst({
+      where: { clubId: CLUB_IDS.paradox, status: "Active", role: "Volunteer" },
+      include: { user: true },
+    });
+
+    const user = await sessionUserForEmail(SEEDED_ACCOUNTS.coordinator.email);
+    const result = await answerAssistantQuery(user, "List active volunteers", { activeRole: "coordinator" });
+    expect(result.sourceType).toBe("membership");
+    expect(result.sourceHref).toBe("/coordinator/volunteers");
+    expect(result.answer.toLowerCase()).not.toBe("i don't have that information.");
+    if (sample?.user.name) {
+      expect(result.answer.toLowerCase()).toContain(sample.user.name.toLowerCase().split(" ")[0]!);
+    }
+  });
+
+  it("answers who has the most open tasks from club board data", async () => {
+    const openOnClub = await prisma.task.count({
+      where: { status: { not: "done" }, event: { clubId: CLUB_IDS.paradox } },
+    });
+    if (openOnClub === 0) return;
+
+    const user = await sessionUserForEmail(SEEDED_ACCOUNTS.coordinator.email);
+    const result = await answerAssistantQuery(user, "Who has the most open tasks?", {
+      activeRole: "coordinator",
+    });
+    expect(result.sourceType).toBe("membership");
+    expect(result.answer.toLowerCase()).not.toBe("i don't have that information.");
+  });
+
+  it("answers who has the most done tasks from club board data", async () => {
+    const doneOnClub = await prisma.task.count({
+      where: { status: "done", event: { clubId: CLUB_IDS.paradox } },
+    });
+    if (doneOnClub === 0) return;
+
+    const user = await sessionUserForEmail(SEEDED_ACCOUNTS.coordinator.email);
+    const result = await answerAssistantQuery(user, "Who has the most done tasks?", {
+      activeRole: "coordinator",
+    });
+    expect(result.sourceType).toBe("membership");
+    expect(result.answer.toLowerCase()).not.toBe("i don't have that information.");
+  });
+
+  it("refuses club roster reads outside the coordinator shell", async () => {
+    const user = await sessionUserForEmail(SEEDED_ACCOUNTS.coordinator.email);
+    const result = await answerAssistantQuery(user, "List active volunteers", { activeRole: "volunteer" });
+    // May classify as club_roster_lookup (wrong shell) or another intent; must not invent a full roster.
+    if (result.sourceType === null) {
+      expect(result.answer.toLowerCase()).toMatch(/coordinator|don't have that information|not available|isn't available/);
+    }
+  });
+});

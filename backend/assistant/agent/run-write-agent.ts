@@ -9,9 +9,126 @@ import { GenAiError, toolCompletion, type ToolCompletionMessage } from "@/lib/ge
 
 const MAX_TOOL_ROUNDS = 6;
 
-const WRITE_AGENT_SYSTEM = `You are Ask Sangam's write-action agent for a student clubs platform.
+const DEFAULT_PENDING_WRITE_ANSWER = "I can do that — please confirm below.";
+
+/**
+ * Merges optional model companion text into the fixed pending-write answer.
+ * Keeps the default confirm copy when empty; preserves existing single-write UX.
+ */
+export function composePendingWriteAnswer(
+  companionText: string,
+  defaultAnswer: string = DEFAULT_PENDING_WRITE_ANSWER,
+): string {
+  const extra = companionText.trim();
+  if (!extra) return defaultAnswer;
+  // Model already wrote the user-facing confirm framing — use it as-is.
+  if (/please confirm|confirm below/i.test(extra)) return extra;
+  return `${defaultAnswer} ${extra}`;
+}
+
+/**
+ * Pulls a trailing second write from multi-ask phrasing (deterministic — not LLM).
+ * e.g. `Mark X as doing, also assign check-in to Y for Z` → `assign check-in to Y for Z`
+ */
+export function extractDeferredWriteRequest(question: string): string | null {
+  const parts = splitMultiWriteRequests(question);
+  if (parts.length < 2) return null;
+  return parts.slice(1).join(", also ");
+}
+
+/**
+ * Split a multi-write user message into N segments.
+ * Separators: `, also` / `; also` / ` and also ` / bare ` also ` (case-insensitive).
+ * No separator → `[question]`.
+ */
+export function splitMultiWriteRequests(question: string): string[] {
+  const trimmed = question.trim();
+  if (!trimmed) return [];
+
+  const parts = trimmed
+    .split(/(?:,|\.|!|;)?\s*(?:and\s+)?also\s+/i)
+    .map((part) => part.replace(/^[.,!;:\s]+|[.?!]+$/gu, "").trim())
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts : [trimmed];
+}
+
+/** Ensures a multi-ask leftover is acknowledged even when the model omits companion text. */
+export function appendDeferredWriteNote(answer: string, deferredRequest: string | null): string {
+  if (!deferredRequest) return answer;
+  if (/after you confirm|ask me again/i.test(answer)) return answer;
+  return `${answer} After you confirm, ask me again to ${deferredRequest}.`;
+}
+
+/** Merge N write-agent results into one answer with proposedActions (N cards). */
+export function mergeMultiWriteAnswers(results: AssistantAnswer[]): AssistantAnswer {
+  const proposedActions = results
+    .map((r) => r.proposedAction)
+    .filter((action): action is NonNullable<typeof action> => Boolean(action));
+
+  const clarifications = results
+    .filter((r) => !r.proposedAction)
+    .map((r) => r.answer.trim())
+    .filter(Boolean);
+
+  if (proposedActions.length === 0) {
+    return {
+      answer: clarifications.join(" ") || "I couldn't complete that action.",
+      sourceType: null,
+    };
+  }
+
+  const confirmCopy =
+    proposedActions.length === 1
+      ? DEFAULT_PENDING_WRITE_ANSWER
+      : `I can do that — please confirm each of the ${proposedActions.length} actions below.`;
+
+  const answer = clarifications.length > 0 ? `${confirmCopy} ${clarifications.join(" ")}` : confirmCopy;
+  const firstWithMeta = results.find((r) => r.proposedAction);
+
+  return {
+    answer,
+    sourceType: firstWithMeta?.sourceType ?? null,
+    sourceLabel: firstWithMeta?.sourceLabel,
+    sourceHref: firstWithMeta?.sourceHref,
+    proposedAction: proposedActions[0],
+    proposedActions,
+  };
+}
+
+/**
+ * Resolve one or many write segments. When the question has multiple also-joined
+ * writes, runs the write agent per segment and returns N proposal cards.
+ */
+export async function runWriteToolAgentForQuestion(
+  user: AssistantSessionUser,
+  question: string,
+  activeRole?: AppRole,
+): Promise<AssistantAnswer> {
+  const segments = splitMultiWriteRequests(question);
+  if (segments.length <= 1) {
+    return runWriteToolAgent(user, question, activeRole);
+  }
+
+  const results: AssistantAnswer[] = [];
+  for (const segment of segments) {
+    results.push(await runWriteToolAgent(user, segment, activeRole));
+  }
+  return mergeMultiWriteAnswers(results);
+}
+
+/** System prompt for the write tool loop — exported for unit coverage of shell/defer rules. */
+export function writeAgentSystemPrompt(activeRole?: AppRole): string {
+  const shellLine = activeRole
+    ? `The user is currently in the "${activeRole}" role view. Trust this shell and the tools you were given for what they can do.`
+    : `Trust the tools you were given for what this user can do in their current role view.`;
+
+  return `You are Ask Sangam's write-action agent for a student clubs platform.
 
 You only have the tools listed in this request (in-process Anthropic tools — not MCP). Call them when needed; do not invent capabilities you were not given.
+
+${shellLine}
+If the user phrases things as a different role (e.g. says "as admin" while in coordinator), do NOT say they lack access — use the tools available in this shell. You may briefly note which view they are in if their wording conflicts.
 
 Available tools (role-filtered — you may not have all of them):
 - list_my_tasks — open tasks the user can manage (own tasks for volunteers; club open tasks for coordinators). Use before status changes.
@@ -31,9 +148,11 @@ Workflow:
 5. If a person name for assign is ambiguous, ask in plain text with candidates; do not call a write tool until unique.
 6. "all volunteers" = list_club_volunteers (Active Volunteers only).
 7. Announcements (admin only): if the user names specific people, resolve_club_members_by_name then propose_announcement with recipientUserIds + recipientNames. Otherwise propose with title/body (optional audience). UI picks timing (and role audience when not person-targeted). If a name is ambiguous/missing, ask in plain text — do not guess.
-8. Prefer one write-tool call once arguments are known.
-9. Never claim the write already happened — the user must Accept in the UI first.
-10. If a needed tool is missing from your tool list, say briefly that this role view cannot do that (e.g. volunteer cannot assign/bulk; admin cannot change tasks).`;
+8. Prefer one write-tool call once arguments are known for THIS message segment.
+9. This call is already a single write segment (multi-ask messages are split upstream). Do not defer sibling asks.
+10. Never claim the write already happened — the user must Accept in the UI first.
+11. If a needed tool is missing from your tool list, say briefly that this role view cannot do that (e.g. volunteer cannot assign/bulk; admin cannot change tasks). Base that only on the missing tool / shell — not on how the user described themselves.`;
+}
 
 export function toToolActor(user: AssistantSessionUser, activeRole?: AppRole): ToolActor {
   return {
@@ -94,9 +213,11 @@ export async function buildWriteProposal(
   toolName: string,
   rawArgs: unknown,
   activeRole?: AppRole,
+  deferredNote?: string,
 ): Promise<AssistantAnswer> {
   const preview = previewToolCall(toolName, actor, rawArgs);
   const meta = sourceMetaForTool(toolName, actor);
+  const deferredFields = deferredNote ? { deferredNote } : {};
 
   if (toolName === "offer_task_status_choices") {
     const args = preview.args as {
@@ -116,6 +237,7 @@ export async function buildWriteProposal(
         toolName: "update_task_status",
         args: updateArgs,
         ...(activeRole ? { role: activeRole } : {}),
+        ...deferredFields,
       });
       const description = [option.assigneeName, option.eventTitle].filter(Boolean).join(" · ");
       return {
@@ -209,6 +331,7 @@ export async function buildWriteProposal(
           toolName: "propose_announcement",
           args,
           ...(activeRole ? { role: activeRole } : {}),
+          ...deferredFields,
         });
         const argsPreview = previewToolCall("propose_announcement", actor, args).argsPreview;
         return {
@@ -289,6 +412,7 @@ export async function buildWriteProposal(
           toolName: "propose_announcement",
           args,
           ...(activeRole ? { role: activeRole } : {}),
+          ...deferredFields,
         });
         const argsPreview = previewToolCall("propose_announcement", actor, args).argsPreview;
         return {
@@ -349,10 +473,11 @@ export async function buildWriteProposal(
     toolName,
     args: preview.args as Record<string, unknown>,
     ...(activeRole ? { role: activeRole } : {}),
+    ...deferredFields,
   });
 
   return {
-    answer: `I can do that — please confirm below.`,
+    answer: DEFAULT_PENDING_WRITE_ANSWER,
     sourceType: meta.sourceType,
     sourceLabel:
       preview.argsPreview.title ??
@@ -395,7 +520,7 @@ export async function runWriteToolAgent(
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const result = await toolCompletion({
-        system: WRITE_AGENT_SYSTEM,
+        system: writeAgentSystemPrompt(activeRole),
         messages,
         tools,
         maxTokens: 2048,
@@ -413,7 +538,21 @@ export async function runWriteToolAgent(
       for (const use of toolUses) {
         const registered = getTool(use.name);
         if (registered?.requiresConfirmation) {
-          return buildWriteProposal(actor, use.name, use.input, activeRole);
+          const deferred = extractDeferredWriteRequest(question);
+          const proposal = await buildWriteProposal(
+            actor,
+            use.name,
+            use.input,
+            activeRole,
+            deferred ?? undefined,
+          );
+          return {
+            ...proposal,
+            answer: appendDeferredWriteNote(
+              composePendingWriteAnswer(textFromContent(result.content), proposal.answer),
+              deferred,
+            ),
+          };
         }
       }
 

@@ -21,6 +21,8 @@ export type PendingActionPayload = {
   args: Record<string, unknown>;
   /** Shell the proposal was made from, so Accept executes with the same scope. */
   role?: string;
+  /** Leftover second write from a multi-ask message — remind after Accept. */
+  deferredNote?: string;
   /** One-time id embedded in the payload for clearer consume tracking. */
   jti: string;
   exp: number;
@@ -42,7 +44,8 @@ function decodePayload(encoded: string): PendingActionPayload | null {
       typeof parsed.args !== "object" ||
       parsed.args === null ||
       Array.isArray(parsed.args) ||
-      (parsed.role !== undefined && typeof parsed.role !== "string")
+      (parsed.role !== undefined && typeof parsed.role !== "string") ||
+      (parsed.deferredNote !== undefined && typeof parsed.deferredNote !== "string")
     ) {
       return null;
     }
