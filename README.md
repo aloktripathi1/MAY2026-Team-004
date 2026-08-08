@@ -570,43 +570,48 @@ need a background job before they can notify.
 
 The gold sparkles button opens a drawer that answers from your club data and can propose writes.
 Those writes never hit the database until you **Accept** on the proposal card. **Reject** cancels
-cleanly (“Okay — I won't make that change.”).
+cleanly (“Okay — I won't make that change.”). Multi-write asks (joined with `also`) can show
+**several** cards at once, plus **Accept all** / **Reject all**.
 
-What you can *do* depends on the shell you’re browsing — same rule as the rest of the app. Switch
-roles in the sidebar if you need a different toolkit.
+What you can *do* depends on the **dashboard shell** you’re browsing — not on phrases like
+“as admin” in the chat. Switch roles in the sidebar if you need a different toolkit.
 
 ### Who can do what
 
-| Shell | Reads | Writes |
-|---|---|---|
-| Member | Events, announcements, memberships | — |
-| Volunteer | Same + own tasks | Mark **your** tasks todo / doing / done |
-| Coordinator | Club board context | Status on the club board · single assign · bulk assign |
-| Admin | Announcements + club context | Draft / post announcements (not task assign) |
-| Faculty | Approvals, events, announcements | — |
+| Shell | Can ask / read | Can propose (Accept required) | Cannot do here |
+|---|---|---|---|
+| **Member** (`/app`) | Next events, announcements, own club memberships | — | Tasks, assign, bulk, roster, post announcements |
+| **Volunteer** (`/volunteer`) | Same as Member + **own** open tasks | Mark **your** tasks `todo` / `doing` / `done` | Assign / bulk, club roster load, post announcements |
+| **Coordinator** (`/coordinator`) | Events & announcements in scope + **club volunteer roster** + who has the most todo / doing / done / open tasks | Board task status · single assign · bulk assign · multi-ask (`also`) with N confirm cards | Post announcements (Admin only) |
+| **Admin** (`/admin`) | Announcements + club context | Draft / post announcements (role audience **or** named people + timing picker) | Task status, assign, bulk, roster aggregation |
+| **Faculty** (`/faculty`) | Approvals / upcoming events / announcements | — | Writes (tasks, assign, announcements) |
 
-Wrong-shell asks get a short refuse (e.g. bulk assign as volunteer, announcement as coordinator).
+Wrong-shell asks get a short refuse (e.g. bulk assign as Volunteer, announcement as Coordinator,
+roster as Volunteer). Access follows the shell you opened, not self-labels in the prompt.
 
 ### Try one from each write shell
 
-Use names and titles you actually see on the board. After Accept, the page soft-refreshes.
+Use names and titles you actually see on the board (example chips in the drawer match the
+current DB when possible). After Accept, the page soft-refreshes.
 
 **Volunteer** (`/volunteer`)
 
 ```text
-Mark Setup PA System as doing
+Mark "Setup PA System" as doing
 ```
 
-**Coordinator** (`/coordinator` or volunteers board)
+**Coordinator** (`/coordinator`)
 
 ```text
-Assign Poster design to Soham Reddy and Booth setup to Sai Dutta for Test Event 1
+List active volunteers
+Assign booth setup to Pardhiv Nukasani for Test Event 1
+Mark "Independence Day Function Approval" as doing, also assign check-in to Pardhiv Nukasani for Test Event 1
 ```
 
 **Admin** (`/admin`)
 
 ```text
-Draft an announcement titled "Rehearsal moved" saying rehearsal is moved to Friday for all members
+Draft an announcement titled "Team sync" saying sync is Friday at 5pm for all members
 ```
 
 On announcements you’ll pick **who** (All / Volunteers / Coordinators, or a named person if you
@@ -615,8 +620,9 @@ asked for one) and **when** (Send now vs digest), then Accept.
 ### How a write feels
 
 1. You ask (or tap an example chip).  
-2. A proposal card appears — Accept is disabled until any required pickers are chosen.  
+2. One or more proposal cards appear — Accept is disabled until any required pickers are chosen.  
 3. Accept runs the domain write and refreshes boards / lists. Reject burns the pending tokens.
+   With several cards, you can confirm each one or use **Accept all** / **Reject all**.
 
 Ambiguous **tasks** (two “Booth setup” rows) use an on-card picker — not a chat follow-up. Ambiguous
 **people** for assign still clarify in chat before a proposal.
@@ -628,7 +634,7 @@ Assign and announcement Accepts can email through the normal mailer (`taskAssign
 ### Under the hood (short)
 
 UI → Server Actions (`askSangamQueryAction` / `askSangamConfirmAction`) → classifier → write agent
-+ tool registry → signed pending token → Accept → domain + `revalidatePath`. Legacy
++ tool registry → signed pending token(s) → Accept → domain + `revalidatePath`. Legacy
 `/api/assistant/*` returns **410**.
 
 

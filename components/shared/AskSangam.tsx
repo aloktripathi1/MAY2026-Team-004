@@ -63,29 +63,29 @@ function slotHasChoiceSelected(slot: ProposalSlot): boolean {
   return Boolean(resolveSelectedChoiceId(slot));
 }
 
-/** Role-scoped examples: one chip per capability that shell allows (live Test Club 1 data). */
+/** Role-scoped examples grounded in current Test Club 1 DB + shell capabilities. */
 const EXAMPLE_QUESTIONS: Record<AppRole, string[]> = {
   member: [
+    "Which clubs am I a member of?",
     "When's my next event?",
     "What are the latest announcements?",
-    "Which clubs am I a member of?",
   ],
   volunteer: [
-    "Mark Setup PA System as doing",
+    'Mark "Setup PA System" as doing',
     "What tasks am I assigned?",
     "When's my next event?",
     "What are the latest announcements?",
   ],
   coordinator: [
-    "Change the first task status to doing",
-    "Assign check-in to Pardhiv Nukasani for Test Event 1",
-    "Assign Poster design to Soham Reddy and Booth setup to Sai Dutta for Test Event 1",
+    'Mark "Setup PA System" as doing',
+    "Assign booth setup to Pardhiv Nukasani for Test Event 1",
+    'Mark "Independence Day Function Approval" as doing, also assign check-in to Pardhiv Nukasani for Test Event 1',
     "List active volunteers",
     "Who has the most open tasks?",
   ],
   admin: [
-    'Draft an announcement titled "Rehearsal moved" saying rehearsal is moved to Friday for all members',
-    'Draft an announcement titled "Rehearsal moved" saying rehearsal is moved to Friday for Purnendu',
+    'Draft an announcement titled "Team sync" saying sync is Friday at 5pm for all members',
+    'Draft an announcement titled "Volunteer note" saying check the board for Pardhiv Nukasani',
     "What are the latest announcements?",
   ],
   faculty: [
