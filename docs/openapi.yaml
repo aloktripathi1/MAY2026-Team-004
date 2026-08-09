@@ -1,0 +1,3024 @@
+openapi: 3.0.3
+info:
+  title: Sangam API
+  version: 0.2.1
+  description: |
+    Sangam club platform APIs (IITM BS). Updated for Milestone 4 (Sprint 2) —
+    verified directly against the current codebase on `main` @ commit
+    385e387 (merge of feat/admin-coordinator-surface-nav on top of PR #144:
+    Club Admins can now assign tasks and manage the task board through Ask
+    Sangam the same way Coordinators can — see the GenAI write-tool section
+    below), not the original plan (see milestone-4/api-list.md for what was
+    descoped or never built, e.g. Place & Equipment Booking, and the
+    Handover Brief Generator GenAI feature).
+
+    APIs created (own): listed under paths below.
+    APIs integrated (third-party): Anthropic Claude, Groq (Whisper), Google
+    OAuth, Resend, Vercel Blob — see milestone-4/api-list.md for the full
+    table with request/response boundaries and required env vars.
+
+    GenAI APIs: a dedicated section below, clearly separated from the
+    regular CRUD APIs. Covers Ask Sangam's read-only Q&A (now a Server
+    Action, not a public REST route — see note on the retired
+    POST /api/assistant/query) and its agentic write capability: bulk task
+    assignment, task status updates, and announcement drafting, all via a
+    signed propose -> confirm pattern that requires explicit user Accept
+    before any database write. POST /api/assistant/transcribe (voice input)
+    is a real REST route and is documented normally alongside it.
+
+    User story mapping: each operation includes `x-user-story` and
+    `x-user-story-title`, i.e. "Implements: Story N.N".
+
+    Note on "Try it out": this spec is served live, same-origin, at
+    GET /api/openapi (raw YAML), with an interactive Swagger UI at
+    /api/docs. Both were restored this milestone (they'd briefly been
+    removed after the file they read, docs/openapi.yaml, was deleted from
+    the repo) — this file at docs/openapi.yaml is now the single canonical
+    copy the running app actually serves; milestone-4/openapi.yaml is a
+    synced snapshot kept for the submission archive.
+  contact:
+    name: MAY2026-Team-004
+
+servers:
+  - url: http://localhost:3000
+    description: Local dev (curl, external tools)
+  - url: https://www.sangam-club.com
+    description: Production
+
+tags:
+  - name: Auth
+    description: Account creation and session (User Story 1.1)
+  - name: Membership
+    description: Club member directory, join requests, status, bulk import, interests (Epic 1, Story 7.1)
+  - name: Events
+    description: Event creation, listing, registration, check-in, approval, locking (Epic 2)
+  - name: Mock Auth
+    description: Demo stub only. Not part of the real auth REST surface.
+  - name: GenAI
+    description: |
+      Ask Sangam — kept separate from the regular CRUD APIs above.
+      Structured retrieval-and-generation over Postgres (classify intent ->
+      scoped Prisma query -> generate grounded answer), not vector RAG.
+      Two legacy REST routes are retired (410 GONE); the real read + agentic
+      write traffic goes through two Next.js Server Actions
+      (`x-transport: server-action`, no fetchable URL — documented under
+      synthetic /_server-actions/... paths for their request/response
+      contract). POST /api/assistant/transcribe (voice input, Groq Whisper)
+      is a real REST route. Writes (task assignment, bulk assignment, status
+      updates, announcements) always go through a signed propose -> confirm
+      pattern — nothing is written to the database without an explicit
+      user Accept.
+
+paths:
+  /api/auth/signup:
+    post:
+      tags:
+        - Auth
+      summary: Create account with institutional credentials
+      description: |
+        Creates a student account with institutional email, name, roll number,
+        and password. Only emails ending with @ds.study.iitm.ac.in are accepted.
+
+        On success, sets httpOnly session cookies and returns the created user
+        (password is never returned). Client should continue to onboarding.
+
+        User Story 1.1 - Institutional Credential Verification
+        As a Club Admin, I want to verify student membership using institutional
+        credentials, so that only eligible students can join the club.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - POST /api/auth/signup
+      operationId: authSignup
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      x-plan-endpoint: POST /api/auth/signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+            examples:
+              valid:
+                summary: Valid institutional signup
+                value:
+                  name: Ananya Rao
+                  email: 23s1000999@ds.study.iitm.ac.in
+                  password: SecurePass1
+              nonInstitutional:
+                summary: Rejected - wrong email domain
+                value:
+                  name: Outside User
+                  email: student@gmail.com
+                  password: SecurePass1
+      responses:
+        "201":
+          description: Account created. Session cookies set.
+          headers:
+            Set-Cookie:
+              description: httpOnly signed session cookie (sangam_session)
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignupSuccessResponse"
+              example:
+                success: true
+                data:
+                  id: clxexampleid
+                  name: Ananya Rao
+                  email: 23s1000999@ds.study.iitm.ac.in
+                  rollNumber: "23s1000999"
+                  next: /signup/onboarding
+                userStory: "1.1"
+        "400":
+          description: |
+            Invalid JSON body, or Zod validation failure
+            (including non-institutional email, short password, missing fields).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                validation:
+                  summary: Non-institutional email
+                  value:
+                    success: false
+                    error:
+                      code: VALIDATION_ERROR
+                      message: Email must end with @ds.study.iitm.ac.in
+                      details:
+                        - path: email
+                          message: Email must end with @ds.study.iitm.ac.in
+                    userStory: "1.1"
+                invalidJson:
+                  summary: Malformed body
+                  value:
+                    success: false
+                    error:
+                      code: INVALID_JSON
+                      message: Request body must be valid JSON.
+                    userStory: "1.1"
+        "409":
+          description: Email or roll number already registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emailExists:
+                  summary: Duplicate email
+                  value:
+                    success: false
+                    error:
+                      code: EMAIL_EXISTS
+                      message: An account with this email already exists.
+                    userStory: "1.1"
+                rollExists:
+                  summary: Duplicate roll number
+                  value:
+                    success: false
+                    error:
+                      code: ROLL_EXISTS
+                      message: An account with this roll number already exists.
+                    userStory: "1.1"
+        "500":
+          description: Unexpected server failure while creating the account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INTERNAL_ERROR
+                  message: Could not create account. Please try again.
+                userStory: "1.1"
+
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate and return session
+      description: |
+        Authenticates with institutional email and password. On success, sets
+        httpOnly session cookies and returns the user, memberships/roles, and
+        a safe post-login path.
+
+        Only emails ending with @ds.study.iitm.ac.in are accepted. Failed auth
+        returns a generic INVALID_CREDENTIALS message (401) so responses do not
+        reveal whether the email or password was wrong. Optional callbackUrl is
+        accepted only when it is a same-origin relative path (starts with `/`,
+        not `//`). Mock/demo auth remains separate under /api/auth/{nextauth}.
+
+        User Story 1.1 - Institutional Credential Verification
+        As a Club Admin, I want to verify student membership using institutional
+        credentials, so that only eligible students can join the club.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - POST /api/auth/login
+      operationId: authLogin
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      x-plan-endpoint: POST /api/auth/login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              valid:
+                summary: Valid institutional login
+                value:
+                  email: 23s1000123@ds.study.iitm.ac.in
+                  password: sangam
+              withCallback:
+                summary: Login with safe callbackUrl
+                value:
+                  email: 23s1000123@ds.study.iitm.ac.in
+                  password: sangam
+                  callbackUrl: /app/profile
+              nonInstitutional:
+                summary: Rejected - wrong email domain
+                value:
+                  email: student@gmail.com
+                  password: sangam
+      responses:
+        "200":
+          description: Authenticated. Session cookies set.
+          headers:
+            Set-Cookie:
+              description: httpOnly signed session cookie (sangam_session)
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginSuccessResponse"
+              example:
+                success: true
+                data:
+                  id: u1
+                  name: Ananya Rao
+                  email: 23s1000123@ds.study.iitm.ac.in
+                  rollNumber: "23s1000123"
+                  isFaculty: true
+                  memberships:
+                    - clubId: c1
+                      clubSlug: tech
+                      clubName: Tech Club
+                      role: Admin
+                      personaName: Ananya Rao
+                  next: /faculty
+                userStory: "1.1"
+        "400":
+          description: Invalid JSON or Zod validation failure (including non-institutional email).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                validation:
+                  summary: Non-institutional email
+                  value:
+                    success: false
+                    error:
+                      code: VALIDATION_ERROR
+                      message: Email must end with @ds.study.iitm.ac.in
+                      details:
+                        - path: email
+                          message: Email must end with @ds.study.iitm.ac.in
+                    userStory: "1.1"
+                invalidJson:
+                  summary: Malformed body
+                  value:
+                    success: false
+                    error:
+                      code: INVALID_JSON
+                      message: Request body must be valid JSON.
+                    userStory: "1.1"
+        "401":
+          description: Email/password do not match an account (generic message).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INVALID_CREDENTIALS
+                  message: Invalid email or password.
+                userStory: "1.1"
+        "403":
+          description: |
+            Password was correct, but the account's email has never been
+            confirmed. Distinct from 401 on purpose: since the caller already
+            proved they know the password, saying the address is unverified
+            here reveals nothing an attacker couldn't already tell, and a
+            generic "invalid email or password" would incorrectly send a real
+            user to reset a password that already works.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: EMAIL_UNVERIFIED
+                  message: Confirm your email address before signing in. Check your inbox for the link we sent.
+                userStory: "1.1"
+        "500":
+          description: Unexpected server failure while signing in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INTERNAL_ERROR
+                  message: Could not sign in. Please try again.
+                userStory: "1.1"
+
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Return current user and held roles/memberships
+      description: |
+        Returns the authenticated user from real session cookies, with fresh
+        memberships and roles loaded from the database (not from stale cookie
+        copies alone). Also returns accessible app roles (multi-role) and the
+        default home path.
+
+        Requires a prior successful POST /api/auth/signup or POST /api/auth/login
+        that set httpOnly cookies. Does NOT fall back to the mock demo persona
+        used by lib/mock-session.ts — unauthenticated requests get 401.
+
+        User Story 1.1 - Institutional Credential Verification (session identity)
+        Multi-role: returns all club memberships and accessibleAppRoles.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - GET /api/auth/me
+      operationId: authMe
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      x-plan-endpoint: GET /api/auth/me
+      x-multi-role: true
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "200":
+          description: Current user with memberships and accessible roles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeSuccessResponse"
+              example:
+                success: true
+                data:
+                  id: u1
+                  name: Ananya Rao
+                  email: 23s1000123@ds.study.iitm.ac.in
+                  rollNumber: "23s1000123"
+                  isFaculty: true
+                  memberships:
+                    - clubId: c1
+                      clubSlug: codechef
+                      clubName: CodeChef IITM BS
+                      role: Admin
+                      personaName: Ananya Rao
+                  roles:
+                    - faculty
+                    - admin
+                    - member
+                  home: /faculty
+                userStory: "1.1"
+        "401":
+          description: Missing or invalid session cookies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: UNAUTHENTICATED
+                  message: Authentication required.
+                userStory: "1.1"
+        "500":
+          description: Unexpected server failure while loading the current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: INTERNAL_ERROR
+                  message: Could not load current user. Please try again.
+                userStory: "1.1"
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Clear the session cookie
+      description: |
+        Clears the signed sangam_session cookie. There is no separate
+        bearer/access token in Sangam and no server-side session store — the
+        cookie IS the credential, so clearing it is the entire logout. A raw
+        copy of the cookie value made before logout would still verify (it's
+        a stateless HMAC signature, not a revocable server-side record); if
+        that threat matters for your deployment, move to a server-side
+        session store with revocation instead. Always returns 200, even if
+        no session was present.
+
+        User Story 1.1 - Institutional Credential Verification (session teardown)
+      operationId: authLogout
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      responses:
+        "200":
+          description: Session cookie cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      loggedOut:
+                        type: boolean
+                  userStory:
+                    type: string
+              example:
+                success: true
+                data:
+                  loggedOut: true
+                userStory: "1.1"
+
+  /api/auth/{nextauth}:
+    parameters:
+      - name: nextauth
+        in: path
+        required: true
+        description: Catch-all path segments for the mock NextAuth stub
+        schema:
+          type: string
+    get:
+      tags:
+        - Mock Auth
+      summary: Mock NextAuth catch-all (GET)
+      description: |
+        Mock stub only. Returns mode mock. Not used for real signup, login, or me.
+        Kept so existing demo paths are not broken. Real auth uses explicit
+        REST routes such as POST /api/auth/signup, POST /api/auth/login, and GET /api/auth/me.
+      operationId: mockAuthGet
+      x-user-story: "n/a"
+      x-mock: true
+      responses:
+        "200":
+          description: Mock mode acknowledgement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MockAuthResponse"
+              example:
+                mode: mock
+                message: Mock auth stub. Use /api/auth/signup (and other REST auth routes) for real auth.
+    post:
+      tags:
+        - Mock Auth
+      summary: Mock NextAuth catch-all (POST)
+      description: Mock stub only. Separate from real REST auth routes (/signup, /login, /me).
+      operationId: mockAuthPost
+      x-user-story: "n/a"
+      x-mock: true
+      responses:
+        "200":
+          description: Mock mode acknowledgement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MockAuthResponse"
+
+  /api/onboarding/interests:
+    post:
+      tags:
+        - Membership
+      summary: Save selected interest tags after signup
+      description: |
+        Saves the interest tags the user selected during onboarding, used later
+        for interest-based club discovery.
+
+        User Story 7.1 - Interest-Based Club Discovery
+        As a Club Member, I want to specify my interests during profile creation
+        and discover clubs that match them, so that I can join communities that
+        are genuinely relevant to me instead of joining randomly through a shared link.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - POST /api/onboarding/interests
+      operationId: saveOnboardingInterests
+      x-user-story: "7.1"
+      x-user-story-title: Interest-Based Club Discovery
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingInterestsRequest"
+            examples:
+              valid:
+                summary: Two interests selected
+                value:
+                  interests: ["Technical", "Design"]
+      responses:
+        "200":
+          description: Interests saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      interests:
+                        type: array
+                        items: { type: string }
+                  userStory: { type: string, example: "7.1" }
+        "400":
+          description: Zero or too many interests selected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while saving interests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/members/bulk-import:
+    post:
+      tags:
+        - Membership
+      summary: Bulk-import existing member lists
+      description: |
+        Imports a list of members (name, roll number, email, optional role) into
+        a club in one call, upserting users by roll number and skipping rows that
+        already have a membership in the club.
+
+        User Story 1.5 - Bulk Member Import
+        As a Club Admin, I want to bulk-import existing member lists from
+        spreadsheets or Google Forms, so that I am not forced to manually
+        re-register every existing member when onboarding the club onto the platform.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - POST /api/members/bulk-import
+      operationId: bulkImportMembers
+      x-user-story: "1.5"
+      x-user-story-title: Bulk Member Import
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkImportRequest"
+      responses:
+        "200":
+          description: Import processed. Returns counts, not per-row errors.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      imported: { type: integer, example: 8 }
+                      skipped: { type: integer, example: 2 }
+                  userStory: { type: string, example: "1.5" }
+        "400":
+          description: Missing clubId or empty rows array.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not an Admin of the target club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Club not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while importing members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/clubs/{id}/members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Club id
+        schema: { type: string }
+    get:
+      tags:
+        - Membership
+      summary: List members of a club (admin view)
+      description: |
+        Returns every membership row for the club, including each member's
+        role and status.
+
+        User Story 1.2 - Centralized Member Directory
+        As a Club Admin, I want to maintain a centralized directory of all club
+        members, so that I can track member information without relying on
+        multiple Google Forms and spreadsheets.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - GET /api/clubs/[id]/members
+      operationId: listClubMembers
+      x-user-story: "1.2"
+      x-user-story-title: Centralized Member Directory
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "200":
+          description: Member list for the club.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      members:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/MembershipRecord"
+                  userStory: { type: string, example: "1.2" }
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not an Admin of this club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Club not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while loading members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Membership
+      summary: Register/apply to join a club
+      description: |
+        Creates a Pending membership for the current user in this club.
+
+        User Story 1.3 - Single-Portal Registration
+        As a Club Member, I want to register for a club through a single portal,
+        so that I do not miss registration updates or have to fill duplicate forms.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Auth and Membership - POST /api/clubs/[id]/members
+      operationId: applyToJoinClub
+      x-user-story: "1.3"
+      x-user-story-title: Single-Portal Registration
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "201":
+          description: Join request created with Pending status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      membership:
+                        $ref: "#/components/schemas/MembershipRecord"
+                  userStory: { type: string, example: "1.3" }
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Club not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Already a member of, or already applied to, this club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: ALREADY_MEMBER
+                  message: Already a member of, or already applied to, this club.
+                userStory: "1.3"
+        "500":
+          description: Unexpected server failure while submitting the join request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/clubs/{id}/members/{memberId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Club id
+        schema: { type: string }
+      - name: memberId
+        in: path
+        required: true
+        description: Membership id
+        schema: { type: string }
+    patch:
+      tags:
+        - Membership
+      summary: Update a membership's status and/or role
+      description: |
+        Updates a membership's status (Active/Pending/Inactive), role
+        (Member/Volunteer/Coordinator), or both in one call — at least one
+        of the two fields is required (enforced by a Zod `.refine`). Requires
+        the caller to be an Admin of the membership's club.
+
+        `role` deliberately excludes Admin: a club has exactly one Admin, and
+        that handover is a distinct, transactional operation owned by
+        POST /admin/handover (Server Action `transferAdminAction` —
+        demotes the outgoing Admin to Coordinator and promotes the successor
+        in the same DB transaction), not this endpoint.
+
+        User Story 1.4 - Membership Status Tracking
+        As a Club Member, I want to view my membership status after logging
+        into the platform, so that I know whether my application has been
+        approved or is still under review.
+
+        Implements: Story 1.4
+      operationId: updateMembershipStatusOrRole
+      x-user-story: "1.4"
+      x-user-story-title: Membership Status Tracking
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: At least one of `status` or `role` is required.
+              properties:
+                status:
+                  type: string
+                  enum: [Active, Pending, Inactive]
+                role:
+                  type: string
+                  enum: [Member, Volunteer, Coordinator]
+                  description: Never Admin — see description above.
+            examples:
+              approve:
+                summary: Approve a pending application
+                value: { status: Active }
+              promote:
+                summary: Promote to Coordinator
+                value: { role: Coordinator }
+              both:
+                summary: Approve and promote in one call
+                value: { status: Active, role: Volunteer }
+      responses:
+        "200":
+          description: Membership updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      membership:
+                        $ref: "#/components/schemas/MembershipRecord"
+                  userStory: { type: string, example: "1.4" }
+        "400":
+          description: |
+            Invalid JSON (`INVALID_JSON`); neither `status` nor `role`
+            provided, or an invalid enum value (`VALIDATION_ERROR`); or a
+            domain-level rejection from `updateMembershipStatus` /
+            `updateMembershipRole` that isn't a 404/403 case (status code
+            defaults to 400 for any other result code).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies (`UNAUTHENTICATED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not an Admin of this club (`FORBIDDEN`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Membership not found (`MEMBERSHIP_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while updating the membership (`INTERNAL_ERROR`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events:
+    get:
+      tags:
+        - Events
+      summary: List events, filterable by club/status
+      description: |
+        Returns events, optionally filtered by `clubId` and/or `status`
+        (upcoming/live/past).
+
+        User Story 2.5 - Event Listing Page
+        As a Club Member, I want to access details of upcoming and past events
+        in one place, so that I can easily stay informed about club activities.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - GET /api/events
+      operationId: listEvents
+      x-user-story: "2.5"
+      x-user-story-title: Event Listing Page
+      parameters:
+        - name: clubId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [upcoming, live, past] }
+      responses:
+        "200":
+          description: List of events (with club embedded).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      events:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.5" }
+        "500":
+          description: Unexpected server failure while loading events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Events
+      summary: Create event (coordinator)
+      description: |
+        Creates an event for the caller's club. Caller must hold the
+        Coordinator or Admin role for that club. New events start with
+        `status: upcoming` and `approval: pending`.
+
+        User Story 2.1 - Event Creation & Registration
+        As an Event Coordinator, I want to create and manage event
+        registrations from one platform, so that participants are not lost
+        because of multiple registration forms.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - POST /api/events
+      operationId: createEvent
+      x-user-story: "2.1"
+      x-user-story-title: Event Creation & Registration
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: Event created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.1" }
+        "400":
+          description: Zod validation failure (missing/invalid fields).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not a Coordinator/Admin of the target club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Club not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while creating the event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Event id
+        schema: { type: string }
+    get:
+      tags:
+        - Events
+      summary: Event detail
+      description: |
+        Returns full event detail with club embedded and a Count-Me-In count.
+
+        User Story 2.5 - Event Listing Page (detail view)
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - GET /api/events/[id]
+      operationId: getEventById
+      x-user-story: "2.5"
+      responses:
+        "200":
+          description: Event detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.5" }
+        "404":
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while loading the event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags:
+        - Events
+      summary: Edit event
+      description: |
+        Updates one or more fields of an event. Caller must be a
+        Coordinator/Admin of the event's club. Editing an event's date/time/venue
+        is the trigger point for the schedule-change notification described in
+        the user story (notification delivery itself is Epic 5 / M4 scope).
+
+        User Story 2.2 - Event Schedule Change Notification
+        As a Club Member, I want to receive a notification whenever an event's
+        date or time changes, so that I do not show up at the wrong time or
+        miss the event entirely.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - PATCH /api/events/[id]
+      operationId: updateEvent
+      x-user-story: "2.2"
+      x-user-story-title: Event Schedule Change Notification
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEventRequest"
+      responses:
+        "200":
+          description: Event updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.2" }
+        "400":
+          description: Invalid JSON or Zod validation failure.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not a Coordinator/Admin of this event's club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while updating the event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/{id}/register:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Event id
+        schema: { type: string }
+    post:
+      tags:
+        - Events
+      summary: RSVP / Count Me In (toggle)
+      description: |
+        Toggles the caller's registration for the event: creates a Count-Me-In
+        if none exists (subject to capacity/status), removes it if one already
+        exists. Blocked once the event's registration is locked (see
+        PATCH /api/events/{id}/lock).
+
+        User Story 2.1 - Event Creation & Registration
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - POST /api/events/[id]/register
+      operationId: registerForEvent
+      x-user-story: "2.1"
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "200":
+          description: Registration toggled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      action:
+                        type: string
+                        enum: [registered, cancelled]
+                  userStory: { type: string, example: "2.1" }
+        "400":
+          description: Registration unavailable (event past or at capacity).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Registration is locked for this event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while updating registration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/{id}/checkin:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Event id
+        schema: { type: string }
+    post:
+      tags:
+        - Events
+      summary: Mark attendee checked in
+      description: |
+        Marks a specific Count-Me-In registration as checked in. Caller must
+        be a Coordinator/Admin of the event's club.
+
+        User Story 2.7 - RSVP and Attendance Check-in
+        As an Event Coordinator, I want to record actual attendance against
+        the registered participant list at the time of the event, so that I
+        know who genuinely showed up and can plan future events around real
+        turnout, not just registration counts.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - POST /api/events/[id]/checkin
+      operationId: checkInAttendee
+      x-user-story: "2.7"
+      x-user-story-title: RSVP and Attendance Check-in
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [countMeInId]
+              properties:
+                countMeInId: { type: string }
+      responses:
+        "200":
+          description: Attendee marked checked in.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      countMeIn: { type: object }
+                  userStory: { type: string, example: "2.7" }
+        "400":
+          description: Invalid JSON or missing countMeInId.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not a Coordinator/Admin of this event's club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Event or registration not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while checking in the attendee.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/{id}/participants:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Event id
+        schema: { type: string }
+    get:
+      tags:
+        - Events
+      summary: Participant list with registration/check-in status
+      description: |
+        Returns every Count-Me-In registration for the event with the
+        participant's name/email and checked-in status. Caller must be a
+        Coordinator/Admin of the event's club.
+
+        User Story 2.3 - Participant List & Event Dashboard
+        As an Event Coordinator, I want to maintain a single, accurate list of
+        registered participants visible on a dashboard, so that participant
+        information remains consistent for both admins and coordinators.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - GET /api/events/[id]/participants
+      operationId: listEventParticipants
+      x-user-story: "2.3"
+      x-user-story-title: Participant List & Event Dashboard
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "200":
+          description: Participant list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      participants:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            userId: { type: string }
+                            name: { type: string }
+                            email: { type: string }
+                            checkedIn: { type: boolean }
+                            registeredAt: { type: string, format: date-time }
+                  userStory: { type: string, example: "2.3" }
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not a Coordinator/Admin of this event's club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while loading participants.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/conflicts:
+    get:
+      tags:
+        - Events
+      summary: Check date/venue conflicts before creating an event
+      description: |
+        Returns events already scheduled at the given venue on the given date
+        (optionally excluding one event id, for edit flows), so the caller can
+        warn about double-booking before creating/editing an event.
+
+        User Story 2.4 - Conflict-Checked Scheduling
+        As a Club Admin, I want to schedule events while checking for
+        conflicts with other club activities, so that overlapping events can
+        be avoided.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - GET /api/events/conflicts
+      operationId: checkEventConflicts
+      x-user-story: "2.4"
+      x-user-story-title: Conflict-Checked Scheduling
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: venue
+          in: query
+          required: true
+          schema: { type: string }
+        - name: excludeEventId
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Conflicting events (empty array if none).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      hasConflict: { type: boolean }
+                      conflicts:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.4" }
+        "400":
+          description: Missing required date or venue query params.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while checking conflicts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/{id}/approve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Event id
+        schema: { type: string }
+    post:
+      tags:
+        - Events
+      summary: Faculty approval action
+      description: |
+        Sets an event's institutional approval status. Caller must have
+        `isFaculty: true` — faculty oversight is institution-wide, not
+        scoped to a single club.
+
+        User Story 2.8 - Faculty Approval for Events
+        As a Faculty Coordinator / Mentor, I want to review and approve
+        events that require institutional sign-off before they are published,
+        so that club activities remain aligned with institutional guidelines
+        without slowing down routine events.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - POST /api/events/[id]/approve
+      operationId: setEventApprovalByFaculty
+      x-user-story: "2.8"
+      x-user-story-title: Faculty Approval for Events
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approval]
+              properties:
+                approval:
+                  type: string
+                  enum: [approved, pending, rejected]
+                force:
+                  type: boolean
+                  description: |
+                    Required to reject an already-approved event that has
+                    registered participants — omit or set to false first to
+                    get the 409 confirmation prompt with the registrant count.
+      responses:
+        "200":
+          description: Approval updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.8" }
+        "400":
+          description: Invalid JSON or invalid approval value.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not faculty.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: FORBIDDEN
+                  message: Faculty only.
+                userStory: "2.8"
+        "404":
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Rejecting an approved event with registered participants requires force:true.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: CONFIRMATION_REQUIRED
+                  message: 3 people are already registered for this approved event. Resubmit with force to reject it anyway.
+                userStory: "2.8"
+        "500":
+          description: Unexpected server failure while updating approval.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/events/{id}/lock:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Event id
+        schema: { type: string }
+    patch:
+      tags:
+        - Events
+      summary: Lock/unlock registration
+      description: |
+        Sets `registrationLocked` on the event. While locked,
+        POST /api/events/{id}/register is rejected with 409 REGISTRATION_LOCKED,
+        so participant/team details stop changing once registration closes.
+        Caller must be a Coordinator/Admin of the event's club.
+
+        User Story 2.6 - Registration Lock
+        As a Club Admin, I want to lock participant or team details once
+        registration closes, so that tracking remains accurate and data is
+        not lost when people change details at the last moment.
+
+        Plan ref: docs/Sangam_M3_M4_Plan.md - Event Management - PATCH /api/events/[id]/lock
+      operationId: setRegistrationLock
+      x-user-story: "2.6"
+      x-user-story-title: Registration Lock
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locked]
+              properties:
+                locked: { type: boolean }
+      responses:
+        "200":
+          description: Lock state updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/EventRecord"
+                  userStory: { type: string, example: "2.6" }
+        "400":
+          description: Invalid JSON or missing locked boolean.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not a Coordinator/Admin of this event's club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server failure while updating the lock.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # --- GenAI APIs ---------------------------------------------------------
+  # Kept separate from the regular CRUD endpoints above. Ask Sangam is
+  # structured retrieval-and-generation over Postgres, not vector RAG: one
+  # Claude call classifies intent + entities (backend/domain/assistant.ts),
+  # a normal Prisma query runs scoped to the caller's own session
+  # (memberships / userId — never another club's or user's data), and a
+  # second Claude call turns the query result into a short natural-language
+  # answer using only that data. If the query finds nothing, the fixed
+  # "I don't have that information." response is returned and the
+  # generation call is skipped entirely, so Claude can never improvise an
+  # answer from empty data. Task mutations use a dual path: classify as
+  # task_action, then an in-process tool agent proposes writes that the
+  # user must Accept via POST /api/assistant/confirm. See lib/genai.ts.
+  # ===========================================================================
+  # GenAI APIs — Ask Sangam
+  #
+  # Two retired REST routes (kept only so old/external clients get a clear
+  # error), one real REST route (voice input), and two Server Actions that
+  # carry all of Ask Sangam's actual read + agentic-write traffic today.
+  # Server Actions are Next.js's RPC mechanism (a POST to the originating
+  # page with a `Next-Action` header, not a conventional JSON REST route) —
+  # documented here under synthetic `/_server-actions/...` paths, each
+  # tagged `x-transport: server-action`, so the request/response contract is
+  # still fully specified even though there is no literal fetchable URL.
+  # ===========================================================================
+
+  /api/assistant/query:
+    post:
+      tags:
+        - GenAI
+      summary: "RETIRED — Ask Sangam Q&A (now askSangamQueryAction Server Action)"
+      description: |
+        Permanently retired. Always returns 410 GONE. Ask Sangam moved to
+        Server Actions (see /_server-actions/askSangamQueryAction below) so
+        every request is a same-origin RSC call carrying its own CSRF
+        protection, instead of a client-fetchable JSON endpoint. This route
+        is kept only so an old or external client gets an explicit,
+        actionable error instead of a 404 or a silent failure.
+
+        Implements: Story Ask Sangam (superseded)
+      operationId: assistantQueryRetired
+      x-user-story: "Ask Sangam"
+      responses:
+        "410":
+          description: Always. Client-facing assistant HTTP routes are retired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: GONE
+                  message: Ask Sangam no longer accepts client HTTP calls. Use the in-app assistant (Server Actions).
+                userStory: "Ask Sangam"
+
+  /api/assistant/confirm:
+    post:
+      tags:
+        - GenAI
+      summary: "RETIRED — confirm/reject (now askSangamConfirmAction Server Action)"
+      description: |
+        Permanently retired. Always returns 410 GONE. See
+        /_server-actions/askSangamConfirmAction below for the real,
+        current interface.
+
+        Implements: Story Ask Sangam (superseded)
+      operationId: assistantConfirmRetired
+      x-user-story: "Ask Sangam"
+      responses:
+        "410":
+          description: Always. Client-facing assistant HTTP routes are retired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                error:
+                  code: GONE
+                  message: Ask Sangam confirm is only available through Server Actions.
+                userStory: "Ask Sangam"
+
+  /api/assistant/transcribe:
+    post:
+      tags:
+        - GenAI
+      summary: Ask Sangam voice input — speech-to-text via Groq Whisper
+      description: |
+        Real REST route (not a Server Action — the browser's MediaRecorder
+        output is a Blob, sent as multipart/form-data, which Server Actions
+        don't accept as cleanly as a dedicated route). Transcribes a short
+        voice recording and returns plain text for the caller to review and
+        edit before sending as an Ask Sangam message — never auto-submitted.
+
+        Calls the Groq API (model whisper-large-v3-turbo) via lib/groq.ts.
+        Nothing else in the app uses Groq.
+
+        Implements: Story Ask Sangam
+      operationId: assistantTranscribe
+      x-user-story: "Ask Sangam"
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Recorded audio clip (e.g. audio/webm from MediaRecorder). Max 25MB.
+      responses:
+        "200":
+          description: Transcription succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      text: { type: string, example: "What's on my task list?" }
+                  userStory: { type: string, example: "Ask Sangam" }
+        "400":
+          description: |
+            Request isn't multipart/form-data (`INVALID_FORM`), or no audio
+            file / empty file / over the 25MB cap (`VALIDATION_ERROR`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid session cookies (`UNAUTHENTICATED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Groq returned an empty transcript — audio had no detectable speech (`EMPTY_TRANSCRIPT`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Groq API failure/timeout, or GROQ_API_KEY not configured (`INTERNAL_ERROR`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /_server-actions/askSangamQueryAction:
+    post:
+      tags:
+        - GenAI
+      x-transport: server-action
+      summary: "[Server Action] Ask Sangam — Q&A + agentic write proposals"
+      description: |
+        `askSangamQueryAction` in backend/assistant/actions.ts. NOT a
+        fetchable URL — invoked directly from the AskSangam client
+        component as a Next.js Server Action. Documented here for its
+        request/response contract only.
+
+        Gated by: session cookie -> Zod validation -> role-in-session check
+        -> HMAC request-signing round-trip (canonicalize + sign + verify,
+        defense-in-depth against a tampered client bundle) -> domain call.
+
+        Classifies the query's intent, then either:
+        - Answers a grounded read-only question (events / own or club tasks
+          / announcements / memberships / coordinator roster + task load), or
+        - Runs the write-tool agent, which may return one or more signed
+          `proposedAction`s. A single message can request multiple writes
+          ("assign X, also mark Y done") via a deterministic "also" splitter
+          — each becomes its own proposal in `proposedActions`.
+        Nothing is ever written to the database by this call — only by
+        askSangamConfirmAction, and only after explicit user Accept.
+
+        The agentic write tools reachable this way (role-gated, see
+        backend/assistant/tools/registry.ts):
+        - `assign_task` — single task, Coordinator or Admin
+        - `propose_bulk_task_assignments` — up to 50 rows in one shot, Coordinator or Admin
+        - `update_task_status` — todo/doing/done, Volunteer, Coordinator, or Admin
+        - `offer_task_status_choices` — disambiguation UI when 2+ tasks match (not a chat question)
+        - `propose_announcement` — role-audience or named recipients, Admin only
+
+        Admin outranks Coordinator here the same way it does on the REST
+        event/task endpoints (an Admin never had to hold a separate
+        Coordinator membership) — added this milestone, since a
+        freshly-approved club's sole Admin previously had no way to assign
+        its first task or manage its first event's task board through Ask
+        Sangam at all. This is scoped to the Admin's own `role: admin`
+        shell only: the `role` field is still rejected outright unless the
+        session actually holds it (see the `roleNotHeld` example below), so
+        an Admin cannot pass `role: coordinator` to reach the Coordinator
+        chat shell — that would let Admin-only tools like
+        `propose_announcement` leak into a Coordinator-scoped actor, which
+        is deliberately still blocked.
+
+        Implements: Story Ask Sangam
+      operationId: askSangamQueryAction
+      x-user-story: "Ask Sangam"
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, role]
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  example: "Assign booth setup to Sai Dutta for Founder AMA on 2026-08-19, also mark 'Finalize mentor slot roster' as done."
+                role:
+                  type: string
+                  enum: [member, coordinator, admin, volunteer, faculty]
+                  description: |
+                    Dashboard shell the question was asked from. Tool
+                    availability is scoped to it. The write agent's system
+                    prompt explicitly states this role and instructs the
+                    model to trust it over anything the user's own wording
+                    claims (e.g. "as admin..." while actually in the
+                    coordinator shell) — added this milestone after manual
+                    testing found the model could be talked into a false
+                    self-refusal by conflicting user phrasing (see
+                    test-cases.md for the before/after). Rejected outright if
+                    the session doesn't actually hold this role.
+      responses:
+        "200":
+          description: |
+            Always 200 at the transport level — Server Actions report
+            failure via the `AskSangamActionResult` union's `ok` field, not
+            an HTTP status code.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AskSangamActionSuccess"
+                  - $ref: "#/components/schemas/AskSangamActionFailure"
+              examples:
+                readAnswer:
+                  summary: Grounded read-only answer, no proposal
+                  value:
+                    ok: true
+                    data:
+                      answer: "You have 3 open tasks: ..."
+                      sourceType: task
+                      sourceLabel: "Registration Desk"
+                      sourceHref: "/volunteer"
+                singleProposal:
+                  summary: One write proposed, awaiting confirmation
+                  value:
+                    ok: true
+                    data:
+                      answer: "I can do that — please confirm below."
+                      sourceType: task
+                      sourceHref: "/coordinator/volunteers"
+                      proposedAction:
+                        toolName: assign_task
+                        summary: "Assign \"Registration Desk\" (Volunteer) to Krishna Kapoor."
+                        argsPreview: { title: "Registration Desk", role: Volunteer, event: "Founder AMA", assignee: Krishna Kapoor }
+                        token: "eyJhbGciOi...signed-payload"
+                        status: pending
+                multiProposal:
+                  summary: Two writes proposed from one "also"-joined message
+                  value:
+                    ok: true
+                    data:
+                      answer: "I can do that — please confirm each of the 2 actions below."
+                      sourceType: task
+                      proposedActions:
+                        - toolName: assign_task
+                          summary: "Assign \"Booth Setup\" to Sai Dutta."
+                          argsPreview: { title: "Booth Setup", assignee: Sai Dutta }
+                          token: "signed-token-1"
+                          status: pending
+                        - toolName: update_task_status
+                          summary: "Mark task \"Finalize mentor slot roster\" as done."
+                          argsPreview: { taskId: team-task-purnendu-3, status: done }
+                          token: "signed-token-2"
+                          status: pending
+                notAuthenticated:
+                  summary: No session
+                  value: { ok: false, error: "Authentication required." }
+                roleNotHeld:
+                  summary: Requested role isn't one the session actually holds
+                  value: { ok: false, error: "That role is not available for your account." }
+                validationFailed:
+                  summary: Empty or over-length query
+                  value: { ok: false, error: "Ask something first." }
+                signatureFailed:
+                  summary: HMAC request-signing round-trip failed
+                  value: { ok: false, error: "Request signature verification failed." }
+                genaiUnavailable:
+                  summary: Claude API failure/timeout during classify or generate
+                  value: { ok: false, error: "Ask Sangam couldn't answer that just now. Please try again." }
+
+  /_server-actions/askSangamConfirmAction:
+    post:
+      tags:
+        - GenAI
+      x-transport: server-action
+      summary: "[Server Action] Accept or reject a proposed Ask Sangam write"
+      description: |
+        `askSangamConfirmAction` in backend/assistant/actions.ts. NOT a
+        fetchable URL. Same session + HMAC gates as the query action above,
+        then delegates to `confirmPendingWrite` (backend/assistant/confirm-pending-write.ts).
+
+        Token verification (backend/assistant/agent/pending-action.ts) is
+        signed and single-use: `consume: false` on the first check so a
+        failed accept doesn't burn the token, then `consume: true` once the
+        tool actually executes (accept) or immediately (reject) — so a
+        replayed accept on an already-applied token correctly reports
+        "already applied" rather than double-writing.
+
+        Implements: Story Ask Sangam
+      operationId: askSangamConfirmAction
+      x-user-story: "Ask Sangam"
+      security:
+        - SangamSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, token]
+              properties:
+                decision:
+                  type: string
+                  enum: [accept, reject]
+                token:
+                  type: string
+                  description: Signed token from a proposedAction (or one of its choices[].token).
+      responses:
+        "200":
+          description: Same ok/data-or-error transport pattern as askSangamQueryAction.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AskSangamActionSuccess"
+                  - $ref: "#/components/schemas/AskSangamActionFailure"
+              examples:
+                accepted:
+                  summary: Accept — write applied
+                  value:
+                    ok: true
+                    data:
+                      answer: "Assigned \"Registration Desk\" successfully. You can confirm it on the related board."
+                      sourceType: task
+                      sourceHref: "/coordinator/volunteers"
+                rejected:
+                  summary: Reject — no write, DB unchanged
+                  value: { ok: true, data: { answer: "Okay — I won't make that change.", sourceType: null } }
+                expired:
+                  summary: Token TTL elapsed before Accept was clicked
+                  value: { ok: false, error: "That proposed action expired. Ask again to get a fresh confirmation." }
+                alreadyApplied:
+                  summary: Same token confirmed twice (replay)
+                  value: { ok: false, error: "That action was already applied." }
+                userMismatch:
+                  summary: Token belongs to a different session
+                  value: { ok: false, error: "That proposed action does not belong to your session." }
+                tampered:
+                  summary: Signature invalid — token edited or forged
+                  value: { ok: false, error: "Invalid or tampered action token." }
+                roleMismatch:
+                  summary: Session no longer holds the role the token was signed for
+                  value: { ok: false, error: "That proposed action does not match your current roles." }
+                executionFailed:
+                  summary: Tool ran but the domain call itself rejected it (e.g. target no longer valid)
+                  value: { ok: false, error: "Couldn't apply that change." }
+
+  # ===========================================================================
+  # Newly documented this milestone — previously implemented but missing from
+  # the spec entirely. Verified directly against each route.ts.
+  # ===========================================================================
+
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: Request a password-reset email
+      description: |
+        Enumeration-safe by design: always returns the same 200 body whether
+        or not the address has an account, so this endpoint can't be used to
+        discover which emails are registered. If the address exists, sends a
+        reset link via sendPasswordResetEmail.
+
+        Implements: Story 1.1
+      operationId: authForgotPassword
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Always, regardless of whether the address has an account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string, example: "If that address has a Sangam account, a password reset link is on its way." }
+        "400":
+          description: Invalid JSON (`INVALID_JSON`) or not a well-formed email (`VALIDATION_ERROR`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Complete a password reset with an emailed token
+      description: |
+        No auto-login on success, unlike email verification — this changes
+        the password on an existing account rather than finishing a signup,
+        so requiring a fresh sign-in confirms the new password actually
+        works and doesn't hand a live session to anyone who merely had mail
+        access.
+
+        Implements: Story 1.1
+      operationId: authResetPassword
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string, minLength: 1 }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Password updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string, example: "Password updated. Sign in with your new password." }
+        "400":
+          description: Invalid JSON/body, or the token doesn't correspond to any reset request (`INVALID`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Token was found but is no longer usable — already used (`USED`) or past its TTL (`EXPIRED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                used:
+                  value: { success: false, error: { code: USED, message: "This reset link has already been used." } }
+                expired:
+                  value: { success: false, error: { code: EXPIRED, message: "This reset link has expired. Request a new one." } }
+
+  /api/auth/resend-verification:
+    post:
+      tags:
+        - Auth
+      summary: Re-send the email-verification link
+      description: |
+        Same enumeration-safe pattern as forgot-password — always 200
+        regardless of whether the address exists or is already verified.
+
+        Implements: Story 1.1
+      operationId: authResendVerification
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Always, regardless of account/verification state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string }
+        "400":
+          description: Invalid JSON (`INVALID_JSON`) or not a well-formed email (`VALIDATION_ERROR`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/verify-email:
+    get:
+      tags:
+        - Auth
+      summary: Confirm email via the link sent at signup (HTML landing page)
+      description: |
+        Not a JSON API — recipients click this from a mail client, so it
+        renders a small HTML page rather than returning a JSON error body
+        (which would be useless to someone who just clicked "verify"). On
+        success, sets session cookies and the page links into the app
+        already signed in.
+      operationId: authVerifyEmail
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Verified. HTML page; session cookies set via Set-Cookie.
+          content:
+            text/html:
+              schema: { type: string }
+        "400":
+          description: Token missing or doesn't correspond to any pending verification. HTML page.
+          content:
+            text/html:
+              schema: { type: string }
+        "410":
+          description: Token found but expired. HTML page.
+          content:
+            text/html:
+              schema: { type: string }
+
+  /api/auth/google:
+    get:
+      tags:
+        - Auth
+      summary: Start Google OAuth sign-in (redirect)
+      description: |
+        Kicks off the Google OAuth flow — sets a CSRF state cookie and
+        redirects to Google's consent screen. No JSON request or response;
+        always a 302. Redirects to /login?error=... if Google OAuth isn't
+        configured (missing GOOGLE_CLIENT_ID/SECRET).
+
+        Implements: Story 1.1
+      operationId: authGoogleStart
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      responses:
+        "302":
+          description: Redirect to Google's consent screen, or back to /login?error=... if not configured.
+
+  /api/auth/google/callback:
+    get:
+      tags:
+        - Auth
+      summary: Google OAuth callback (redirect)
+      description: |
+        Google redirects here after consent. Verifies CSRF state, exchanges
+        the code, creates/links the account, sets session cookies. Always a
+        302 — success goes to the user's home path, any failure (state
+        mismatch, revoked consent, disallowed email domain) goes back to
+        /login?error=....
+
+        Implements: Story 1.1
+      operationId: authGoogleCallback
+      x-user-story: "1.1"
+      x-user-story-title: Institutional Credential Verification
+      responses:
+        "302":
+          description: Redirect to the user's home path on success, or /login?error=... on any failure.
+
+  /api/clubs/{id}/export:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags:
+        - Membership
+      summary: Export a club's full handover data bundle (Admin)
+      description: |
+        Members, events, tasks, issues, and announcements for the club as
+        one downloadable JSON file — built for GitHub issue #103 ("Full
+        data export" button did nothing) so a successor Admin can actually
+        inspect what they're inheriting. Returns a raw file download
+        (Content-Disposition: attachment), not the usual jsonSuccess
+        envelope.
+
+        Implements: Story 1.4
+      operationId: exportClubData
+      x-user-story: "1.4"
+      x-user-story-title: Membership Status Tracking
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "200":
+          description: JSON file download.
+          headers:
+            Content-Disposition:
+              schema: { type: string, example: 'attachment; filename="club-export.json"' }
+          content:
+            application/json:
+              schema: { type: object }
+        "401":
+          description: Missing or invalid session cookies (`UNAUTHENTICATED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not an Admin of this club (`FORBIDDEN`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Club not found (`CLUB_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/clubs/{id}/transparency/export:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags:
+        - Membership
+      summary: Export a club's transparency log as CSV (Admin)
+      description: |
+        Built for GitHub issue #104 ("Export CSV" button did nothing).
+        Returns a raw CSV file download, not a JSON envelope.
+
+        Implements: Story 1.4
+      operationId: exportTransparencyLog
+      x-user-story: "1.4"
+      x-user-story-title: Membership Status Tracking
+      security:
+        - SangamSessionCookie: []
+      responses:
+        "200":
+          description: CSV file download.
+          headers:
+            Content-Disposition:
+              schema: { type: string, example: 'attachment; filename="transparency-log.csv"' }
+          content:
+            text/csv:
+              schema: { type: string }
+        "401":
+          description: Missing or invalid session cookies (`UNAUTHENTICATED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not an Admin of this club (`FORBIDDEN`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Club not found (`CLUB_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/cron/email/{sweep}:
+    parameters:
+      - name: sweep
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [event-reminders, task-due-reminders, task-overdue, registration-closing-soon, announcement-digest]
+      - name: at
+        in: query
+        required: false
+        schema: { type: string, format: date-time }
+        description: ISO datetime override for which rows the sweep considers (dev/test only; dedupe keys make repeat runs safe).
+    get:
+      tags:
+        - Membership
+      summary: Run a scheduled email sweep (Vercel Cron)
+      description: |
+        Not session-authenticated — cron has no user. Authorized by a bearer
+        token (`Authorization: Bearer $CRON_SECRET`, constant-time compared)
+        so an open URL can't be used to spam a club's members. POST is
+        accepted as an alias of GET for the same sweep; OPTIONS returns 204
+        with no body (CORS/health-check friendliness).
+
+        Implements: Story Communication (email notifications)
+      operationId: runEmailSweep
+      x-user-story: "Communication"
+      x-user-story-title: Real Email Notifications
+      security:
+        - CronBearerToken: []
+      responses:
+        "200":
+          description: Sweep ran. Returns a per-sweep summary (counts sent/skipped, etc.).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    properties:
+                      sweep: { type: string, example: task-due-reminders }
+                      at: { type: string, format: date-time }
+        "400":
+          description: "`at` query param isn't a valid ISO datetime (`INVALID_AT`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or wrong bearer token (`UNAUTHORIZED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Unknown sweep name — not one of the five registered sweeps (`UNKNOWN_SWEEP`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: The sweep function threw (`SWEEP_FAILED`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Membership
+      summary: Alias of GET, same sweep (Vercel Cron)
+      operationId: runEmailSweepPost
+      x-user-story: "Communication"
+      security:
+        - CronBearerToken: []
+      responses:
+        "200":
+          description: Same as GET.
+        "400":
+          description: Same as GET.
+        "401":
+          description: Same as GET.
+        "404":
+          description: Same as GET.
+        "500":
+          description: Same as GET.
+    options:
+      tags:
+        - Membership
+      summary: CORS/health-check preflight
+      operationId: runEmailSweepOptions
+      x-user-story: "Communication"
+      responses:
+        "204":
+          description: No content. No auth required.
+
+  /api/email/unsubscribe:
+    get:
+      tags:
+        - Membership
+      summary: Show the unsubscribe confirmation page (HTML)
+      description: |
+        Deliberately does NOT unsubscribe on GET — mail clients and
+        corporate link scanners pre-fetch every URL in a message, and a GET
+        that unsubscribed would silently opt people out of mail they still
+        want to receive. Shows a confirmation button instead; POST (below)
+        performs the actual opt-out.
+
+        Implements: Story Communication (email notifications)
+      operationId: unsubscribeShow
+      x-user-story: "Communication"
+      x-user-story-title: Real Email Notifications
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Confirmation page with an opt-out button. HTML.
+          content:
+            text/html:
+              schema: { type: string }
+        "400":
+          description: Token missing or invalid. HTML page — "Link not valid".
+          content:
+            text/html:
+              schema: { type: string }
+    post:
+      tags:
+        - Membership
+      summary: Perform the unsubscribe (HTML)
+      description: |
+        Satisfies RFC 8058 one-click unsubscribe (`List-Unsubscribe-Post`,
+        the header sent on outgoing mail promises this). Turns off the
+        relevant notification-preference category for the token's user.
+
+        Implements: Story Communication (email notifications)
+      operationId: unsubscribeConfirm
+      x-user-story: "Communication"
+      x-user-story-title: Real Email Notifications
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Opted out. Confirmation page. HTML.
+          content:
+            text/html:
+              schema: { type: string }
+        "400":
+          description: Token missing, invalid, or user not found. HTML page.
+          content:
+            text/html:
+              schema: { type: string }
+
+components:
+  securitySchemes:
+    SangamSessionCookie:
+      type: apiKey
+      in: cookie
+      name: sangam_session
+      description: |
+        Session established by POST /api/auth/signup or POST /api/auth/login.
+        A single httpOnly cookie holding an HMAC-signed userId — name, email,
+        role, and memberships are never stored client-side and are always
+        loaded fresh from the database per request. There is no separate
+        bearer/access token: this cookie is the only credential, and
+        POST /api/auth/logout clears it. See backend/auth/session-cookies.ts.
+    CronBearerToken:
+      type: http
+      scheme: bearer
+      description: |
+        `Authorization: Bearer $CRON_SECRET`, constant-time compared.
+        Vercel Cron sends this automatically per the schedule in
+        vercel.json; not a user session. Fails closed if CRON_SECRET isn't
+        configured — no secret means no request can ever be told apart
+        from a stranger's.
+
+  schemas:
+    AssistantProposedAction:
+      type: object
+      description: One signed write proposal awaiting Accept/Reject.
+      properties:
+        toolName: { type: string, example: assign_task }
+        summary: { type: string, example: Assign "Registration Desk" (Volunteer) to Krishna Kapoor. }
+        argsPreview:
+          type: object
+          additionalProperties: { type: string }
+        token:
+          type: string
+          description: |
+            Signed pending-action token. Primary token when there's a single
+            proposal; may be empty when `choices` is set — Accept must then
+            use the selected choice's own token instead.
+        status: { type: string, enum: [pending] }
+        choices:
+          type: array
+          nullable: true
+          description: When set, UI must pick one option before Accept — never a chat follow-up question.
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              description: { type: string }
+              token: { type: string }
+              argsPreview:
+                type: object
+                additionalProperties: { type: string }
+        choicePrompt: { type: string, nullable: true, example: Select a task }
+        choiceGroups:
+          type: array
+          nullable: true
+          description: Multi-dimension MCQ (e.g. announcement audience x timing). Selected ids join with "__" to match a choices[] row.
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              prompt: { type: string }
+              options:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    label: { type: string }
+                    description: { type: string }
+        defaultGroupSelections:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+
+    AskSangamActionSuccess:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          required: [answer, sourceType]
+          properties:
+            answer: { type: string }
+            sourceType:
+              type: string
+              nullable: true
+              enum: [event, task, announcement, membership, null]
+            sourceLabel: { type: string, nullable: true }
+            sourceHref: { type: string, nullable: true }
+            proposedAction:
+              allOf:
+                - $ref: "#/components/schemas/AssistantProposedAction"
+              nullable: true
+              description: Present when exactly one write is proposed (or mirrors proposedActions[0] when there are several).
+            proposedActions:
+              type: array
+              nullable: true
+              description: Present when one user message produced multiple write proposals (the "also" splitter).
+              items:
+                $ref: "#/components/schemas/AssistantProposedAction"
+
+    AskSangamActionFailure:
+      type: object
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error:
+          type: string
+          description: Human-readable failure reason. Server Actions signal failure via this field, not an HTTP status code.
+
+    SignupRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Full name of the student
+          example: Ananya Rao
+        email:
+          type: string
+          format: email
+          description: |
+            Institutional email only. Must end with @ds.study.iitm.ac.in.
+            Case-insensitive input; stored lowercase. The roll number is not
+            submitted separately — it's derived from the local part of this
+            address (everything before the @) and returned in the response.
+          pattern: "^[^@\\s]+@ds\\.study\\.iitm\\.ac\\.in$"
+          example: 23s1000999@ds.study.iitm.ac.in
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Account password (minimum 8 characters)
+          example: SecurePass1
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          description: Institutional email only. Must end with @ds.study.iitm.ac.in.
+          pattern: "^[^@\\s]+@ds\\.study\\.iitm\\.ac\\.in$"
+          example: 23s1000123@ds.study.iitm.ac.in
+        password:
+          type: string
+          format: password
+          minLength: 1
+          description: Account password
+          example: sangam
+        callbackUrl:
+          type: string
+          description: |
+            Optional post-login path. Only same-origin relative paths are honored
+            (must start with `/` and must not start with `//`). Unsafe values fall
+            back to the role-based home path.
+          example: /app/profile
+
+    SessionMembership:
+      type: object
+      required:
+        - clubId
+        - clubSlug
+        - clubName
+        - role
+        - personaName
+      properties:
+        clubId:
+          type: string
+        clubSlug:
+          type: string
+        clubName:
+          type: string
+        role:
+          type: string
+          description: Club role (Member, Volunteer, Coordinator, Admin)
+          example: Admin
+        personaName:
+          type: string
+
+    LoginUser:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - isFaculty
+        - memberships
+        - next
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        rollNumber:
+          type: string
+          nullable: true
+        isFaculty:
+          type: boolean
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionMembership"
+        next:
+          type: string
+          description: Safe post-login path (callbackUrl or role home)
+          example: /faculty
+
+    LoginSuccessResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          enum:
+            - true
+        data:
+          $ref: "#/components/schemas/LoginUser"
+        userStory:
+          type: string
+          example: "1.1"
+
+    MeUser:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - isFaculty
+        - memberships
+        - roles
+        - home
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        rollNumber:
+          type: string
+          nullable: true
+        isFaculty:
+          type: boolean
+        memberships:
+          type: array
+          description: All club memberships held by the user (multi-role / multi-club)
+          items:
+            $ref: "#/components/schemas/SessionMembership"
+        roles:
+          type: array
+          description: App shells the user can open (faculty, admin, coordinator, volunteer, member)
+          items:
+            type: string
+            enum:
+              - faculty
+              - admin
+              - coordinator
+              - volunteer
+              - member
+        home:
+          type: string
+          description: Default home path for the highest role
+          example: /faculty
+
+    MeSuccessResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          enum:
+            - true
+        data:
+          $ref: "#/components/schemas/MeUser"
+        userStory:
+          type: string
+          example: "1.1"
+
+    SignupUser:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - rollNumber
+        - next
+      properties:
+        id:
+          type: string
+          description: Created user id (cuid)
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        rollNumber:
+          type: string
+          nullable: true
+        next:
+          type: string
+          description: Suggested next client path after signup
+          example: /signup/onboarding
+
+    SignupSuccessResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          enum:
+            - true
+        data:
+          $ref: "#/components/schemas/SignupUser"
+        userStory:
+          type: string
+          description: Mapped user story id from docs/user_stories.md
+          example: "1.1"
+
+    ErrorDetail:
+      type: object
+      properties:
+        path:
+          type: string
+          example: email
+        message:
+          type: string
+          example: Email must end with @ds.study.iitm.ac.in
+
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - INVALID_JSON
+            - VALIDATION_ERROR
+            - EMAIL_EXISTS
+            - ROLL_EXISTS
+            - INVALID_CREDENTIALS
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - CLUB_NOT_FOUND
+            - ALREADY_MEMBER
+            - MEMBERSHIP_NOT_FOUND
+            - EVENT_NOT_FOUND
+            - REGISTRATION_LOCKED
+            - REGISTRATION_UNAVAILABLE
+            - REGISTRATION_NOT_FOUND
+            - CONFIRMATION_REQUIRED
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          description: Optional field-level validation details (Zod)
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        error:
+          $ref: "#/components/schemas/ApiError"
+        userStory:
+          type: string
+          description: Mapped user story id from docs/user_stories.md
+          example: "1.1"
+
+    MockAuthResponse:
+      type: object
+      required:
+        - mode
+        - message
+      properties:
+        mode:
+          type: string
+          enum:
+            - mock
+        message:
+          type: string
+
+    OnboardingInterestsRequest:
+      type: object
+      required:
+        - interests
+      properties:
+        interests:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            type: string
+            enum: [Technical, Cultural, Sports, Design, Debate, Entrepreneurship, Sustainability, Writing]
+
+    BulkImportRequest:
+      type: object
+      required:
+        - clubId
+        - rows
+      properties:
+        clubId:
+          type: string
+        rows:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: object
+            required: [name, roll, email]
+            properties:
+              name: { type: string }
+              roll: { type: string }
+              email:
+                type: string
+                format: email
+                description: Institutional email only. Must end with @ds.study.iitm.ac.in.
+                pattern: "^[^@\\s]+@ds\\.study\\.iitm\\.ac\\.in$"
+              role:
+                type: string
+                description: |
+                  Case-insensitive match against Member/Volunteer/Coordinator;
+                  any other value (including "Admin", empty, or missing)
+                  silently falls back to Member. Admin is deliberately
+                  unreachable via bulk import — a club has exactly one Admin,
+                  changeable only through the transactional handover flow, not
+                  a CSV row. (Not enforced by a request-schema enum — the
+                  fallback happens in backend/domain/membership.ts so a typo'd
+                  role degrades gracefully instead of failing the whole row.)
+                  Fixed in this milestone: role matching previously included
+                  "Admin" as a valid CSV target, inconsistent with the
+                  single-member PATCH endpoint's exclusion.
+                example: Volunteer
+
+    MembershipRecord:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        rollNumber: { type: string, nullable: true }
+        clubId: { type: string }
+        role:
+          type: string
+          enum: [Member, Volunteer, Coordinator, Admin]
+        status:
+          type: string
+          enum: [Active, Pending, Inactive]
+        joinedAt: { type: string, format: date-time }
+
+    CreateEventRequest:
+      type: object
+      required:
+        - clubId
+        - title
+        - description
+        - date
+        - time
+        - venue
+        - capacity
+      properties:
+        clubId: { type: string }
+        title: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        date: { type: string, format: date }
+        time: { type: string, example: "18:00" }
+        venue: { type: string, minLength: 1 }
+        capacity: { type: integer, minimum: 1 }
+        tags:
+          type: string
+          description: Comma-separated tags
+          example: "workshop,beginner-friendly"
+
+    UpdateEventRequest:
+      type: object
+      description: All fields optional — only supplied fields are updated.
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        date: { type: string, format: date }
+        time: { type: string }
+        venue: { type: string, minLength: 1 }
+        capacity: { type: integer, minimum: 1 }
+        tags:
+          type: string
+          description: Comma-separated tags
+
+    EventRecord:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        clubId: { type: string }
+        date: { type: string, format: date-time }
+        time: { type: string }
+        venue: { type: string }
+        status:
+          type: string
+          enum: [upcoming, live, past]
+        capacity: { type: integer }
+        going: { type: integer }
+        tags:
+          type: array
+          items: { type: string }
+        description: { type: string }
+        approval:
+          type: string
+          enum: [approved, pending, notRequired, rejected]
+        registrationLocked: { type: boolean }

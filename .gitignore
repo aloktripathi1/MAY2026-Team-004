@@ -8,7 +8,13 @@ prisma/dev.db-journal
 *.tsbuildinfo
 *.md
 !README.md
-docs/
+# Root-level docs/ only (local planning notes) — the leading slash keeps this
+# from also matching app/api/docs/, the live Swagger UI route. docs/openapi.yaml
+# is excluded from the ignore: the running app reads it at build/request time
+# (GET /api/openapi), so it must stay tracked or production silently 404s/
+# fails to build — exactly what happened here before this comment existed.
+/docs/*
+!/docs/openapi.yaml
 __pycache__/
 .pytest_cache/
 .venv/
