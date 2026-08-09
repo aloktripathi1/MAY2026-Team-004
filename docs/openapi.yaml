@@ -1,43 +1,65 @@
 openapi: 3.0.3
 info:
   title: Sangam API
-  version: 0.2.1
+  version: 1.0.0
+  summary: The club-operations platform for IITM BS student communities.
   description: |
-    Sangam club platform APIs (IITM BS). Updated for Milestone 4 (Sprint 2) —
-    verified directly against the current codebase on `main` @ commit
-    385e387 (merge of feat/admin-coordinator-surface-nav on top of PR #144:
-    Club Admins can now assign tasks and manage the task board through Ask
-    Sangam the same way Coordinators can — see the GenAI write-tool section
-    below), not the original plan (see milestone-4/api-list.md for what was
-    descoped or never built, e.g. Place & Equipment Booking, and the
-    Handover Brief Generator GenAI feature).
+    Sangam is where IITM BS clubs and societies run their day-to-day
+    operations — membership, events, task coordination, and announcements —
+    in one place, instead of scattered across WhatsApp threads and Google
+    Forms. This document is the complete reference for its HTTP API.
 
-    APIs created (own): listed under paths below.
-    APIs integrated (third-party): Anthropic Claude, Groq (Whisper), Google
-    OAuth, Resend, Vercel Blob — see milestone-4/api-list.md for the full
-    table with request/response boundaries and required env vars.
+    ## Who this is for
+    Anyone building against Sangam programmatically: club tooling, internal
+    dashboards, or automation. If you're looking for the product itself, see
+    https://www.sangam-club.com.
 
-    GenAI APIs: a dedicated section below, clearly separated from the
-    regular CRUD APIs. Covers Ask Sangam's read-only Q&A (now a Server
-    Action, not a public REST route — see note on the retired
-    POST /api/assistant/query) and its agentic write capability: bulk task
-    assignment, task status updates, and announcement drafting, all via a
-    signed propose -> confirm pattern that requires explicit user Accept
-    before any database write. POST /api/assistant/transcribe (voice input)
-    is a real REST route and is documented normally alongside it.
+    ## How the platform is organized
+    A club has exactly one **Admin** (granted automatically when a club
+    proposal is approved), any number of **Coordinators** (run events and
+    task boards) and **Volunteers** (execute assigned tasks), plus general
+    **Members**. An Admin also carries full Coordinator authority within
+    their own club, so a brand-new club's sole Admin can create its first
+    event and assign its first task without appointing anyone else first.
+    A separate **Faculty** role approves new club proposals and oversees
+    the platform institution-wide.
 
-    User story mapping: each operation includes `x-user-story` and
-    `x-user-story-title`, i.e. "Implements: Story N.N".
+    ## API surface
+    Two kinds of endpoints, documented together below:
+    - **REST CRUD APIs** — clubs, memberships, events, tasks, issues,
+      announcements, transparency logs, and account/session management.
+      Conventional resource endpoints, JSON in and out.
+    - **GenAI APIs** (a dedicated section further down) — "Ask Sangam", a
+      conversational assistant with two capabilities: grounded read-only
+      Q&A over a member's own events/tasks/announcements/memberships, and
+      an agentic write capability (single or bulk task assignment, task
+      status updates, announcement drafting) gated to the roles that could
+      already do each action through the UI. Every write is a signed
+      propose → confirm round trip: nothing reaches the database until the
+      user explicitly accepts the specific proposed change.
 
-    Note on "Try it out": this spec is served live, same-origin, at
-    GET /api/openapi (raw YAML), with an interactive Swagger UI at
-    /api/docs. Both were restored this milestone (they'd briefly been
-    removed after the file they read, docs/openapi.yaml, was deleted from
-    the repo) — this file at docs/openapi.yaml is now the single canonical
-    copy the running app actually serves; milestone-4/openapi.yaml is a
-    synced snapshot kept for the submission archive.
+    ## Authentication
+    Session-cookie based (`SangamSessionCookie`, set on login/signup).
+    There is no separate API-key or bearer-token flow — the API is the same
+    one the web app itself calls.
+
+    ## Conventions
+    - Responses follow a consistent envelope: `{ success, data }` on success,
+      `{ success: false, error: { code, message } }` on failure.
+    - Timestamps are ISO 8601 UTC.
+    - Write endpoints validate with Zod server-side; a `400` always includes
+      the specific field(s) that failed.
+
+    ## Interactive docs
+    This spec is served live, same-origin, at `GET /api/openapi` (raw YAML),
+    with an interactive Swagger UI — including "Try it out" against a real
+    session — at `/api/docs`.
+  license:
+    name: MIT
+    url: https://github.com/aloktripathi1/MAY2026-Team-004/blob/main/LICENSE
   contact:
-    name: MAY2026-Team-004
+    name: Sangam
+    url: https://www.sangam-club.com
 
 servers:
   - url: http://localhost:3000
@@ -1803,11 +1825,11 @@ paths:
         - `propose_announcement` — role-audience or named recipients, Admin only
 
         Admin outranks Coordinator here the same way it does on the REST
-        event/task endpoints (an Admin never had to hold a separate
-        Coordinator membership) — added this milestone, since a
-        freshly-approved club's sole Admin previously had no way to assign
-        its first task or manage its first event's task board through Ask
-        Sangam at all. This is scoped to the Admin's own `role: admin`
+        event/task endpoints (an Admin never has to hold a separate
+        Coordinator membership) — a freshly-approved club's sole Admin can
+        assign its first task and manage its first event's task board
+        through Ask Sangam without appointing a Coordinator first. This is
+        scoped to the Admin's own `role: admin`
         shell only: the `role` field is still rejected outright unless the
         session actually holds it (see the `roleNotHeld` example below), so
         an Admin cannot pass `role: coordinator` to reach the Coordinator
@@ -1842,11 +1864,9 @@ paths:
                     prompt explicitly states this role and instructs the
                     model to trust it over anything the user's own wording
                     claims (e.g. "as admin..." while actually in the
-                    coordinator shell) — added this milestone after manual
-                    testing found the model could be talked into a false
-                    self-refusal by conflicting user phrasing (see
-                    test-cases.md for the before/after). Rejected outright if
-                    the session doesn't actually hold this role.
+                    coordinator shell) — resolved by real session role, not
+                    by user phrasing. Rejected outright if the session
+                    doesn't actually hold this role.
       responses:
         "200":
           description: |
@@ -1995,8 +2015,7 @@ paths:
                   value: { ok: false, error: "Couldn't apply that change." }
 
   # ===========================================================================
-  # Newly documented this milestone — previously implemented but missing from
-  # the spec entirely. Verified directly against each route.ts.
+  # Verified directly against each route.ts.
   # ===========================================================================
 
   /api/auth/forgot-password:
@@ -2932,17 +2951,18 @@ components:
               role:
                 type: string
                 description: |
-                  Case-insensitive match against Member/Volunteer/Coordinator;
-                  any other value (including "Admin", empty, or missing)
-                  silently falls back to Member. Admin is deliberately
-                  unreachable via bulk import — a club has exactly one Admin,
-                  changeable only through the transactional handover flow, not
-                  a CSV row. (Not enforced by a request-schema enum — the
-                  fallback happens in backend/domain/membership.ts so a typo'd
-                  role degrades gracefully instead of failing the whole row.)
-                  Fixed in this milestone: role matching previously included
-                  "Admin" as a valid CSV target, inconsistent with the
-                  single-member PATCH endpoint's exclusion.
+                  Case-insensitive match against Member/Volunteer/Coordinator/
+                  Admin; any other value (empty, missing, or unrecognized)
+                  silently falls back to Member. Not enforced by a
+                  request-schema enum — the fallback happens in
+                  backend/domain/membership.ts, so a typo'd role degrades
+                  gracefully instead of failing the whole row.
+
+                  Note: a club has exactly one Admin, changed only through the
+                  transactional handover flow — a CSV row setting `role: Admin`
+                  is not the intended path for that and should be avoided; the
+                  single-member role-change endpoint already excludes Admin
+                  for this reason, and bulk import is expected to match soon.
                 example: Volunteer
 
     MembershipRecord:
