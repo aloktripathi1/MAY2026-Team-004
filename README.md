@@ -20,7 +20,6 @@ Sangam is a community and society management platform: one place for membership,
 - [Testing](#testing)
 - [Email notifications](#email-notifications)
 - [Ask Sangam](#ask-sangam)
-- [Project structure](#project-structure)
 - [Data model](#data-model)
 - [Deployment](#deployment)
 - [License](#license)
@@ -36,7 +35,7 @@ Sangam is a community and society management platform: one place for membership,
 - **Announcements**: audience-targeted broadcasts instead of blanket messages.
 - **Email notifications**: transactional and activity email through [Resend](https://resend.com/), covering signup verification, membership and approval decisions, registration confirmations, schedule changes, task assignments, and daily reminder/digest sweeps, with per-category opt-outs and one-click unsubscribe. See [Email notifications](#email-notifications).
 - **Transparency & metrics**: admin-facing club health and activity reporting.
-- **Ask Sangam**: an in-app assistant for grounded Q&A plus confirmable writes (task status, assign/bulk, announcements). Capabilities follow the shell you're in and nothing mutates until you Accept. See [Ask Sangam](#ask-sangam).
+- **Ask Sangam**: an in-app assistant for grounded Q&A and agentic writes (task status, assign/bulk, announcements). Capabilities follow the shell you're in and nothing mutates until you Accept. See [Ask Sangam](#ask-sangam).
 - **Signed session auth**: custom httpOnly-cookie sessions with server-side role checks on every protected route, no client-trusted state.
 
 ---
@@ -59,11 +58,11 @@ Sangam is a community and society management platform: one place for membership,
 - [Vercel Blob](https://vercel.com/storage/blob) for file storage
 
 **Auth**
-- A custom, signed httpOnly-cookie session (`backend/auth/session-cookies.ts`), not NextAuth. Real signup and login go through `app/api/auth/{signup,login,me}` and `backend/auth/*`. The NextAuth-shaped route at `app/api/auth/[...nextauth]/route.ts` is an unrelated stub kept for URL-shape compatibility; it plays no part in authentication.
+- A custom, signed httpOnly-cookie session (`backend/auth/session-cookies.ts`). Real signup and login go through `app/api/auth/{signup,login,me}` and `backend/auth/*`.
 - [Google OAuth](https://developers.google.com/identity) as an additional sign-in method alongside email/password.
 
 **AI**
-- [Anthropic SDK](https://www.anthropic.com/api) (`@anthropic-ai/sdk`) powers Ask Sangam: classification, grounded Q&A, and the agentic write capability. There's no separate "Claude Agent SDK" package; the tool-calling loop (propose a tool call, run it, feed back the result, repeat) is custom, built directly on the SDK's native tool-use API (`backend/assistant/agent/`, `lib/genai.ts`).
+- [Anthropic SDK](https://www.anthropic.com/api) (`@anthropic-ai/sdk`) powers Ask Sangam: classification, grounded Q&A, and the agentic write capability. A custom tool-calling loop (propose a tool call, run it, feed back the result, repeat) is built directly on the SDK's native tool-use API (`backend/assistant/agent/`, `lib/genai.ts`).
 - [Groq](https://groq.com/) Whisper (`whisper-large-v3-turbo`) for voice input, transcribing a recorded clip to text before it reaches the same assistant pipeline (`lib/groq.ts`). Plain `fetch` against Groq's API, no SDK dependency.
 
 **Testing**
@@ -74,11 +73,11 @@ Sangam is a community and society management platform: one place for membership,
 
 ---
 
-## Team, Dhurandhar (MAY2026-Team-004)
+## Team Dhurandhar (MAY2026-Team-004)
 
 | Name | Project role |
 |---|---|
-| Alok Kumar Tripathi | Team Lead, Backend |
+| Alok Kumar Tripathi | Team Lead, Backend, Frontend |
 | Vishal Singh Baraiya | Product Manager |
 | Pardhiv Nukasani | Frontend |
 | Purnendu Shukla | Backend, Code Review |
@@ -127,15 +126,7 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 
 ## Demo accounts
 
-Log in with any of these at [sangam-club.com/login](https://sangam-club.com/login) (or locally at `/login`). They're created by `prisma/seed.ts`.
-
-**All-in-one account.** One person, every role at once (Admin on CodeChef, Coordinator on E-Cell, Volunteer on Sarga, Member on Paradox, plus Faculty), so you can switch roles from the sidebar without signing in as five different people:
-
-| Email | Password |
-|---|---|
-| 23s1000123@ds.study.iitm.ac.in | sangam |
-
-**Single-role accounts** (password `FirstName@2026`), each pinned to exactly one role. Useful for testing that role-gating and cross-club authorization actually hold:
+Log in with any of these at [sangam-club.com/login](https://sangam-club.com/login) (or locally at `/login`). They're created by `prisma/seed.ts`, each pinned to exactly one role (password `FirstName@2026`):
 
 | Name | App role | Email | Password |
 |---|---|---|---|
@@ -422,19 +413,13 @@ The sending domain is **sangam-club.com** (registrar and DNS: Hostinger). Until 
 npx tsx scripts/send-test-email.ts you@sangam-club.com registrationConfirmation
 ```
 
-### Not yet wired
-
-- **"New reply on your issue"**: `Issue` has no comment or reply model yet. `notifyIssueReply` and its template are written and tested, ready for when issue threads exist.
-- **AI handover brief**: `notifyHandoverBrief` is ready, but the brief generator itself is a separate GenAI feature not yet built.
-- **Bulk CSV member import sends nothing.** At the 500-row limit, mailing every imported member inline would hold the Server Action open for minutes. Roster imports need a background job before they can notify.
-
 ---
 
 ## Ask Sangam
 
 A drawer that answers from your club data and can propose writes. Writes never hit the database until you **Accept** on the proposal card; **Reject** cancels cleanly. Multi-write asks (joined with "also") can show several cards at once, plus **Accept all** / **Reject all**.
 
-Built on the [Anthropic SDK](https://www.anthropic.com/api) with a custom classify → tool-call → propose → confirm loop, not the separate Claude Agent SDK package (see [Tech stack](#tech-stack)). Voice input transcribes through [Groq Whisper](https://groq.com/) before reaching the same pipeline.
+Built on the [Anthropic SDK](https://www.anthropic.com/api) with a custom classify → tool-call → propose → confirm loop (see [Tech stack](#tech-stack)). Voice input transcribes through [Groq Whisper](https://groq.com/) before reaching the same pipeline.
 
 What you can *do* depends on the **dashboard shell** you're in, not on phrases like "as admin" in the chat: the write agent trusts the real session role, never the user's own wording. Switch roles in the sidebar for a different toolkit.
 
@@ -474,7 +459,7 @@ Draft an announcement titled "Team sync" saying sync is Friday at 5pm for all me
 
 On announcements you'll pick **who** (All / Volunteers / Coordinators, or a named person) and **when** (Send now vs. digest), then Accept.
 
-### How a write feels
+### How an agentic mode works
 
 1. You ask, or tap an example chip.
 2. One or more proposal cards appear. Accept is disabled until any required pickers are chosen.
@@ -487,87 +472,6 @@ Assign and announcement Accepts can email through the normal mailer. That only l
 ### Under the hood (short)
 
 UI → Server Actions (`askSangamQueryAction` / `askSangamConfirmAction`) → classifier → write agent + tool registry → signed pending token(s) → Accept → domain + `revalidatePath`. Legacy `/api/assistant/*` returns **410**.
-
----
-
-## Project structure
-
-```
-app/
-  (public)/        landing, clubs directory, login, signup (+ interests onboarding)
-  (member)/app/    dashboard, clubs (+ join requests), events (+ Count Me In), issues
-                    (raise via modal + screenshot attachments, status filter), profile
-                    (edit details + avatar upload, notification preference toggles)
-  (admin)/admin/   overview, events, volunteers, members (+ add member, bulk CSV import),
-                    issues (filterable queue, per-row/bulk assignment), approvals,
-                    announcements (+ audience targeting), metrics, transparency, handover
-  (coordinator)/coordinator/  dashboard (+ New Event popup), all-events history, event
-                    dashboard (registration, check-in, edit details), volunteers
-  (volunteer)/volunteer/      task list with inline status updates, events (Count Me In)
-  (faculty)/faculty/          oversight dashboard, event approvals, club activity, club
-                    proposals (+ faculty access management)
-  api/auth/[...nextauth]/     unrelated stub, see Tech stack above
-  api/openapi/                serves docs/openapi.yaml
-  api/docs/                   Swagger UI (Try it out), same-origin
-
-docs/
-  openapi.yaml            Swagger-compatible OpenAPI 3 spec, served live
-
-components/
-  ui/          Btn, GlassCard, Stat, StatusPill, Modal, shared design-system primitives
-  shell/       AppShell (per-role sidebar/nav), PageHeader
-  auth/        AuthShell (shared login/signup visual shell), OnboardingForm
-  tasks/       TaskStatusButtons, shared between the volunteer and coordinator task boards
-  coordinator/ EventsListView, VolunteersView, EventDetailView, AssignTaskModal, and other
-               pieces shared between the Coordinator surface and Admin's native pages
-  (route-local components, e.g. forms and list views specific to one page, live colocated
-   next to their page.tsx inside app/, per Next.js convention, rather than under components/)
-
-backend/                  server-only code, never imported by client components
-  auth/
-    app-session.ts         resolves the signed session cookie to the current user
-    session-cookies.ts     signs and verifies the real session cookie
-    authenticate-user.ts, create-user.ts, get-current-user.ts   auth domain logic shared
-                            by both the REST routes (app/api/auth/*) and the form actions
-    login-schema.ts, signup-schema.ts    zod schemas shared by both entry points
-    roles.ts                per-club role helpers, including the Admin/Coordinator
-                            surface-inheritance rule (SURFACE_ROLES)
-  api/
-    http.ts                 jsonSuccess/jsonError response shape shared by REST routes
-  db/
-    prisma.ts                Prisma Client singleton
-  domain/
-    workflow-rules.ts        status enums and authorization rules
-    approvals.ts, countMeIn.ts, tasks.ts, events.ts, membership.ts   Server Actions and
-                              domain logic shared across more than one route
-    club-requests.ts         student club proposals; approval creates the Club and its
-                              first Admin together (see Roles and provisioning)
-    faculty.ts               grant/revoke institution-wide faculty access
-    assistant.ts              Ask Sangam's intent classification and read-only answers
-  assistant/
-    agent/                   the write-tool agent loop (Anthropic SDK, custom orchestration)
-    tools/                   per-capability tool definitions (assign, bulk assign, status,
-                              announcements), each with its own role gate
-  email/                    all outbound email, see Email notifications below
-    client.ts                sendEmail(), the only place mail leaves the app
-    notifications.ts         one function per thing that happens
-    scheduled.ts             the cron sweeps: reminders, overdue nudges, announcement digest
-    templates.ts, render.ts, recipients.ts, routes.ts, config.ts, unsubscribe.ts
-
-lib/                      frontend-facing helpers, safe to import from client components
-  genai.ts                 Anthropic SDK client and completion helpers
-  groq.ts                   Groq Whisper transcription for voice input
-  seed-data.ts, notification-prefs.ts, interests.ts, event-tags.ts, format.ts, utils.ts
-
-prisma/
-  schema.prisma            active schema
-  migrations/, seed.ts
-
-tests/
-  unit/          Jest unit tests, mirrors the lib/ and backend/ source tree
-  components/    Jest + Testing Library component tests (jsdom)
-  integration/   Jest integration tests, live HTTP against app/api/ (needs a running app + database)
-```
 
 ---
 

@@ -2,8 +2,9 @@ openapi: 3.0.3
 info:
   title: Sangam API
   version: 1.0.0
-  summary: The club-operations platform for IITM BS student communities.
   description: |
+    The club-operations platform for IITM BS student communities.
+
     Sangam is where IITM BS clubs and societies run their day-to-day
     operations - membership, events, task coordination, and announcements -
     in one place, instead of scattered across WhatsApp threads and Google
