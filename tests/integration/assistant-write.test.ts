@@ -630,21 +630,47 @@ describe("Ask Sangam write flow (live Claude + DB)", () => {
     expect(asCoordShell.proposedAction).toBeUndefined();
   });
 
-  it("admin shell refuses task status and assign intents", async () => {
+  it("admin shell can update task status and assign tasks — Admin inherits Coordinator's task-board rights", async () => {
     const admin = await sessionUserForEmail(SEEDED_ACCOUNTS.admin.email);
 
     const status = await answerAssistantQuery(admin, `Mark "${fixture.statusTaskTitle}" as done.`, {
       activeRole: "admin",
     });
-    expect(status.proposedAction).toBeUndefined();
-    expect(status.answer.toLowerCase()).toMatch(/volunteer|coordinator|isn't available|not available|admin/);
+    expect(status.proposedAction?.toolName).toBe("update_task_status");
+    expect(status.proposedAction?.token).toMatch(/\./);
 
+    const confirmedStatus = await confirmPendingWrite({
+      user: admin,
+      decision: "accept",
+      token: status.proposedAction!.token,
+    });
+    expect(confirmedStatus.ok).toBe(true);
+
+    const updatedTask = await prisma.task.findUnique({ where: { id: fixture.statusTaskId } });
+    expect(updatedTask?.status).toBe("done");
+
+    const title = `Admin single assign ${WRITE_MARKER}`;
     const assign = await answerAssistantQuery(
       admin,
-      `Assign poster design to ${fixture.volunteerA.name} for "${fixture.eventTitle}".`,
+      `Assign "${title}" to ${fixture.volunteerB.name} for the event "${fixture.eventTitle}".`,
       { activeRole: "admin" },
     );
-    expect(assign.proposedAction).toBeUndefined();
+    expect(assign.proposedAction?.toolName).toBe("assign_task");
+    expect(assign.proposedAction?.token).toMatch(/\./);
+
+    const confirmedAssign = await confirmPendingWrite({
+      user: admin,
+      decision: "accept",
+      token: assign.proposedAction!.token,
+    });
+    expect(confirmedAssign.ok).toBe(true);
+
+    const row = await prisma.task.findFirst({
+      where: { eventId: fixture.eventId, title: { contains: WRITE_MARKER }, assigneeId: fixture.volunteerB.userId },
+      orderBy: { id: "desc" },
+    });
+    expect(row).toBeTruthy();
+    expect(row!.status).toBe("todo");
   });
 
   it("volunteer shell refuses assign and announcement writes", async () => {

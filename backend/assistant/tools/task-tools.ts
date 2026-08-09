@@ -4,11 +4,19 @@ import { prisma } from "@/backend/db/prisma";
 import { assignTask, updateTaskStatus } from "@/backend/domain/tasks";
 import { TASK_STATUSES } from "@/backend/domain/workflow-rules";
 import { formatTaskDue } from "@/lib/format";
+import { SURFACE_ROLES } from "@/backend/auth/roles";
 import type { AssistantTool, ToolActor } from "@/backend/assistant/tools/types";
+
+/**
+ * Club roles that can manage a club's task board — mirrors canManageClub
+ * (domain/tasks.ts) and requireCoordinatorForClub (domain/events.ts): an
+ * Admin outranks a Coordinator here too, in Ask Sangam as everywhere else.
+ */
+const COORDINATOR_SURFACE_ROLES = new Set(SURFACE_ROLES.Coordinator ?? ["Coordinator"]);
 
 function taskBoardHref(actor: ToolActor): string {
   if (actor.isFaculty) return "/faculty";
-  if (actor.memberships.some((m) => m.role === "Coordinator")) {
+  if (actor.memberships.some((m) => COORDINATOR_SURFACE_ROLES.has(m.role))) {
     return "/coordinator/volunteers";
   }
   return "/volunteer";
@@ -21,19 +29,19 @@ function revalidateTaskSurfaces() {
   revalidatePath("/app");
 }
 
-/** Task board actions in Ask Sangam — Volunteer + Coordinator shells only (Admin has no task UI). */
-const TASK_CAPABLE_ROLES = new Set(["Volunteer", "Coordinator"]);
+/** Task board actions in Ask Sangam — Volunteer + Coordinator/Admin shells. */
+const TASK_CAPABLE_ROLES = new Set(["Volunteer", ...COORDINATOR_SURFACE_ROLES]);
 
 function canWorkTasks(actor: ToolActor): boolean {
   return actor.memberships.some((m) => TASK_CAPABLE_ROLES.has(m.role));
 }
 
 function canAssignTasks(actor: ToolActor): boolean {
-  return actor.memberships.some((m) => m.role === "Coordinator");
+  return actor.memberships.some((m) => COORDINATOR_SURFACE_ROLES.has(m.role));
 }
 
 function managedClubIds(actor: ToolActor): string[] {
-  return actor.memberships.filter((m) => m.role === "Coordinator").map((m) => m.clubId);
+  return actor.memberships.filter((m) => COORDINATOR_SURFACE_ROLES.has(m.role)).map((m) => m.clubId);
 }
 
 const listMyTasksSchema = z.object({});
@@ -225,7 +233,7 @@ const assignTaskSchema = z.object({
 export const assign_task: AssistantTool<z.infer<typeof assignTaskSchema>> = {
   name: "assign_task",
   description:
-    "Create and assign a single new task to a club member for an event. Coordinators only. Resolve eventId and assigneeId via list_club_events / resolve_members_by_name (or known ids) first. For many different tasks to different people, use propose_bulk_task_assignments instead.",
+    "Create and assign a single new task to a club member for an event. Coordinators and Admins only. Resolve eventId and assigneeId via list_club_events / resolve_members_by_name (or known ids) first. For many different tasks to different people, use propose_bulk_task_assignments instead.",
   risk: "write",
   requiresConfirmation: true,
   isAvailable: canAssignTasks,

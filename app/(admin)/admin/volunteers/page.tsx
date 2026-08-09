@@ -8,8 +8,13 @@ export const metadata: Metadata = {
   description: "Assign and track volunteer tasks.",
 };
 
-export default async function VolunteersPage() {
-  const { membership } = await requirePageMembership("Coordinator");
+/**
+ * Admin's native volunteers/task-assignment page — same VolunteersView the
+ * Coordinator surface uses, mounted under the Admin shell. See
+ * app/(admin)/admin/events/page.tsx for why "Admin" is the right gate here.
+ */
+export default async function AdminVolunteersPage() {
+  const { membership } = await requirePageMembership("Admin");
 
   return (
     <>

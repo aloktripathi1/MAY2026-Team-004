@@ -88,6 +88,16 @@ const APP_ROLE_TO_CLUB_ROLE: Record<Exclude<AppRole, "faculty">, string> = {
  * Memberships that back a specific shell. A coordinator browsing the member
  * app is acting as a member there, so capabilities scoped by this function
  * don't leak across shells.
+ *
+ * Deliberately exact-match, not SURFACE_ROLES-aware: Ask Sangam's tool
+ * predicates (task-tools.ts, bulk-task-tools.ts, announcement-tools.ts) each
+ * hardcode their own "Coordinator" / "Admin" checks against membership.role.
+ * Widening this to admit an Admin row under the "coordinator" shell puts an
+ * Admin-role membership inside a Coordinator-scoped actor, which the
+ * Admin-only tools' predicates (e.g. canDraftAnnouncement) then pick up —
+ * leaking announcement drafting into the coordinator shell. Until those
+ * predicates are made surface-aware too, keep this exact-match so Ask Sangam
+ * simply declines ("role not available") rather than silently misbehaving.
  */
 export function membershipsForAppRole<T extends { role: string }>(memberships: T[], role: AppRole): T[] {
   if (role === "faculty") return [];

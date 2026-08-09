@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
-import { updateEventAction, type EditEventState } from "./actions";
+import { updateEventAction, type EditEventState } from "./event-detail-actions";
 
 type EventDetails = {
   id: string;

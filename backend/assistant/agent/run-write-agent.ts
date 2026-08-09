@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { membershipsForAppRole, type AppRole } from "@/backend/auth/roles";
+import { membershipsForAppRole, SURFACE_ROLES, type AppRole } from "@/backend/auth/roles";
 import type { AssistantAnswer, AssistantSessionUser } from "@/backend/domain/assistant-types";
 import { executeTool, getTool, previewToolCall, toAnthropicTools } from "@/backend/assistant/tools/registry";
 import { enrichUpdateTaskSummary } from "@/backend/assistant/tools/task-tools";
@@ -131,12 +131,12 @@ ${shellLine}
 If the user phrases things as a different role (e.g. says "as admin" while in coordinator), do NOT say they lack access — use the tools available in this shell. You may briefly note which view they are in if their wording conflicts.
 
 Available tools (role-filtered — you may not have all of them):
-- list_my_tasks — open tasks the user can manage (own tasks for volunteers; club open tasks for coordinators). Use before status changes.
-- update_task_status — set ONE clearly identified task to todo/doing/done (needs Accept). Volunteers + coordinators.
+- list_my_tasks — open tasks the user can manage (own tasks for volunteers; club open tasks for coordinators and admins). Use before status changes.
+- update_task_status — set ONE clearly identified task to todo/doing/done (needs Accept). Volunteers, coordinators, and admins.
 - offer_task_status_choices — when 2+ tasks match (same person, same title filter, etc.), call this with all matching options. NEVER ask which task in chat text — the UI shows a picker.
-- assign_task — create ONE task for one person (coordinator only). Resolve eventId/assigneeId first.
-- list_club_events / list_club_volunteers / resolve_members_by_name — resolve ids for assign/bulk (coordinator only).
-- propose_bulk_task_assignments — many different tasks → different people in one shot (max 50, coordinator only). Volunteers never get this.
+- assign_task — create ONE task for one person (coordinator or admin). Resolve eventId/assigneeId first.
+- list_club_events / list_club_volunteers / resolve_members_by_name — resolve ids for assign/bulk (coordinator or admin).
+- propose_bulk_task_assignments — many different tasks → different people in one shot (max 50, coordinator or admin). Volunteers never get this.
 - resolve_club_members_by_name — admin only; resolve named people before a targeted announcement.
 - propose_announcement — draft a club announcement (admin only). Role audience All|Volunteers|Coordinators OR specific people via recipientUserIds after resolve_club_members_by_name. UI picks timing (and role audience when not targeted).
 
@@ -144,14 +144,14 @@ Workflow:
 1. Use read tools first to resolve ids. Never invent ids.
 2. Status change with one clear match → update_task_status. With 2+ matches → offer_task_status_choices (not a clarifying question).
 3. "the first task" with a unique ordered list → use index 1 from list_my_tasks via update_task_status.
-4. Single assign (coordinator only): resolve event + member, then assign_task. Multiple different people/tasks → propose_bulk_task_assignments.
+4. Single assign (coordinator or admin): resolve event + member, then assign_task. Multiple different people/tasks → propose_bulk_task_assignments.
 5. If a person name for assign is ambiguous, ask in plain text with candidates; do not call a write tool until unique.
 6. "all volunteers" = list_club_volunteers (Active Volunteers only).
 7. Announcements (admin only): if the user names specific people, resolve_club_members_by_name then propose_announcement with recipientUserIds + recipientNames. Otherwise propose with title/body (optional audience). UI picks timing (and role audience when not person-targeted). If a name is ambiguous/missing, ask in plain text — do not guess.
 8. Prefer one write-tool call once arguments are known for THIS message segment.
 9. This call is already a single write segment (multi-ask messages are split upstream). Do not defer sibling asks.
 10. Never claim the write already happened — the user must Accept in the UI first.
-11. If a needed tool is missing from your tool list, say briefly that this role view cannot do that (e.g. volunteer cannot assign/bulk; admin cannot change tasks). Base that only on the missing tool / shell — not on how the user described themselves.`;
+11. If a needed tool is missing from your tool list, say briefly that this role view cannot do that (e.g. volunteer cannot assign/bulk; member/faculty cannot manage tasks). Base that only on the missing tool / shell — not on how the user described themselves.`;
 }
 
 export function toToolActor(user: AssistantSessionUser, activeRole?: AppRole): ToolActor {
@@ -199,9 +199,10 @@ function sourceMetaForTool(
   if (toolName === "propose_announcement") {
     return { sourceType: "announcement", sourceHref: "/admin/announcements" };
   }
+  const coordinatorSurfaceRoles = SURFACE_ROLES.Coordinator ?? ["Coordinator"];
   return {
     sourceType: "task",
-    sourceHref: actor.memberships.some((m) => m.role === "Coordinator")
+    sourceHref: actor.memberships.some((m) => coordinatorSurfaceRoles.includes(m.role))
       ? "/coordinator/volunteers"
       : "/volunteer",
   };

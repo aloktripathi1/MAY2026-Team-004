@@ -27,17 +27,17 @@ const UNSUPPORTED_ACTION_ANSWER: AssistantAnswer = {
 
 const TASK_STATUS_WRONG_SHELL: AssistantAnswer = {
   answer:
-    "Updating task status isn't available in this role view. Switch to Volunteer for your own tasks, or Coordinator for the club board.",
+    "Updating task status isn't available in this role view. Switch to Volunteer for your own tasks, or Coordinator/Admin for the club board.",
   sourceType: null,
 };
 
 const TASK_ASSIGN_WRONG_SHELL: AssistantAnswer = {
-  answer: "Assigning tasks is only available in the Coordinator view.",
+  answer: "Assigning tasks is only available in the Coordinator or Admin view.",
   sourceType: null,
 };
 
 const BULK_WRITE_WRONG_SHELL: AssistantAnswer = {
-  answer: "Bulk task assignment is only available in the Coordinator view.",
+  answer: "Bulk task assignment is only available in the Coordinator or Admin view.",
   sourceType: null,
 };
 
@@ -47,7 +47,7 @@ const ANNOUNCE_WRITE_WRONG_SHELL: AssistantAnswer = {
 };
 
 const ROSTER_WRONG_SHELL: AssistantAnswer = {
-  answer: "Listing club volunteers and task load is only available in the Coordinator view.",
+  answer: "Listing club volunteers and task load is only available in the Coordinator or Admin view.",
   sourceType: null,
 };
 
@@ -440,12 +440,12 @@ async function handleMembershipStatus(
   });
 }
 
-/** Clubs the user may manage as Coordinator for roster / open-task aggregation reads. */
+/** Clubs the user may manage as Coordinator (or Admin) for roster / open-task aggregation reads. */
 function coordinatorClubIdsForRoster(user: AssistantSessionUser, activeRole?: AppRole): string[] {
-  if (activeRole && activeRole !== "coordinator") return [];
+  if (activeRole && activeRole !== "coordinator" && activeRole !== "admin") return [];
   const memberships = activeRole
-    ? membershipsForAppRole(user.memberships, "coordinator")
-    : user.memberships.filter((m) => m.role === "Coordinator");
+    ? membershipsForAppRole(user.memberships, activeRole)
+    : user.memberships.filter((m) => m.role === "Coordinator" || m.role === "Admin");
   return memberships.map((m) => m.clubId);
 }
 
@@ -459,7 +459,7 @@ async function handleClubRosterLookup(
   entities: Classification["entities"],
   activeRole?: AppRole,
 ): Promise<AssistantAnswer> {
-  if (activeRole && activeRole !== "coordinator") return ROSTER_WRONG_SHELL;
+  if (activeRole && activeRole !== "coordinator" && activeRole !== "admin") return ROSTER_WRONG_SHELL;
 
   let clubIds = coordinatorClubIdsForRoster(user, activeRole);
   if (clubIds.length === 0) return NO_DATA_ANSWER;
@@ -594,19 +594,19 @@ export async function answerAssistantQuery(
         return await handleTaskLookup(user, question, classification.entities);
       case "task_action": {
         const role = options?.activeRole;
-        if (role && role !== "volunteer" && role !== "coordinator") {
+        if (role && role !== "volunteer" && role !== "coordinator" && role !== "admin") {
           return TASK_STATUS_WRONG_SHELL;
         }
         return await runWriteToolAgentForQuestion(user, question, options?.activeRole);
       }
       case "task_assign": {
-        if (options?.activeRole && options.activeRole !== "coordinator") {
+        if (options?.activeRole && options.activeRole !== "coordinator" && options.activeRole !== "admin") {
           return TASK_ASSIGN_WRONG_SHELL;
         }
         return await runWriteToolAgentForQuestion(user, question, options?.activeRole);
       }
       case "bulk_task_assign": {
-        if (options?.activeRole && options.activeRole !== "coordinator") {
+        if (options?.activeRole && options.activeRole !== "coordinator" && options.activeRole !== "admin") {
           return BULK_WRITE_WRONG_SHELL;
         }
         return await runWriteToolAgentForQuestion(user, question, options?.activeRole);

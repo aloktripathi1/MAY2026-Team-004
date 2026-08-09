@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Download, Check } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
-import { toggleCheckInAction, bulkCheckInAction } from "./actions";
+import { toggleCheckInAction, bulkCheckInAction } from "./event-detail-actions";
 
 type ParticipantRow = {
   countMeInId: string;

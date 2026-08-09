@@ -6,7 +6,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   return { title: `Event dashboard · Sangam`, description: "Manage this event." };
 }
 
-export default async function CoordinatorEventDashboard({ params }: { params: { id: string } }) {
-  const { membership } = await requirePageMembership("Coordinator");
+/**
+ * Admin's native single-event dashboard — same EventDetailView the
+ * Coordinator surface uses, mounted under the Admin shell. See
+ * app/(admin)/admin/events/page.tsx for why "Admin" is the right gate here.
+ */
+export default async function AdminEventDashboard({ params }: { params: { id: string } }) {
+  const { membership } = await requirePageMembership("Admin");
   return <EventDetailView slugOrId={params.id} clubId={membership.clubId} />;
 }

@@ -49,4 +49,14 @@ describe("accessibleAppRoles", () => {
     expect(accessibleAppRoles({ isFaculty: true, memberships: [] })).toEqual(["faculty"]);
     expect(accessibleAppRoles({ memberships: [{ role: "Member" }] })).toEqual(["member"]);
   });
+
+  it("keeps Coordinator out of an Admin-only user's switcher — /admin/events and /admin/volunteers cover that natively now", () => {
+    expect(accessibleAppRoles({ memberships: [{ role: "Admin" }] })).not.toContain("coordinator");
+  });
+
+  it("still lists Coordinator for a real dual-role user (Admin of one club, Coordinator of another)", () => {
+    expect(
+      accessibleAppRoles({ memberships: [{ role: "Admin" }, { role: "Coordinator" }] }),
+    ).toEqual(["admin", "coordinator", "member"]);
+  });
 });
