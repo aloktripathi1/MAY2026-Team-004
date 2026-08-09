@@ -2,7 +2,7 @@
   <img src="public/banner.png" alt="Sangam" width="100%" />
 </p>
 
-Sangam is a community and society management platform: a single source of truth for membership, events, venues, equipment, tasks, and communication, built to replace the WhatsApp groups, Google Forms, and spreadsheets clubs typically end up patching together.
+Sangam is a community and society management platform: one place for membership, events, venues, equipment, tasks, and communication, built to replace the WhatsApp groups, Google Forms, and spreadsheets clubs typically patch together.
 
 **Live demo:** [sangam-club.com](https://sangam-club.com). See [Demo accounts](#demo-accounts) to sign in.
 
@@ -29,14 +29,14 @@ Sangam is a community and society management platform: a single source of truth 
 
 ## Features
 
-- **Role-based dashboards**: separate, purpose-built views for Admin, Coordinator, Volunteer, Member, and Faculty, each showing only what that role needs to act on.
+- **Role-based dashboards**: separate views for Admin, Coordinator, Volunteer, Member, and Faculty, each showing only what that role needs to act on. Admin also carries full Coordinator authority in its own club, so a club's Admin can create its first event and assign its first task without appointing a Coordinator first.
 - **Membership management**: join requests, bulk CSV member import, per-club roles instead of one global permission level.
 - **Events lifecycle**: creation, faculty approval, registration ("Count Me In") with race-safe capacity enforcement, check-in, and registration locking.
 - **Issue tracking**: members raise issues with screenshot attachments; admins triage, filter, and assign them individually or in bulk.
 - **Announcements**: audience-targeted broadcasts instead of blanket messages.
-- **Email notifications**: transactional and activity email through [Resend](https://resend.com/) — signup verification, membership and approval decisions, registration confirmations, schedule changes, task assignments, and daily reminder/digest sweeps — with per-category opt-outs and one-click unsubscribe. See [Email notifications](#email-notifications).
+- **Email notifications**: transactional and activity email through [Resend](https://resend.com/), covering signup verification, membership and approval decisions, registration confirmations, schedule changes, task assignments, and daily reminder/digest sweeps, with per-category opt-outs and one-click unsubscribe. See [Email notifications](#email-notifications).
 - **Transparency & metrics**: admin-facing club health and activity reporting.
-- **Ask Sangam**: gold sparkles drawer — grounded Q&A plus confirmable writes (task status, assign/bulk, announcements). Capabilities follow the shell you’re in; nothing mutates until you Accept. See [Ask Sangam](#ask-sangam).
+- **Ask Sangam**: an in-app assistant for grounded Q&A plus confirmable writes (task status, assign/bulk, announcements). Capabilities follow the shell you're in and nothing mutates until you Accept. See [Ask Sangam](#ask-sangam).
 - **Signed session auth**: custom httpOnly-cookie sessions with server-side role checks on every protected route, no client-trusted state.
 
 ---
@@ -60,9 +60,11 @@ Sangam is a community and society management platform: a single source of truth 
 
 **Auth**
 - A custom, signed httpOnly-cookie session (`backend/auth/session-cookies.ts`), not NextAuth. Real signup and login go through `app/api/auth/{signup,login,me}` and `backend/auth/*`. The NextAuth-shaped route at `app/api/auth/[...nextauth]/route.ts` is an unrelated stub kept for URL-shape compatibility; it plays no part in authentication.
+- [Google OAuth](https://developers.google.com/identity) as an additional sign-in method alongside email/password.
 
 **AI**
-- [Anthropic Claude API](https://www.anthropic.com/api) powers Ask Sangam, the in-app assistant
+- [Anthropic SDK](https://www.anthropic.com/api) (`@anthropic-ai/sdk`) powers Ask Sangam: classification, grounded Q&A, and the agentic write capability. There's no separate "Claude Agent SDK" package; the tool-calling loop (propose a tool call, run it, feed back the result, repeat) is custom, built directly on the SDK's native tool-use API (`backend/assistant/agent/`, `lib/genai.ts`).
+- [Groq](https://groq.com/) Whisper (`whisper-large-v3-turbo`) for voice input, transcribing a recorded clip to text before it reaches the same assistant pipeline (`lib/groq.ts`). Plain `fetch` against Groq's API, no SDK dependency.
 
 **Testing**
 - [Jest](https://jestjs.io/) with [Testing Library](https://testing-library.com/) for unit, component, and live-HTTP integration suites (see [Testing](#testing))
@@ -111,14 +113,15 @@ Set these in `.env` (see `.env.example` for the full list with defaults):
 | `AUTH_SECRET` | Signs the session cookie. Required in production; the app refuses to start signing sessions without it. Falls back to a fixed insecure value in development. Generate one with `openssl rand -hex 32`. |
 | `ASSISTANT_ACTION_SECRET` | HMAC for Ask Sangam Server Action request envelopes (`backend/assistant/security/request-signing.ts`). Required for query/confirm actions. |
 | `ANTHROPIC_API_KEY` | Powers Ask Sangam via `lib/genai.ts`. Get a key at [console.anthropic.com](https://console.anthropic.com/). |
+| `GROQ_API_KEY` | Powers Ask Sangam's voice input via `lib/groq.ts`. Get a key at [console.groq.com](https://console.groq.com/). |
 | `RESEND_API_KEY` | Powers email notifications via `backend/email/`. Get a key at [resend.com/api-keys](https://resend.com/api-keys). |
 | `EMAIL_ENABLED` | Master switch for real delivery. Unset or `false` puts the mailer in dry-run. Real sends need this **and** `RESEND_API_KEY`. |
-| `EMAIL_FROM` | Sender identity — `Sangam <no-reply@sangam-club.com>` once the domain is verified. Defaults to Resend's `onboarding@resend.dev` test sender. |
+| `EMAIL_FROM` | Sender identity: `Sangam <no-reply@sangam-club.com>` once the domain is verified. Defaults to Resend's `onboarding@resend.dev` test sender. |
 | `EMAIL_REPLY_TO` | Optional `Reply-To`. Omit to let replies bounce. |
 | `EMAIL_ALLOWLIST` | Comma-separated addresses or domains that may receive real mail. Anything else is skipped and logged. Empty means no restriction. |
-| `APP_URL` | Absolute origin used to build links inside emails. Falls back to the host of the request being served, so a stale value can't produce dead links in mail sent during a request — but set it, because scheduled mail has no request to borrow a host from. |
+| `APP_URL` | Absolute origin used to build links inside emails. Falls back to the host of the request being served, so a stale value can't produce dead links in mail sent during a request, but set it: scheduled mail has no request to borrow a host from. |
 | `CRON_SECRET` | Bearer token for the scheduled-email routes under `/api/cron/email/*`. Without it those routes refuse every request. |
-| `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. **On by default**, and only active once email can actually be delivered. Set `false` to disable — see [Requiring verified email](#requiring-verified-email). |
+| `REQUIRE_EMAIL_VERIFICATION` | Refuses sign-in until the address is confirmed. **On by default**, and only active once email can actually be delivered. Set `false` to disable. See [Requiring verified email](#requiring-verified-email). |
 
 ---
 
@@ -148,31 +151,27 @@ Roll numbers match the email's local part (e.g. `23f3003225`). Club roles: CodeC
 
 ## Roles and provisioning
 
-Five roles: Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor.
-Roles are **per-club** (`Membership.role`) except faculty, which is
-institution-wide (`User.isFaculty`) rather than scoped to a single club — so
-one person can be Coordinator of one club and a plain Member of another.
-Signup produces a plain account with no club, so every elevated role has to be
-granted by someone:
+Five roles: Admin, Event Coordinator, Club Member, Volunteer, Faculty Mentor. Roles are **per-club** (`Membership.role`) except Faculty, which is institution-wide (`User.isFaculty`), so one person can be Coordinator of one club and a plain Member of another.
+
+**Admin also acts as Coordinator in its own club.** A club has exactly one Admin, so it can never hold a separate Coordinator membership too, but the platform treats Admin as outranking Coordinator everywhere a Coordinator action is checked: creating events, managing the task board, and the same capabilities through Ask Sangam. This means a freshly-approved club's sole Admin can host its first event and assign its first task immediately, without appointing anyone else first.
+
+Signup produces a plain account with no club; every elevated role is granted by someone:
 
 | Role | Granted by |
 |---|---|
-| Member / Volunteer / Coordinator of a club | that club's **Admin**, from `/admin/members` — set when adding someone, or changed later from the role control on each row |
+| Member / Volunteer / Coordinator of a club | that club's **Admin**, from `/admin/members`: set when adding someone, or changed later from the role control on each row |
 | **Club Admin** | faculty approving the club proposal (first admin), or the outgoing admin via `/admin/handover` |
 | **Faculty** | another faculty member at `/faculty/club-requests`, or `scripts/bootstrap-faculty.ts` for the first one |
 
 ### The first faculty account
 
-Faculty approve events for every club and appoint other faculty, so it is
-deliberately **not reachable from the web** — no signup option, nothing to trick.
-The first one is granted from the command line, which requires database access:
+Faculty approve events for every club and appoint other faculty, so it's deliberately **not reachable from the web**. The first one is granted from the command line, which requires database access:
 
 ```bash
 npx tsx scripts/bootstrap-faculty.ts you@ds.study.iitm.ac.in
 ```
 
-The account must already exist, so sign up in the app first. `--list` shows who
-currently has faculty. Against production, pull that database's URL first:
+The account must already exist, so sign up in the app first. `--list` shows who currently has faculty. Against production, pull that database's URL first:
 
 ```bash
 npx vercel env pull .env.production.local --environment=production
@@ -182,71 +181,45 @@ npx vercel env pull .env.production.local --environment=production
 DATABASE_URL="$(grep '^DATABASE_URL=' .env.production.local | cut -d= -f2- | tr -d '"')" npx tsx scripts/bootstrap-faculty.ts you@ds.study.iitm.ac.in
 ```
 
-After that, faculty appoint each other in the app. Revoking is guarded: you
-can't remove your own access, and you can't remove the last faculty account —
-either would leave the institution with no reviewer and no way to appoint one
-short of another bootstrap run.
+After that, faculty appoint each other in the app. Revoking is guarded: you can't remove your own access, and you can't remove the last faculty account.
 
 ### Changing someone's role
 
-An Admin changes a member's role from the dropdown on their row in
-`/admin/members`, or over REST with `PATCH /api/clubs/{id}/members/{memberId}`
-(which now accepts `role`, `status`, or both). The member is emailed, unless
-they're still `Pending` — telling someone their role changed before they've been
-told they're in reads as nonsense.
+An Admin changes a member's role from the dropdown on their row in `/admin/members`, or over REST with `PATCH /api/clubs/{id}/members/{memberId}` (accepts `role`, `status`, or both). The member is emailed, unless they're still `Pending`.
 
-**Admin is not assignable this way.** A club has exactly one Admin, and
-`/admin/handover` owns that move because it demotes the outgoing Admin in the
-same transaction; allowing it here would let a club end up with two Admins or
-none.
+**Admin is not assignable this way.** A club has exactly one Admin, and `/admin/handover` owns that move because it demotes the outgoing Admin in the same transaction.
 
 ### New clubs
 
-Students propose clubs from **My clubs → Propose a club**; faculty review them at
-**/faculty/club-requests**. Approving creates the `Club` **and** the proposer's
-Admin membership in one transaction — a club with no admin is precisely the dead
-end this flow exists to remove, and would be unfixable through the UI.
+Students propose clubs from **My clubs → Propose a club**; faculty review them at **/faculty/club-requests**. Approving creates the `Club` **and** the proposer's Admin membership in one transaction.
 
-The proposer's presentation fields are derived rather than asked for: the slug is
-generated from the name (suffixed if taken), and the hue and banner gradient come
-from a hash of the name, matching the seeded clubs. A proposal is refused if the
-club already exists, if an identical one is already pending, or if the student
-already has three open. Both decisions email the proposer, and rejections can
-carry a short reason.
-
-Before this existed, `Club` rows and the first Admin of a club could only come
-from `prisma/seed.ts`, and `isFaculty` was never written outside it — so a freshly
-deployed database had clubs nobody could administer and no way to appoint anyone.
+The slug is generated from the name (suffixed if taken); the hue and banner gradient come from a hash of the name. A proposal is refused if the club already exists, if an identical one is already pending, or if the student already has three open. Both decisions email the proposer, and rejections can carry a short reason.
 
 ### Route protection
 
-`/admin`, `/coordinator`, `/volunteer`, `/faculty`, and `/app` (member) each
-check the signed session cookie against the database and redirect to `/login`
-if you're not signed in as a user who actually holds that role. There's no
-bypass in production: an anonymous or forged request to any of these routes is
-turned away, not handed a privileged session.
+`/admin`, `/coordinator`, `/volunteer`, `/faculty`, and `/app` (member) each check the signed session cookie against the database and redirect to `/login` if you're not signed in as a user who actually holds that role.
 
 ---
 
 ## API docs (OpenAPI / Swagger)
 
-Source of truth: `docs/openapi.yaml` (OpenAPI 3, Swagger-compatible). Served live at `/api/openapi` while the app is running.
+Source of truth: `docs/openapi.yaml` (OpenAPI 3, Swagger-compatible), served live at `/api/openapi` while the app is running.
 
 | What | URL / path |
 |---|---|
-| Interactive docs (Try it out) | [http://localhost:3000/api-docs](http://localhost:3000/api-docs) |
+| Interactive docs (Try it out) | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
 | OpenAPI YAML (raw) | [http://localhost:3000/api/openapi](http://localhost:3000/api/openapi) |
 | OpenAPI file in repo | `docs/openapi.yaml` |
+| Live | [sangam-club.com/api/docs](https://www.sangam-club.com/api/docs) · [sangam-club.com/api/openapi](https://www.sangam-club.com/api/openapi) |
 
 ### Trying an endpoint manually
 
 1. Start the app: `npm run dev`
-2. Open [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+2. Open [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 3. Expand an operation (e.g. `POST /api/auth/signup`), click **Try it out**, edit the example body, click **Execute**
 4. Check **Server response** for the status code and JSON (documented response shapes live in the YAML)
 
-Example signup body (institutional email only, `@ds.study.iitm.ac.in`). Roll number
-isn't submitted — it's derived server-side from the email's local part:
+Example signup body (institutional email only, `@ds.study.iitm.ac.in`). Roll number isn't submitted; it's derived server-side from the email's local part:
 
 ```json
 {
@@ -258,11 +231,11 @@ isn't submitted — it's derived server-side from the email's local part:
 
 A successful signup returns `201` with `success: true` and sets the session cookie.
 
-### editor.swagger.io vs. local `/api-docs`
+### editor.swagger.io vs. local `/api/docs`
 
 You can paste or load `docs/openapi.yaml` into [editor.swagger.io](https://editor.swagger.io/) to view or edit the spec.
 
-**Don't rely on Execute there against `http://localhost:3000`.** The editor is served over HTTPS, so the browser blocks calls to plain HTTP localhost (mixed content) and Swagger shows something like "Undocumented, Failed to fetch." That's a browser limitation, not a broken API. CORS is enabled for `https://editor.swagger.io` on `/api/*`, but for reliable Try it out, use the local docs at [http://localhost:3000/api-docs](http://localhost:3000/api-docs) instead, since it shares an origin with the API.
+**Don't rely on Execute there against `http://localhost:3000`.** The editor is served over HTTPS, so the browser blocks calls to plain HTTP localhost (mixed content). CORS is enabled for `https://editor.swagger.io` on `/api/*`, but for reliable Try it out, use the local docs at [http://localhost:3000/api/docs](http://localhost:3000/api/docs) instead, since it shares an origin with the API.
 
 ---
 
@@ -303,23 +276,17 @@ npm run test:integration
 
 Optional env var: `SANGAM_BASE_URL` (defaults to `http://localhost:3000`).
 
-Role-scoped endpoints (coordinator, admin, faculty) authenticate as the matching seeded team account from [Demo accounts](#demo-accounts), so the suite exercises the same session and authorization path a real user would hit. It also covers the concurrency fix behind event registration (ten genuinely simultaneous requests for one capacity slot, asserting exactly one winner) and the security-relevant paths: anonymous access to every protected route and API, a forged session cookie, cross-role authorization, and 404s for missing dynamic pages.
+Role-scoped endpoints (coordinator, admin, faculty) authenticate as the matching seeded team account from [Demo accounts](#demo-accounts), so the suite exercises the same session and authorization path a real user would hit. It also covers the concurrency fix behind event registration (ten simultaneous requests for one capacity slot, asserting exactly one winner) and security paths: anonymous access to protected routes, a forged session cookie, cross-role authorization, and 404s for missing dynamic pages.
 
-Email is covered in both suites. `tests/unit/backend/email/` renders every template (escaping,
-plain-text twin, category) and checks the token, config and audience logic; `tests/integration/email.test.ts`
-drives the real send path against the database in dry-run — idempotency, preference opt-outs,
-transactional mail ignoring opt-outs, the sweeps, verification single-use, unsubscribe
-GET-vs-POST, and cron auth. Nothing is delivered: see [Dry-run is the default](#dry-run-is-the-default).
+Email is covered in both suites. `tests/unit/backend/email/` renders every template and checks token, config, and audience logic; `tests/integration/email.test.ts` drives the real send path against the database in dry-run: idempotency, preference opt-outs, transactional mail ignoring opt-outs, the sweeps, verification single-use, unsubscribe GET-vs-POST, and cron auth. Nothing is delivered, see [Dry-run is the default](#dry-run-is-the-default).
 
 ### Ask Sangam write tests (live Claude + DB)
 
-Confirmable writes — bulk/single assign, task status, role-audience and targeted announcements, and wrong-shell refuses. Hits real Claude (`ANTHROPIC_API_KEY`) and Postgres; fixtures are cleaned up afterward. Needs a seeded database (`npm run db:push && npm run db:seed`); the Next.js app does not need to be running for these files.
+Confirmable writes: bulk/single assign, task status, role-audience and targeted announcements, and wrong-shell refusals. Hits real Claude (`ANTHROPIC_API_KEY`) and Postgres; fixtures are cleaned up afterward. Needs a seeded database (`npm run db:push && npm run db:seed`); the Next.js app does not need to be running for these files.
 
 ```bash
 npm run test:integration -- --testPathPatterns="assistant-tools|assistant-write"
 ```
-
-Written test-case docs, in the course-required format, live under `docs/test-cases/`.
 
 ### Quick smoke check without Swagger
 
@@ -335,28 +302,17 @@ curl -s -X POST http://localhost:3000/api/auth/signup \
 
 ## Email notifications
 
-All outbound email lives in [`backend/email/`](backend/email). Domain code never talks to the
-provider: it calls a named function like `notifyMembershipApplied(userId, clubId)`, and that
-layer decides who hears about it, renders the template, and hands one `sendEmail()` call the
-result. Notifications are **best-effort by design** — a membership approval still stands if the
-mail provider is down.
+All outbound email lives in [`backend/email/`](backend/email). Domain code never talks to the provider directly: it calls a named function like `notifyMembershipApplied(userId, clubId)`, and that layer decides who hears about it, renders the template, and hands one `sendEmail()` call the result. Notifications are **best-effort by design**: a membership approval still stands if the mail provider is down.
 
 ### Provider
 
-[Resend](https://resend.com/), chosen over SES and Postmark because the app is a Vercel-hosted
-Next.js project: one SDK, no IAM or sandbox-exit process, and DKIM handled from the dashboard.
-Vercel and Neon cannot send mail themselves, so an external provider was required either way.
+[Resend](https://resend.com/), chosen because the app is a Vercel-hosted Next.js project: one SDK, no IAM or sandbox-exit process, DKIM handled from the dashboard.
 
 ### Dry-run is the default
 
-Sending needs **both** `EMAIL_ENABLED=true` and `RESEND_API_KEY`. With either missing every send
-is decided, logged to the console and recorded in `EmailLog` with status `dryRun` — but nothing
-leaves the app. The seeded accounts are real IITM addresses, so local development and the test
-suite deliberately never deliver.
+Sending needs **both** `EMAIL_ENABLED=true` and `RESEND_API_KEY`. With either missing, every send is decided, logged to the console, and recorded in `EmailLog` with status `dryRun`, but nothing leaves the app. The seeded accounts are real IITM addresses, so local development and the test suite deliberately never deliver.
 
-`EMAIL_ALLOWLIST` is the second guard: while no domain is verified, it restricts real delivery to
-listed addresses or domains. It applies to real sends only — dry-run still shows what *would*
-have gone out.
+`EMAIL_ALLOWLIST` is the second guard: while no domain is verified, it restricts real delivery to listed addresses or domains. It applies to real sends only; dry-run still shows what would have gone out.
 
 To check a real send once `RESEND_API_KEY` is in place:
 
@@ -364,38 +320,34 @@ To check a real send once `RESEND_API_KEY` is in place:
 npx tsx scripts/send-test-email.ts you@example.com registrationConfirmation
 ```
 
-It prints the resolved sender, mode and result, and delivers nothing while `EMAIL_ENABLED` is off.
-
 ### What triggers what
 
 | Email | Trigger | Category |
 |---|---|---|
-| Signup verification | account created (`createUserAccount`) | *transactional — no opt-out* |
-| Password reset | user requests one via `/forgot-password` | *transactional — no opt-out* |
+| Signup verification | account created (`createUserAccount`) | *transactional, no opt-out* |
+| Password reset | user requests one via `/forgot-password` | *transactional, no opt-out* |
 | Membership request received | member applies to a club | `membership` |
 | Membership request awaiting approval | member applies → club admins | `membership` |
 | Membership approved / rejected | admin decides on the request | `membership` |
 | Welcome | first membership anywhere goes Active | `membership` |
 | Role changed | admin adds a member above `Member` | `membership` |
 | Admin handover (both sides) | `transferAdminAction` | `membership` |
-| New club event | coordinator creates an event | `events` |
+| New club event | coordinator or admin creates an event | `events` |
 | Event awaiting approval | event created → faculty | `events` |
 | Event approved / not approved | faculty or admin decides | `events` |
 | Registration confirmed | member counts themselves in | `events` |
 | **Schedule change** | date, time or venue moved → registrants | `events` |
 | Event cancelled | approved event with registrants is rejected | `events` |
-| Task assigned | coordinator assigns a volunteer task | `tasks` |
+| Task assigned | coordinator or admin assigns a volunteer task | `tasks` |
 | New announcement | **High** priority only, posted | `announcements` |
 | Issue received | member raises an issue | `issues` |
 | Issue status changed / resolved | admin moves the status | `issues` |
 
-Schedule-change mail only goes out when a registrant would actually rearrange their day —
-`diffScheduleFields` compares date, time and venue, so a reworded description mails nobody.
+Schedule-change mail only goes out when a registrant would actually rearrange their day: `diffScheduleFields` compares date, time, and venue, so a reworded description mails nobody.
 
 ### Scheduled email
 
-Five daily sweeps, wired in [`vercel.json`](vercel.json) and served by
-`/api/cron/email/{sweep}`:
+Five daily sweeps, wired in [`vercel.json`](vercel.json) and served by `/api/cron/email/{sweep}`:
 
 | Sweep | What it does |
 |---|---|
@@ -405,13 +357,9 @@ Five daily sweeps, wired in [`vercel.json`](vercel.json) and served by
 | `registration-closing-soon` | Members not yet registered for a nearly-full or imminent event |
 | `announcement-digest` | One email covering the day's Low/Med announcements per person |
 
-Two properties make them safe to run repeatedly, which matters because Vercel Cron retries:
-dedupe keys name the **target** (`eventReminder:<eventId>:<userId>`), never the run; and windows
-are calendar days, so a sweep that fires late still covers the same rows.
+Dedupe keys name the **target** (`eventReminder:<eventId>:<userId>`), never the run, so a retry can't double-send. Windows are calendar days, so a sweep that fires late still covers the same rows.
 
-The routes authenticate with `Authorization: Bearer $CRON_SECRET` — Vercel sends this
-automatically. **Without `CRON_SECRET` set they refuse every request**, since an open URL here
-would let anyone mail a club's members. Run one by hand with:
+The routes authenticate with `Authorization: Bearer $CRON_SECRET`; Vercel sends this automatically. Without `CRON_SECRET` set they refuse every request. Run one by hand with:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/email/event-reminders"
@@ -421,129 +369,54 @@ Add `?at=2026-09-17T09:00:00Z` to drive the windows without waiting for the cloc
 
 ### Requiring verified email
 
-A new account is **not** signed in until its address is confirmed. Set
-`REQUIRE_EMAIL_VERIFICATION=false` to turn that off. When active:
+A new account is **not** signed in until its address is confirmed. Set `REQUIRE_EMAIL_VERIFICATION=false` to turn that off. When active:
 
 - signup no longer returns a session; it redirects to `/signup/check-email`
-- clicking the emailed link (`GET /api/auth/verify-email`) confirms the address
-  **and** signs the user in, landing them straight on their dashboard — no
-  separate login step afterward
-- `POST /api/auth/login` answers **403 `EMAIL_UNVERIFIED`** until confirmed
-  (deliberately distinct from `INVALID_CREDENTIALS` — the password *was* right,
-  and a generic message would send people to reset a password that works)
-- the login form offers "Send me a new verification link", backed by
-  `POST /api/auth/resend-verification`
+- clicking the emailed link (`GET /api/auth/verify-email`) confirms the address **and** signs the user in
+- `POST /api/auth/login` answers **403 `EMAIL_UNVERIFIED`** until confirmed, distinct from `INVALID_CREDENTIALS` since the password was actually right
+- the login form offers "Send me a new verification link", backed by `POST /api/auth/resend-verification`
 
-The gate is **inert unless email can actually be delivered** — if `EMAIL_ENABLED`
-is off or no API key is set, it does not fire. Requiring a step nobody can
-complete would refuse every account, including whoever is trying to configure it.
-That also means it never interferes locally or in tests, and starts applying in
-production the moment email works.
+The gate is **inert unless email can actually be delivered**: if `EMAIL_ENABLED` is off or no API key is set, it doesn't fire. That means it never interferes locally or in tests, and starts applying in production the moment email works.
 
-`EMAIL_ALLOWLIST` does **not** filter verification mail. The allowlist exists to
-keep *notification* fan-out off real inboxes during rollout; verification goes to
-one address the recipient just typed and is the only way into their own account,
-so filtering it would turn the safety net into a lockout.
+`EMAIL_ALLOWLIST` does **not** filter verification mail; that would turn the safety net into a lockout.
 
-Enabling the gate never strands an existing login. `prisma/seed.ts` stamps the
-seeded demo accounts, migration `20260806160000_backfill_email_verified` settles
-old rows for anyone deploying with `prisma migrate deploy` — **and the gate does
-not depend on either**.
-
-That last part matters because production deploys with `prisma db push`
-(`vercel.json`), which syncs schema structure and never executes migration SQL,
-so the backfill does not run there. Instead the gate distinguishes the two
-meanings of a null `emailVerified` by asking whether a verification token was
-ever issued for that account: signup always issues one before the account can
-sign in, so "no token, ever" identifies exactly the accounts that predate the
-feature. Those are let through and stamped on first sign-in, so it resolves once
-per account rather than on every attempt.
-
-It fails open in one rare case by design — if issuing the token itself failed,
-the account is admitted. Locking someone out because our own mail system broke
-is the worse of the two outcomes.
-
-The resend endpoint answers identically for known and unknown addresses so it
-can't be used to enumerate accounts.
+Enabling the gate never strands an existing login. The gate distinguishes old accounts from new by whether a verification token was ever issued for that account: signup always issues one, so "no token, ever" identifies accounts that predate the feature, and those are let through and stamped on first sign-in.
 
 ### Preferences and unsubscribe
 
-`User.notificationPrefs` gained five email flags (`emailAnnouncements`, `emailEvents`,
-`emailTasks`, `emailMembership`, `emailIssues`) alongside the three existing in-app feed flags,
-which never expressed "don't mail me". They're toggled from **Profile → Notification
-preferences**, default on, and rows written before this change read as opted in.
+`User.notificationPrefs` has five email flags (`emailAnnouncements`, `emailEvents`, `emailTasks`, `emailMembership`, `emailIssues`), toggled from **Profile → Notification preferences**, default on.
 
-Every non-transactional email carries a signed opt-out link and the `List-Unsubscribe` /
-`List-Unsubscribe-Post` headers Gmail and Yahoo expect. `GET /api/email/unsubscribe` shows a
-confirmation; `POST` performs it — deliberately split, because mail clients pre-fetch links and a
-GET that unsubscribed would opt people out of mail they still want.
-
-`pinnedAnnouncementsOnly` is honoured too: someone with it on only gets announcement email for
-pinned posts.
+Every non-transactional email carries a signed opt-out link and the `List-Unsubscribe` / `List-Unsubscribe-Post` headers Gmail and Yahoo expect. `GET /api/email/unsubscribe` shows a confirmation; `POST` performs it, deliberately split because mail clients pre-fetch links.
 
 ### Idempotency and audit
 
-Every attempt writes an `EmailLog` row. `dedupeKey` is unique, so the claim doubles as the
-idempotency lock — a repeated key returns `duplicate` and mails nothing. On a genuine send
-failure the key is released (mangled to `failed:<id>:<key>`) so a retry can try again while the
-failed row survives for audit. `sendEmail` also passes the dedupe key to Resend as an
-`Idempotency-Key`, so an abandoned-but-succeeding request can't become a second delivery.
+Every attempt writes an `EmailLog` row. `dedupeKey` is unique and doubles as the idempotency lock: a repeated key returns `duplicate` and mails nothing. On a genuine send failure the key is released so a retry can try again, and the failed row survives for audit.
 
 ### Going live on a real domain
 
-The sending domain is **sangam-club.com** (registrar and DNS: Hostinger). Until it's verified,
-`EMAIL_FROM` uses Resend's `onboarding@resend.dev`, which **only delivers to the address that owns
-the Resend account** — enough to prove the flows, not enough for real recipients.
+The sending domain is **sangam-club.com** (registrar and DNS: Hostinger). Until it's verified, `EMAIL_FROM` uses Resend's `onboarding@resend.dev`, which only delivers to the address that owns the Resend account.
 
-**1. Add the domain in Resend.** [resend.com/domains](https://resend.com/domains) → **Add Domain**
-→ `sangam-club.com`. Pick the region closest to your users; it decides the MX hostname in the next
-step and can't be changed afterwards. Resend then shows the exact records to create.
+1. **Add the domain in Resend.** [resend.com/domains](https://resend.com/domains) → **Add Domain** → `sangam-club.com`. Pick the region closest to your users; it decides the MX hostname and can't be changed afterward.
+2. **Add the records in Hostinger.** hPanel → **Domains** → sangam-club.com → **DNS / Nameservers** → *DNS Records*. Resend gives three: a `TXT` DKIM key at `resend._domainkey`, a `TXT` SPF record at `send`, and an `MX` record at `send`.
 
-**2. Add the records in Hostinger.** hPanel → **Domains** → sangam-club.com → **DNS / Nameservers**
-→ *DNS Records*. Expect three from Resend, roughly:
+   > **Hostinger gotcha:** its editor appends the domain automatically. Enter `resend._domainkey` and `send`, not the full `resend._domainkey.sangam-club.com`, or it verifies against the wrong name.
+3. **Wait for verification**, or force it with **Verify DNS Records**. Check from a terminal:
+   ```bash
+   dig +short TXT resend._domainkey.sangam-club.com && dig +short TXT send.sangam-club.com && dig +short MX send.sangam-club.com
+   ```
+4. **Optional, recommended: DMARC.** Once SPF and DKIM verify, add a `TXT` record named `_dmarc`, value `v=DMARC1; p=none; rua=mailto:you@sangam-club.com`.
+5. **Flip the app over** in the Vercel project's environment variables:
 
-| Type | Name | Value |
-|---|---|---|
-| `TXT` | `resend._domainkey` | the DKIM public key (`p=…`), a long single string |
-| `TXT` | `send` | `v=spf1 include:amazonses.com ~all` |
-| `MX` | `send` | `feedback-smtp.<region>.amazonses.com`, priority `10` |
+   | Variable | Value |
+   |---|---|
+   | `RESEND_API_KEY` | a fresh key from [resend.com/api-keys](https://resend.com/api-keys) |
+   | `EMAIL_FROM` | `Sangam <no-reply@sangam-club.com>` |
+   | `APP_URL` | `https://sangam-club.com`, must match the origin the app is actually served from |
+   | `EMAIL_ALLOWLIST` | keep it pinned to your own address for a first live round |
+   | `EMAIL_ENABLED` | `true` |
+   | `CRON_SECRET` | `openssl rand -hex 32`, or the sweeps stay dark |
 
-Copy the values from the dashboard rather than the table above — the DKIM key and the region in the
-MX host are generated per domain.
-
-SPF and MX land on the `send.` subdomain even though mail is *from* the root domain: that's the
-Return-Path Resend uses for bounce handling, and it does not stop `no-reply@sangam-club.com`
-working as the visible sender.
-
-> **Hostinger gotcha:** its editor appends the domain automatically. Enter `resend._domainkey` and
-> `send`, **not** `resend._domainkey.sangam-club.com` — the latter becomes
-> `resend._domainkey.sangam-club.com.sangam-club.com` and never verifies. Leave TTL at the default.
-
-**3. Wait for verification.** Hostinger usually propagates in minutes; Resend rechecks on its own,
-and **Verify DNS Records** forces it. All records must read *Verified*. Check from a terminal with:
-
-```bash
-dig +short TXT resend._domainkey.sangam-club.com && dig +short TXT send.sangam-club.com && dig +short MX send.sangam-club.com
-```
-
-**4. Optional but recommended — DMARC.** Once SPF and DKIM verify, add one more `TXT` record,
-name `_dmarc`, value `v=DMARC1; p=none; rua=mailto:you@sangam-club.com`. Start at `p=none` so
-nothing is rejected while you watch the reports.
-
-**5. Flip the app over.** In the Vercel project's environment variables:
-
-| Variable | Value |
-|---|---|
-| `RESEND_API_KEY` | a fresh key from [resend.com/api-keys](https://resend.com/api-keys) |
-| `EMAIL_FROM` | `Sangam <no-reply@sangam-club.com>` |
-| `APP_URL` | `https://sangam-club.com` — must match the origin the app is actually served from, or every link in every email is dead |
-| `EMAIL_ALLOWLIST` | keep it pinned to your own address for a first live round |
-| `EMAIL_ENABLED` | `true` |
-| `CRON_SECRET` | `openssl rand -hex 32`, or the sweeps stay dark |
-
-**6. Prove it, then open up.** With the allowlist still pinned, trigger one real flow and confirm
-delivery. Only then clear `EMAIL_ALLOWLIST` to let mail reach actual members — that variable is the
-single thing standing between a bug and 45 students' inboxes.
+6. **Prove it, then open up.** With the allowlist still pinned, trigger one real flow and confirm delivery. Only then clear `EMAIL_ALLOWLIST` to let mail reach actual members.
 
 ```bash
 npx tsx scripts/send-test-email.ts you@sangam-club.com registrationConfirmation
@@ -551,48 +424,33 @@ npx tsx scripts/send-test-email.ts you@sangam-club.com registrationConfirmation
 
 ### Not yet wired
 
-Two items from the issue's email list have no trigger in the app yet, and the gap is a missing
-*feature*, not a missing email:
-
-- **"New reply on your issue"** — `Issue` has no comment or reply model, so there is nothing to
-  notify about. `notifyIssueReply` and its template are written and tested, ready for the moment
-  issue threads exist.
-- **AI handover brief** — `notifyHandoverBrief` is ready, but the brief generator itself is a
-  GenAI feature tracked separately (see the `add/gen-ai` branch); wiring it here would collide.
-
-**Bulk CSV member import sends nothing.** At the 500-row limit, mailing every imported member
-inline would hold the Server Action open for minutes and trip Resend's rate limit. Roster imports
-need a background job before they can notify.
+- **"New reply on your issue"**: `Issue` has no comment or reply model yet. `notifyIssueReply` and its template are written and tested, ready for when issue threads exist.
+- **AI handover brief**: `notifyHandoverBrief` is ready, but the brief generator itself is a separate GenAI feature not yet built.
+- **Bulk CSV member import sends nothing.** At the 500-row limit, mailing every imported member inline would hold the Server Action open for minutes. Roster imports need a background job before they can notify.
 
 ---
 
 ## Ask Sangam
 
-The gold sparkles button opens a drawer that answers from your club data and can propose writes.
-Those writes never hit the database until you **Accept** on the proposal card. **Reject** cancels
-cleanly (“Okay — I won't make that change.”). Multi-write asks (joined with `also`) can show
-**several** cards at once, plus **Accept all** / **Reject all**.
+A drawer that answers from your club data and can propose writes. Writes never hit the database until you **Accept** on the proposal card; **Reject** cancels cleanly. Multi-write asks (joined with "also") can show several cards at once, plus **Accept all** / **Reject all**.
 
-What you can *do* depends on the **dashboard shell** you’re browsing — not on phrases like
-“as admin” in the chat. Switch roles in the sidebar if you need a different toolkit.
+Built on the [Anthropic SDK](https://www.anthropic.com/api) with a custom classify → tool-call → propose → confirm loop, not the separate Claude Agent SDK package (see [Tech stack](#tech-stack)). Voice input transcribes through [Groq Whisper](https://groq.com/) before reaching the same pipeline.
+
+What you can *do* depends on the **dashboard shell** you're in, not on phrases like "as admin" in the chat: the write agent trusts the real session role, never the user's own wording. Switch roles in the sidebar for a different toolkit.
 
 ### Who can do what
 
 | Shell | Can ask / read | Can propose (Accept required) | Cannot do here |
 |---|---|---|---|
-| **Member** (`/app`) | Next events, announcements, own club memberships | — | Tasks, assign, bulk, roster, post announcements |
-| **Volunteer** (`/volunteer`) | Same as Member + **own** open tasks | Mark **your** tasks `todo` / `doing` / `done` | Assign / bulk, club roster load, post announcements |
-| **Coordinator** (`/coordinator`) | Events & announcements in scope + **club volunteer roster** + who has the most todo / doing / done / open tasks | Board task status · single assign · bulk assign · multi-ask (`also`) with N confirm cards | Post announcements (Admin only) |
-| **Admin** (`/admin`) | Announcements + club context | Draft / post announcements (role audience **or** named people + timing picker) | Task status, assign, bulk, roster aggregation |
-| **Faculty** (`/faculty`) | Approvals / upcoming events / announcements | — | Writes (tasks, assign, announcements) |
+| **Member** (`/app`) | Next events, announcements, own club memberships | none | Tasks, assign, bulk, roster, post announcements |
+| **Volunteer** (`/volunteer`) | Same as Member, plus **own** open tasks | Mark **your** tasks `todo` / `doing` / `done` | Assign / bulk, club roster load, post announcements |
+| **Coordinator** (`/coordinator`) | Events & announcements in scope, club volunteer roster, task load by status | Board task status, single assign, bulk assign, multi-ask (also) with N confirm cards | Post announcements (Admin only) |
+| **Admin** (`/admin`) | Everything Coordinator can, plus announcements + club context | Everything Coordinator can propose, plus draft/post announcements (role audience or named people, timing picker) | Nothing a Coordinator or Admin could do through the UI |
+| **Faculty** (`/faculty`) | Approvals, upcoming events, announcements | none | Writes (tasks, assign, announcements) |
 
-Wrong-shell asks get a short refuse (e.g. bulk assign as Volunteer, announcement as Coordinator,
-roster as Volunteer). Access follows the shell you opened, not self-labels in the prompt.
+Wrong-shell asks get a short refusal (e.g. bulk assign as Volunteer, announcement as Coordinator, roster as Volunteer).
 
 ### Try one from each write shell
-
-Use names and titles you actually see on the board (example chips in the drawer match the
-current DB when possible). After Accept, the page soft-refreshes.
 
 **Volunteer** (`/volunteer`)
 
@@ -600,7 +458,7 @@ current DB when possible). After Accept, the page soft-refreshes.
 Mark "Setup PA System" as doing
 ```
 
-**Coordinator** (`/coordinator`)
+**Coordinator** (`/coordinator`) or **Admin** (`/admin`)
 
 ```text
 List active volunteers
@@ -614,29 +472,21 @@ Mark "Independence Day Function Approval" as doing, also assign check-in to Pard
 Draft an announcement titled "Team sync" saying sync is Friday at 5pm for all members
 ```
 
-On announcements you’ll pick **who** (All / Volunteers / Coordinators, or a named person if you
-asked for one) and **when** (Send now vs digest), then Accept.
+On announcements you'll pick **who** (All / Volunteers / Coordinators, or a named person) and **when** (Send now vs. digest), then Accept.
 
 ### How a write feels
 
-1. You ask (or tap an example chip).  
-2. One or more proposal cards appear — Accept is disabled until any required pickers are chosen.  
-3. Accept runs the domain write and refreshes boards / lists. Reject burns the pending tokens.
-   With several cards, you can confirm each one or use **Accept all** / **Reject all**.
+1. You ask, or tap an example chip.
+2. One or more proposal cards appear. Accept is disabled until any required pickers are chosen.
+3. Accept runs the domain write and refreshes boards/lists. Reject burns the pending tokens. With several cards, confirm each one or use **Accept all** / **Reject all**.
 
-Ambiguous **tasks** (two “Booth setup” rows) use an on-card picker — not a chat follow-up. Ambiguous
-**people** for assign still clarify in chat before a proposal.
+Ambiguous **tasks** (two "Booth setup" rows) use an on-card picker, not a chat follow-up. Ambiguous **people** for assign clarify in chat before a proposal.
 
-Assign and announcement Accepts can email through the normal mailer (`taskAssigned`,
-`announcementNew` / digest). That only leaves the app when `EMAIL_ENABLED=true` and
-`RESEND_API_KEY` are set — otherwise you’ll see `[email:dry-run]` in the server log.
+Assign and announcement Accepts can email through the normal mailer. That only leaves the app when `EMAIL_ENABLED=true` and `RESEND_API_KEY` are set; otherwise you'll see `[email:dry-run]` in the server log.
 
 ### Under the hood (short)
 
-UI → Server Actions (`askSangamQueryAction` / `askSangamConfirmAction`) → classifier → write agent
-+ tool registry → signed pending token(s) → Accept → domain + `revalidatePath`. Legacy
-`/api/assistant/*` returns **410**.
-
+UI → Server Actions (`askSangamQueryAction` / `askSangamConfirmAction`) → classifier → write agent + tool registry → signed pending token(s) → Accept → domain + `revalidatePath`. Legacy `/api/assistant/*` returns **410**.
 
 ---
 
@@ -648,9 +498,9 @@ app/
   (member)/app/    dashboard, clubs (+ join requests), events (+ Count Me In), issues
                     (raise via modal + screenshot attachments, status filter), profile
                     (edit details + avatar upload, notification preference toggles)
-  (admin)/admin/   overview, members (+ add member, bulk CSV import), issues
-                    (filterable queue, per-row/bulk assignment), approvals, announcements
-                    (+ audience targeting), metrics, transparency, handover
+  (admin)/admin/   overview, events, volunteers, members (+ add member, bulk CSV import),
+                    issues (filterable queue, per-row/bulk assignment), approvals,
+                    announcements (+ audience targeting), metrics, transparency, handover
   (coordinator)/coordinator/  dashboard (+ New Event popup), all-events history, event
                     dashboard (registration, check-in, edit details), volunteers
   (volunteer)/volunteer/      task list with inline status updates, events (Count Me In)
@@ -658,61 +508,56 @@ app/
                     proposals (+ faculty access management)
   api/auth/[...nextauth]/     unrelated stub, see Tech stack above
   api/openapi/                serves docs/openapi.yaml
-  (public)/api-docs/          local Swagger UI (Try it out)
+  api/docs/                   Swagger UI (Try it out), same-origin
 
 docs/
-  openapi.yaml            Swagger-compatible OpenAPI 3 spec
-  design.md                design notes
-  testing-report.md        QA / testing writeup
-  test-cases/              per-endpoint test case docs, course-required format
+  openapi.yaml            Swagger-compatible OpenAPI 3 spec, served live
 
 components/
   ui/          Btn, GlassCard, Stat, StatusPill, Modal, shared design-system primitives
   shell/       AppShell (per-role sidebar/nav), PageHeader
   auth/        AuthShell (shared login/signup visual shell), OnboardingForm
   tasks/       TaskStatusButtons, shared between the volunteer and coordinator task boards
+  coordinator/ EventsListView, VolunteersView, EventDetailView, AssignTaskModal, and other
+               pieces shared between the Coordinator surface and Admin's native pages
   (route-local components, e.g. forms and list views specific to one page, live colocated
    next to their page.tsx inside app/, per Next.js convention, rather than under components/)
 
 backend/                  server-only code, never imported by client components
   auth/
-    app-session.ts         resolves the signed session cookie to the current user (no anonymous fallback)
+    app-session.ts         resolves the signed session cookie to the current user
     session-cookies.ts     signs and verifies the real session cookie
     authenticate-user.ts, create-user.ts, get-current-user.ts   auth domain logic shared
                             by both the REST routes (app/api/auth/*) and the form actions
     login-schema.ts, signup-schema.ts    zod schemas shared by both entry points
-    roles.ts                helpers for reading a user's per-club role from the session
+    roles.ts                per-club role helpers, including the Admin/Coordinator
+                            surface-inheritance rule (SURFACE_ROLES)
   api/
     http.ts                 jsonSuccess/jsonError response shape shared by REST routes
   db/
     prisma.ts                Prisma Client singleton
   domain/
-    workflow-rules.ts        status enums and authorization rules (requireClubAdminAccess,
-                              isEventPast, etc.)
+    workflow-rules.ts        status enums and authorization rules
     approvals.ts, countMeIn.ts, tasks.ts, events.ts, membership.ts   Server Actions and
                               domain logic shared across more than one route
     club-requests.ts         student club proposals; approval creates the Club and its
                               first Admin together (see Roles and provisioning)
     faculty.ts               grant/revoke institution-wide faculty access
+    assistant.ts              Ask Sangam's intent classification and read-only answers
+  assistant/
+    agent/                   the write-tool agent loop (Anthropic SDK, custom orchestration)
+    tools/                   per-capability tool definitions (assign, bulk assign, status,
+                              announcements), each with its own role gate
   email/                    all outbound email, see Email notifications below
-    client.ts                sendEmail() — the only place mail leaves the app: preference
-                              enforcement, allowlist, dry-run, idempotency claim, audit row
-    notifications.ts         one function per thing that happens (notifyMembershipApplied,
-                              notifyEventScheduleChange, …); what domain code calls
+    client.ts                sendEmail(), the only place mail leaves the app
+    notifications.ts         one function per thing that happens
     scheduled.ts             the cron sweeps: reminders, overdue nudges, announcement digest
-    templates.ts             one pure function per email; data in, subject/html/text out
-    render.ts                the shared HTML shell, escaping, and plain-text twin
-    recipients.ts            who gets a given email (audience → roles, registrants, faculty)
-    routes.ts                every in-app URL an email links to
-    config.ts, unsubscribe.ts   env resolution; signed one-click opt-out links
+    templates.ts, render.ts, recipients.ts, routes.ts, config.ts, unsubscribe.ts
 
 lib/                      frontend-facing helpers, safe to import from client components
-  seed-data.ts             static content not modeled as a DB table (landing-page copy, etc.)
-  notification-prefs.ts    parse/default helpers for the profile's notification toggles
-  interests.ts             parse/default helpers for signup interests and club recommendations
-  event-tags.ts            parse/serialize helpers for comma-separated event tags
-  format.ts                date/display formatting helpers
-  utils.ts                 cn() class-name helper
+  genai.ts                 Anthropic SDK client and completion helpers
+  groq.ts                   Groq Whisper transcription for voice input
+  seed-data.ts, notification-prefs.ts, interests.ts, event-tags.ts, format.ts, utils.ts
 
 prisma/
   schema.prisma            active schema
@@ -730,24 +575,17 @@ tests/
 
 Role is per-club, not global, as described in [Roles and provisioning](#roles-and-provisioning). Venues and Equipment are separate models, not a merged "Resource" type. The shape is shared exactly by `prisma/schema.prisma` and the live Postgres database via `backend/db/prisma.ts`.
 
-`EmailLog` and `EmailVerificationToken` support [Email notifications](#email-notifications):
-`EmailLog.dedupeKey` is unique and doubles as the idempotency lock for the cron sweeps, and only
-the SHA-256 hash of each verification token is stored, so a database leak can't be replayed as a
-valid link. `User.emailVerified` records the fact of verification; it is deliberately **not** a
-login gate, since that would lock out every account created before this feature.
+`EmailLog` and `EmailVerificationToken` support [Email notifications](#email-notifications). `EmailLog.dedupeKey` is unique and doubles as the idempotency lock for the cron sweeps. Only the SHA-256 hash of each verification token is stored, so a database leak can't be replayed as a valid link. `User.emailVerified` records the fact of verification; it's deliberately not a login gate, since that would lock out every account created before this feature.
 
 ---
 
 ## Deployment
 
-Production runs on Vercel, built from `main`. The database is Neon Postgres, connected through the Vercel Postgres integration, which manages `DATABASE_URL` automatically. `AUTH_SECRET` is set directly in the Vercel project's environment variables. Sessions require a signed cookie from login/signup — there is no anonymous demo persona.
+Production runs on Vercel, built from `main`. The database is Neon Postgres, connected through the Vercel Postgres integration, which manages `DATABASE_URL` automatically. `AUTH_SECRET` is set directly in the Vercel project's environment variables. Sessions require a signed cookie from login/signup; there's no anonymous demo persona.
 
 To point production at a fresh database: `npx prisma db push --schema=prisma/schema.prisma` against the new `DATABASE_URL`, then `npx tsx prisma/seed.ts` to load clubs, events, and the demo accounts.
 
-**Email.** `EMAIL_ENABLED` is left unset until a sender domain is verified, so production runs in
-dry-run and sends nothing. `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL` and `CRON_SECRET` go in the
-same Vercel environment variables as `AUTH_SECRET`; the daily sweeps in `vercel.json` are inert
-without `CRON_SECRET`. Full steps in [Going live on a real domain](#going-live-on-a-real-domain).
+**Email.** `EMAIL_ENABLED` is left unset until a sender domain is verified, so production runs in dry-run and sends nothing. `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL`, and `CRON_SECRET` go in the same Vercel environment variables as `AUTH_SECRET`; the daily sweeps in `vercel.json` are inert without `CRON_SECRET`. Full steps in [Going live on a real domain](#going-live-on-a-real-domain).
 
 ---
 

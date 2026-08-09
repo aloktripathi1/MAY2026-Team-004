@@ -5,7 +5,7 @@ info:
   summary: The club-operations platform for IITM BS student communities.
   description: |
     Sangam is where IITM BS clubs and societies run their day-to-day
-    operations — membership, events, task coordination, and announcements —
+    operations - membership, events, task coordination, and announcements -
     in one place, instead of scattered across WhatsApp threads and Google
     Forms. This document is the complete reference for its HTTP API.
 
@@ -26,10 +26,10 @@ info:
 
     ## API surface
     Two kinds of endpoints, documented together below:
-    - **REST CRUD APIs** — clubs, memberships, events, tasks, issues,
+    - **REST CRUD APIs** - clubs, memberships, events, tasks, issues,
       announcements, transparency logs, and account/session management.
       Conventional resource endpoints, JSON in and out.
-    - **GenAI APIs** (a dedicated section further down) — "Ask Sangam", a
+    - **GenAI APIs** (a dedicated section further down) - "Ask Sangam", a
       conversational assistant with two capabilities: grounded read-only
       Q&A over a member's own events/tasks/announcements/memberships, and
       an agentic write capability (single or bulk task assignment, task
@@ -40,7 +40,7 @@ info:
 
     ## Authentication
     Session-cookie based (`SangamSessionCookie`, set on login/signup).
-    There is no separate API-key or bearer-token flow — the API is the same
+    There is no separate API-key or bearer-token flow - the API is the same
     one the web app itself calls.
 
     ## Conventions
@@ -52,8 +52,8 @@ info:
 
     ## Interactive docs
     This spec is served live, same-origin, at `GET /api/openapi` (raw YAML),
-    with an interactive Swagger UI — including "Try it out" against a real
-    session — at `/api/docs`.
+    with an interactive Swagger UI - including "Try it out" against a real
+    session - at `/api/docs`.
   license:
     name: MIT
     url: https://github.com/aloktripathi1/MAY2026-Team-004/blob/main/LICENSE
@@ -78,17 +78,17 @@ tags:
     description: Demo stub only. Not part of the real auth REST surface.
   - name: GenAI
     description: |
-      Ask Sangam — kept separate from the regular CRUD APIs above.
+      Ask Sangam - kept separate from the regular CRUD APIs above.
       Structured retrieval-and-generation over Postgres (classify intent ->
       scoped Prisma query -> generate grounded answer), not vector RAG.
       Two legacy REST routes are retired (410 GONE); the real read + agentic
       write traffic goes through two Next.js Server Actions
-      (`x-transport: server-action`, no fetchable URL — documented under
+      (`x-transport: server-action`, no fetchable URL - documented under
       synthetic /_server-actions/... paths for their request/response
       contract). POST /api/assistant/transcribe (voice input, Groq Whisper)
       is a real REST route. Writes (task assignment, bulk assignment, status
       updates, announcements) always go through a signed propose -> confirm
-      pattern — nothing is written to the database without an explicit
+      pattern - nothing is written to the database without an explicit
       user Accept.
 
 paths:
@@ -375,7 +375,7 @@ paths:
 
         Requires a prior successful POST /api/auth/signup or POST /api/auth/login
         that set httpOnly cookies. Does NOT fall back to the mock demo persona
-        used by lib/mock-session.ts — unauthenticated requests get 401.
+        used by lib/mock-session.ts - unauthenticated requests get 401.
 
         User Story 1.1 - Institutional Credential Verification (session identity)
         Multi-role: returns all club memberships and accessibleAppRoles.
@@ -447,7 +447,7 @@ paths:
       summary: Clear the session cookie
       description: |
         Clears the signed sangam_session cookie. There is no separate
-        bearer/access token in Sangam and no server-side session store — the
+        bearer/access token in Sangam and no server-side session store - the
         cookie IS the credential, so clearing it is the entire logout. A raw
         copy of the cookie value made before logout would still verify (it's
         a stateless HMAC signature, not a revocable server-side record); if
@@ -816,13 +816,13 @@ paths:
       summary: Update a membership's status and/or role
       description: |
         Updates a membership's status (Active/Pending/Inactive), role
-        (Member/Volunteer/Coordinator), or both in one call — at least one
+        (Member/Volunteer/Coordinator), or both in one call - at least one
         of the two fields is required (enforced by a Zod `.refine`). Requires
         the caller to be an Admin of the membership's club.
 
         `role` deliberately excludes Admin: a club has exactly one Admin, and
         that handover is a distinct, transactional operation owned by
-        POST /admin/handover (Server Action `transferAdminAction` —
+        POST /admin/handover (Server Action `transferAdminAction` -
         demotes the outgoing Admin to Coordinator and promotes the successor
         in the same DB transaction), not this endpoint.
 
@@ -851,7 +851,7 @@ paths:
                 role:
                   type: string
                   enum: [Member, Volunteer, Coordinator]
-                  description: Never Admin — see description above.
+                  description: Never Admin - see description above.
             examples:
               approve:
                 summary: Approve a pending application
@@ -1455,7 +1455,7 @@ paths:
       summary: Faculty approval action
       description: |
         Sets an event's institutional approval status. Caller must have
-        `isFaculty: true` — faculty oversight is institution-wide, not
+        `isFaculty: true` - faculty oversight is institution-wide, not
         scoped to a single club.
 
         User Story 2.8 - Faculty Approval for Events
@@ -1485,7 +1485,7 @@ paths:
                   type: boolean
                   description: |
                     Required to reject an already-approved event that has
-                    registered participants — omit or set to false first to
+                    registered participants - omit or set to false first to
                     get the 409 confirmation prompt with the registrant count.
       responses:
         "200":
@@ -1639,7 +1639,7 @@ paths:
   # structured retrieval-and-generation over Postgres, not vector RAG: one
   # Claude call classifies intent + entities (backend/domain/assistant.ts),
   # a normal Prisma query runs scoped to the caller's own session
-  # (memberships / userId — never another club's or user's data), and a
+  # (memberships / userId - never another club's or user's data), and a
   # second Claude call turns the query result into a short natural-language
   # answer using only that data. If the query finds nothing, the fixed
   # "I don't have that information." response is returned and the
@@ -1648,13 +1648,13 @@ paths:
   # task_action, then an in-process tool agent proposes writes that the
   # user must Accept via POST /api/assistant/confirm. See lib/genai.ts.
   # ===========================================================================
-  # GenAI APIs — Ask Sangam
+  # GenAI APIs - Ask Sangam
   #
   # Two retired REST routes (kept only so old/external clients get a clear
   # error), one real REST route (voice input), and two Server Actions that
   # carry all of Ask Sangam's actual read + agentic-write traffic today.
   # Server Actions are Next.js's RPC mechanism (a POST to the originating
-  # page with a `Next-Action` header, not a conventional JSON REST route) —
+  # page with a `Next-Action` header, not a conventional JSON REST route) -
   # documented here under synthetic `/_server-actions/...` paths, each
   # tagged `x-transport: server-action`, so the request/response contract is
   # still fully specified even though there is no literal fetchable URL.
@@ -1664,7 +1664,7 @@ paths:
     post:
       tags:
         - GenAI
-      summary: "RETIRED — Ask Sangam Q&A (now askSangamQueryAction Server Action)"
+      summary: "RETIRED - Ask Sangam Q&A (now askSangamQueryAction Server Action)"
       description: |
         Permanently retired. Always returns 410 GONE. Ask Sangam moved to
         Server Actions (see /_server-actions/askSangamQueryAction below) so
@@ -1694,7 +1694,7 @@ paths:
     post:
       tags:
         - GenAI
-      summary: "RETIRED — confirm/reject (now askSangamConfirmAction Server Action)"
+      summary: "RETIRED - confirm/reject (now askSangamConfirmAction Server Action)"
       description: |
         Permanently retired. Always returns 410 GONE. See
         /_server-actions/askSangamConfirmAction below for the real,
@@ -1721,13 +1721,13 @@ paths:
     post:
       tags:
         - GenAI
-      summary: Ask Sangam voice input — speech-to-text via Groq Whisper
+      summary: Ask Sangam voice input - speech-to-text via Groq Whisper
       description: |
-        Real REST route (not a Server Action — the browser's MediaRecorder
+        Real REST route (not a Server Action - the browser's MediaRecorder
         output is a Blob, sent as multipart/form-data, which Server Actions
         don't accept as cleanly as a dedicated route). Transcribes a short
         voice recording and returns plain text for the caller to review and
-        edit before sending as an Ask Sangam message — never auto-submitted.
+        edit before sending as an Ask Sangam message - never auto-submitted.
 
         Calls the Groq API (model whisper-large-v3-turbo) via lib/groq.ts.
         Nothing else in the app uses Groq.
@@ -1778,7 +1778,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "422":
-          description: Groq returned an empty transcript — audio had no detectable speech (`EMPTY_TRANSCRIPT`).
+          description: Groq returned an empty transcript - audio had no detectable speech (`EMPTY_TRANSCRIPT`).
           content:
             application/json:
               schema:
@@ -1795,10 +1795,10 @@ paths:
       tags:
         - GenAI
       x-transport: server-action
-      summary: "[Server Action] Ask Sangam — Q&A + agentic write proposals"
+      summary: "[Server Action] Ask Sangam - Q&A + agentic write proposals"
       description: |
         `askSangamQueryAction` in backend/assistant/actions.ts. NOT a
-        fetchable URL — invoked directly from the AskSangam client
+        fetchable URL - invoked directly from the AskSangam client
         component as a Next.js Server Action. Documented here for its
         request/response contract only.
 
@@ -1812,28 +1812,28 @@ paths:
         - Runs the write-tool agent, which may return one or more signed
           `proposedAction`s. A single message can request multiple writes
           ("assign X, also mark Y done") via a deterministic "also" splitter
-          — each becomes its own proposal in `proposedActions`.
-        Nothing is ever written to the database by this call — only by
+          - each becomes its own proposal in `proposedActions`.
+        Nothing is ever written to the database by this call - only by
         askSangamConfirmAction, and only after explicit user Accept.
 
         The agentic write tools reachable this way (role-gated, see
         backend/assistant/tools/registry.ts):
-        - `assign_task` — single task, Coordinator or Admin
-        - `propose_bulk_task_assignments` — up to 50 rows in one shot, Coordinator or Admin
-        - `update_task_status` — todo/doing/done, Volunteer, Coordinator, or Admin
-        - `offer_task_status_choices` — disambiguation UI when 2+ tasks match (not a chat question)
-        - `propose_announcement` — role-audience or named recipients, Admin only
+        - `assign_task` - single task, Coordinator or Admin
+        - `propose_bulk_task_assignments` - up to 50 rows in one shot, Coordinator or Admin
+        - `update_task_status` - todo/doing/done, Volunteer, Coordinator, or Admin
+        - `offer_task_status_choices` - disambiguation UI when 2+ tasks match (not a chat question)
+        - `propose_announcement` - role-audience or named recipients, Admin only
 
         Admin outranks Coordinator here the same way it does on the REST
         event/task endpoints (an Admin never has to hold a separate
-        Coordinator membership) — a freshly-approved club's sole Admin can
+        Coordinator membership) - a freshly-approved club's sole Admin can
         assign its first task and manage its first event's task board
         through Ask Sangam without appointing a Coordinator first. This is
         scoped to the Admin's own `role: admin`
         shell only: the `role` field is still rejected outright unless the
         session actually holds it (see the `roleNotHeld` example below), so
         an Admin cannot pass `role: coordinator` to reach the Coordinator
-        chat shell — that would let Admin-only tools like
+        chat shell - that would let Admin-only tools like
         `propose_announcement` leak into a Coordinator-scoped actor, which
         is deliberately still blocked.
 
@@ -1864,13 +1864,13 @@ paths:
                     prompt explicitly states this role and instructs the
                     model to trust it over anything the user's own wording
                     claims (e.g. "as admin..." while actually in the
-                    coordinator shell) — resolved by real session role, not
+                    coordinator shell) - resolved by real session role, not
                     by user phrasing. Rejected outright if the session
                     doesn't actually hold this role.
       responses:
         "200":
           description: |
-            Always 200 at the transport level — Server Actions report
+            Always 200 at the transport level - Server Actions report
             failure via the `AskSangamActionResult` union's `ok` field, not
             an HTTP status code.
           content:
@@ -1894,7 +1894,7 @@ paths:
                   value:
                     ok: true
                     data:
-                      answer: "I can do that — please confirm below."
+                      answer: "I can do that - please confirm below."
                       sourceType: task
                       sourceHref: "/coordinator/volunteers"
                       proposedAction:
@@ -1908,7 +1908,7 @@ paths:
                   value:
                     ok: true
                     data:
-                      answer: "I can do that — please confirm each of the 2 actions below."
+                      answer: "I can do that - please confirm each of the 2 actions below."
                       sourceType: task
                       proposedActions:
                         - toolName: assign_task
@@ -1951,7 +1951,7 @@ paths:
         Token verification (backend/assistant/agent/pending-action.ts) is
         signed and single-use: `consume: false` on the first check so a
         failed accept doesn't burn the token, then `consume: true` once the
-        tool actually executes (accept) or immediately (reject) — so a
+        tool actually executes (accept) or immediately (reject) - so a
         replayed accept on an already-applied token correctly reports
         "already applied" rather than double-writing.
 
@@ -1985,7 +1985,7 @@ paths:
                   - $ref: "#/components/schemas/AskSangamActionFailure"
               examples:
                 accepted:
-                  summary: Accept — write applied
+                  summary: Accept - write applied
                   value:
                     ok: true
                     data:
@@ -1993,8 +1993,8 @@ paths:
                       sourceType: task
                       sourceHref: "/coordinator/volunteers"
                 rejected:
-                  summary: Reject — no write, DB unchanged
-                  value: { ok: true, data: { answer: "Okay — I won't make that change.", sourceType: null } }
+                  summary: Reject - no write, DB unchanged
+                  value: { ok: true, data: { answer: "Okay - I won't make that change.", sourceType: null } }
                 expired:
                   summary: Token TTL elapsed before Accept was clicked
                   value: { ok: false, error: "That proposed action expired. Ask again to get a fresh confirmation." }
@@ -2005,7 +2005,7 @@ paths:
                   summary: Token belongs to a different session
                   value: { ok: false, error: "That proposed action does not belong to your session." }
                 tampered:
-                  summary: Signature invalid — token edited or forged
+                  summary: Signature invalid - token edited or forged
                   value: { ok: false, error: "Invalid or tampered action token." }
                 roleMismatch:
                   summary: Session no longer holds the role the token was signed for
@@ -2068,7 +2068,7 @@ paths:
         - Auth
       summary: Complete a password reset with an emailed token
       description: |
-        No auto-login on success, unlike email verification — this changes
+        No auto-login on success, unlike email verification - this changes
         the password on an existing account rather than finishing a signup,
         so requiring a fresh sign-in confirms the new password actually
         works and doesn't hand a live session to anyone who merely had mail
@@ -2108,7 +2108,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "410":
-          description: Token was found but is no longer usable — already used (`USED`) or past its TTL (`EXPIRED`).
+          description: Token was found but is no longer usable - already used (`USED`) or past its TTL (`EXPIRED`).
           content:
             application/json:
               schema:
@@ -2125,7 +2125,7 @@ paths:
         - Auth
       summary: Re-send the email-verification link
       description: |
-        Same enumeration-safe pattern as forgot-password — always 200
+        Same enumeration-safe pattern as forgot-password - always 200
         regardless of whether the address exists or is already verified.
 
         Implements: Story 1.1
@@ -2167,7 +2167,7 @@ paths:
         - Auth
       summary: Confirm email via the link sent at signup (HTML landing page)
       description: |
-        Not a JSON API — recipients click this from a mail client, so it
+        Not a JSON API - recipients click this from a mail client, so it
         renders a small HTML page rather than returning a JSON error body
         (which would be useless to someone who just clicked "verify"). On
         success, sets session cookies and the page links into the app
@@ -2203,7 +2203,7 @@ paths:
         - Auth
       summary: Start Google OAuth sign-in (redirect)
       description: |
-        Kicks off the Google OAuth flow — sets a CSRF state cookie and
+        Kicks off the Google OAuth flow - sets a CSRF state cookie and
         redirects to Google's consent screen. No JSON request or response;
         always a 302. Redirects to /login?error=... if Google OAuth isn't
         configured (missing GOOGLE_CLIENT_ID/SECRET).
@@ -2224,7 +2224,7 @@ paths:
       description: |
         Google redirects here after consent. Verifies CSRF state, exchanges
         the code, creates/links the account, sets session cookies. Always a
-        302 — success goes to the user's home path, any failure (state
+        302 - success goes to the user's home path, any failure (state
         mismatch, revoked consent, disallowed email domain) goes back to
         /login?error=....
 
@@ -2248,7 +2248,7 @@ paths:
       summary: Export a club's full handover data bundle (Admin)
       description: |
         Members, events, tasks, issues, and announcements for the club as
-        one downloadable JSON file — built for GitHub issue #103 ("Full
+        one downloadable JSON file - built for GitHub issue #103 ("Full
         data export" button did nothing) so a successor Admin can actually
         inspect what they're inheriting. Returns a raw file download
         (Content-Disposition: attachment), not the usual jsonSuccess
@@ -2354,7 +2354,7 @@ paths:
         - Membership
       summary: Run a scheduled email sweep (Vercel Cron)
       description: |
-        Not session-authenticated — cron has no user. Authorized by a bearer
+        Not session-authenticated - cron has no user. Authorized by a bearer
         token (`Authorization: Bearer $CRON_SECRET`, constant-time compared)
         so an open URL can't be used to spam a club's members. POST is
         accepted as an alias of GET for the same sweep; OPTIONS returns 204
@@ -2393,7 +2393,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
-          description: "Unknown sweep name — not one of the five registered sweeps (`UNKNOWN_SWEEP`)."
+          description: "Unknown sweep name - not one of the five registered sweeps (`UNKNOWN_SWEEP`)."
           content:
             application/json:
               schema:
@@ -2439,7 +2439,7 @@ paths:
         - Membership
       summary: Show the unsubscribe confirmation page (HTML)
       description: |
-        Deliberately does NOT unsubscribe on GET — mail clients and
+        Deliberately does NOT unsubscribe on GET - mail clients and
         corporate link scanners pre-fetch every URL in a message, and a GET
         that unsubscribed would silently opt people out of mail they still
         want to receive. Shows a confirmation button instead; POST (below)
@@ -2461,7 +2461,7 @@ paths:
             text/html:
               schema: { type: string }
         "400":
-          description: Token missing or invalid. HTML page — "Link not valid".
+          description: Token missing or invalid. HTML page - "Link not valid".
           content:
             text/html:
               schema: { type: string }
@@ -2503,7 +2503,7 @@ components:
       name: sangam_session
       description: |
         Session established by POST /api/auth/signup or POST /api/auth/login.
-        A single httpOnly cookie holding an HMAC-signed userId — name, email,
+        A single httpOnly cookie holding an HMAC-signed userId - name, email,
         role, and memberships are never stored client-side and are always
         loaded fresh from the database per request. There is no separate
         bearer/access token: this cookie is the only credential, and
@@ -2515,7 +2515,7 @@ components:
         `Authorization: Bearer $CRON_SECRET`, constant-time compared.
         Vercel Cron sends this automatically per the schedule in
         vercel.json; not a user session. Fails closed if CRON_SECRET isn't
-        configured — no secret means no request can ever be told apart
+        configured - no secret means no request can ever be told apart
         from a stranger's.
 
   schemas:
@@ -2532,13 +2532,13 @@ components:
           type: string
           description: |
             Signed pending-action token. Primary token when there's a single
-            proposal; may be empty when `choices` is set — Accept must then
+            proposal; may be empty when `choices` is set - Accept must then
             use the selected choice's own token instead.
         status: { type: string, enum: [pending] }
         choices:
           type: array
           nullable: true
-          description: When set, UI must pick one option before Accept — never a chat follow-up question.
+          description: When set, UI must pick one option before Accept - never a chat follow-up question.
           items:
             type: object
             properties:
@@ -2628,7 +2628,7 @@ components:
           description: |
             Institutional email only. Must end with @ds.study.iitm.ac.in.
             Case-insensitive input; stored lowercase. The roll number is not
-            submitted separately — it's derived from the local part of this
+            submitted separately - it's derived from the local part of this
             address (everything before the @) and returned in the response.
           pattern: "^[^@\\s]+@ds\\.study\\.iitm\\.ac\\.in$"
           example: 23s1000999@ds.study.iitm.ac.in
@@ -2954,12 +2954,12 @@ components:
                   Case-insensitive match against Member/Volunteer/Coordinator/
                   Admin; any other value (empty, missing, or unrecognized)
                   silently falls back to Member. Not enforced by a
-                  request-schema enum — the fallback happens in
+                  request-schema enum - the fallback happens in
                   backend/domain/membership.ts, so a typo'd role degrades
                   gracefully instead of failing the whole row.
 
                   Note: a club has exactly one Admin, changed only through the
-                  transactional handover flow — a CSV row setting `role: Admin`
+                  transactional handover flow - a CSV row setting `role: Admin`
                   is not the intended path for that and should be avoided; the
                   single-member role-change endpoint already excludes Admin
                   for this reason, and bulk import is expected to match soon.
@@ -3007,7 +3007,7 @@ components:
 
     UpdateEventRequest:
       type: object
-      description: All fields optional — only supplied fields are updated.
+      description: All fields optional - only supplied fields are updated.
       properties:
         title: { type: string, minLength: 1 }
         description: { type: string, minLength: 1 }
