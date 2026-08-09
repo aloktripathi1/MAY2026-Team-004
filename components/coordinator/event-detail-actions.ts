@@ -21,6 +21,18 @@ async function requireCoordinatorForEvent(eventId: string) {
   return { event, membership };
 }
 
+/** This event-detail page is mounted at both /coordinator/events/[slug] and
+ * /admin/events/[slug] (Admin outranks Coordinator on this surface), so a
+ * write here has to revalidate both — an Admin editing from their own shell
+ * shouldn't see stale data. */
+function revalidateEventDetailSurfaces(eventSlug: string) {
+  revalidatePath(`/coordinator/events/${eventSlug}`);
+  revalidatePath("/coordinator");
+  revalidatePath(`/admin/events/${eventSlug}`);
+  revalidatePath("/admin/events");
+  revalidatePath("/admin");
+}
+
 export async function toggleCheckInAction(countMeInId: string, eventSlug: string) {
   const session = await getAppSession();
   if (!session?.user) throw new Error("Not authenticated");
@@ -31,7 +43,7 @@ export async function toggleCheckInAction(countMeInId: string, eventSlug: string
 
   await prisma.countMeIn.update({ where: { id: countMeInId }, data: { checkedIn: !countMeIn.checkedIn } });
 
-  revalidatePath(`/coordinator/events/${eventSlug}`);
+  revalidateEventDetailSurfaces(eventSlug);
 }
 
 export type BulkCheckInState = { error?: string; ok?: boolean; count?: number };
@@ -59,7 +71,7 @@ export async function bulkCheckInAction(
     data: { checkedIn: true },
   });
 
-  revalidatePath(`/coordinator/events/${eventSlug}`);
+  revalidateEventDetailSurfaces(eventSlug);
   return { ok: true, count: result.count };
 }
 
@@ -113,7 +125,6 @@ export async function updateEventAction(eventId: string, eventSlug: string, _pre
     if (changes.length > 0) await notifyEventScheduleChange(eventId, changes);
   }
 
-  revalidatePath(`/coordinator/events/${eventSlug}`);
-  revalidatePath("/coordinator");
+  revalidateEventDetailSurfaces(eventSlug);
   return { ok: true };
 }

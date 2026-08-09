@@ -2,10 +2,14 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/backend/db/prisma";
 import { assignTasksBulk, BULK_ASSIGN_MAX_ROWS } from "@/backend/domain/tasks";
+import { SURFACE_ROLES } from "@/backend/auth/roles";
 import type { AssistantTool, ToolActor } from "@/backend/assistant/tools/types";
 
+/** Mirrors canManageClub (domain/tasks.ts) — Admin outranks Coordinator here too. */
+const COORDINATOR_SURFACE_ROLES = new Set(SURFACE_ROLES.Coordinator ?? ["Coordinator"]);
+
 function coordinatorClubIds(actor: ToolActor): string[] {
-  return actor.memberships.filter((m) => m.role === "Coordinator").map((m) => m.clubId);
+  return actor.memberships.filter((m) => COORDINATOR_SURFACE_ROLES.has(m.role)).map((m) => m.clubId);
 }
 
 function canResolveAssignContext(actor: ToolActor): boolean {
@@ -45,7 +49,7 @@ const bulkAssignSchema = z.object({
 export const list_club_events: AssistantTool<z.infer<typeof listClubEventsSchema>> = {
   name: "list_club_events",
   description:
-    "List upcoming events for clubs where the user is a Coordinator. Use to resolve event names to eventId before assigning tasks.",
+    "List upcoming events for clubs where the user is a Coordinator or Admin. Use to resolve event names to eventId before assigning tasks.",
   risk: "read",
   requiresConfirmation: false,
   isAvailable: canResolveAssignContext,

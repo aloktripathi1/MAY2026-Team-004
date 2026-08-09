@@ -33,6 +33,8 @@ const navByRole: Record<Role, { label: string; to: string; icon: any }[]> = {
   ],
   admin: [
     { label: "Overview", to: "/admin", icon: LayoutDashboard },
+    { label: "Events", to: "/admin/events", icon: CalendarDays },
+    { label: "Volunteers", to: "/admin/volunteers", icon: HandHelping },
     { label: "Members", to: "/admin/members", icon: Users2 },
     { label: "Issues", to: "/admin/issues", icon: Ticket },
     { label: "Approvals", to: "/admin/approvals", icon: ClipboardCheck },

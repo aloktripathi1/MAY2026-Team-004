@@ -5,9 +5,9 @@ import { Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
 import { AnnouncementForm } from "./AnnouncementForm";
 
-export function NewAnnouncementButton({ onClick }: { onClick: () => void }) {
+export function NewAnnouncementButton({ onClick, className }: { onClick: () => void; className?: string }) {
   return (
-    <Btn size="sm" onClick={onClick}>
+    <Btn size="sm" className={className} onClick={onClick}>
       <Plus className="h-4 w-4" /> New announcement
     </Btn>
   );

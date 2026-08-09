@@ -6,12 +6,14 @@ import { Btn } from "@/components/ui/primitives";
 import { Modal } from "@/components/ui/Modal";
 import { NewEventForm } from "@/app/(coordinator)/coordinator/new/NewEventForm";
 
-export function NewEventModal({ variant = "primary", size, label = "New event" }: { variant?: "primary" | "ghost" | "outline" | "hot"; size?: "sm"; label?: string }) {
+export function NewEventModal({
+  variant = "primary", size, label = "New event", className,
+}: { variant?: "primary" | "ghost" | "outline" | "hot"; size?: "sm"; label?: string; className?: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <Btn size={size} variant={variant} onClick={() => setIsOpen(true)}>
+      <Btn size={size} variant={variant} className={className} onClick={() => setIsOpen(true)}>
         <Plus className="h-4 w-4" /> {label}
       </Btn>
 

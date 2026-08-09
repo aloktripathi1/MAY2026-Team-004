@@ -206,7 +206,7 @@ describe("assistant tool registry", () => {
     ]);
   });
 
-  it("offers bulk tools to coordinators and announcement tools to admins", () => {
+  it("offers bulk + task tools to coordinators, admins get those plus announcement tools", () => {
     const coordinatorNames = toolsForActor(coordinatorActor).map((t) => t.name);
     const adminNames = toolsForActor(adminActor).map((t) => t.name);
 
@@ -216,13 +216,15 @@ describe("assistant tool registry", () => {
     expect(coordinatorNames).toContain("list_club_events");
     expect(coordinatorNames).not.toContain("propose_announcement");
 
+    // Admin outranks Coordinator (SURFACE_ROLES) — gets the full task/event
+    // toolset on top of their existing announcement-only tools.
     expect(adminNames).toContain("propose_announcement");
     expect(adminNames).toContain("resolve_club_members_by_name");
-    expect(adminNames).not.toContain("assign_task");
-    expect(adminNames).not.toContain("update_task_status");
-    expect(adminNames).not.toContain("list_my_tasks");
-    expect(adminNames).not.toContain("list_club_events");
-    expect(adminNames).not.toContain("propose_bulk_task_assignments");
+    expect(adminNames).toContain("assign_task");
+    expect(adminNames).toContain("update_task_status");
+    expect(adminNames).toContain("list_my_tasks");
+    expect(adminNames).toContain("list_club_events");
+    expect(adminNames).toContain("propose_bulk_task_assignments");
   });
 
   it("offers status tools to volunteers but not assign/bulk/announce", () => {
@@ -254,21 +256,21 @@ describe("assistant tool registry", () => {
       member: new Set(toolsForActor(memberActor).map((t) => t.name)),
     };
 
-    // Status
+    // Status — an Admin outranks Coordinator on the task board too (SURFACE_ROLES).
     expect(byRole.volunteer.has("update_task_status")).toBe(true);
     expect(byRole.coordinator.has("update_task_status")).toBe(true);
-    expect(byRole.admin.has("update_task_status")).toBe(false);
+    expect(byRole.admin.has("update_task_status")).toBe(true);
     expect(byRole.member.has("update_task_status")).toBe(false);
 
-    // Single + bulk assign — coordinator only (not volunteer)
+    // Single + bulk assign — coordinator or admin (not volunteer, not member)
     expect(byRole.volunteer.has("assign_task")).toBe(false);
     expect(byRole.volunteer.has("propose_bulk_task_assignments")).toBe(false);
     expect(byRole.coordinator.has("assign_task")).toBe(true);
     expect(byRole.coordinator.has("propose_bulk_task_assignments")).toBe(true);
-    expect(byRole.admin.has("assign_task")).toBe(false);
-    expect(byRole.admin.has("propose_bulk_task_assignments")).toBe(false);
+    expect(byRole.admin.has("assign_task")).toBe(true);
+    expect(byRole.admin.has("propose_bulk_task_assignments")).toBe(true);
 
-    // Announcements — admin only
+    // Announcements — admin only, Coordinator does not inherit upward
     expect(byRole.admin.has("propose_announcement")).toBe(true);
     expect(byRole.admin.has("resolve_club_members_by_name")).toBe(true);
     expect(byRole.volunteer.has("propose_announcement")).toBe(false);
