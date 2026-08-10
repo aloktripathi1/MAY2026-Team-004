@@ -34,6 +34,10 @@ async function main() {
   const now = new Date();
 
   // Wipe in FK-safe order so re-seed is idempotent.
+  await prisma.emailVerificationToken.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.emailLog.deleteMany();
+  await prisma.clubRequest.deleteMany();
   await prisma.countMeIn.deleteMany();
   await prisma.contribution.deleteMany();
   await prisma.task.deleteMany();
@@ -47,7 +51,7 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.club.deleteMany();
 
-  const passwordHash = await bcrypt.hash("sangam", 10);
+  const passwordHash = await bcrypt.hash("Sangam@2026", 10);
 
   // ---------- clubs ----------
   await prisma.club.createMany({
@@ -68,7 +72,7 @@ async function main() {
   });
   const clubIdBySlug = new Map(seedClubs.map((c) => [c.slug, c.id]));
 
-  // ---------- bulk members (m1..mN) ----------
+  // ---------- fictional roster (m1..m38) ----------
   const memberUserId = (memberId: string) => memberId.replace(/^m/, "u");
   await prisma.user.createMany({
     data: seedMembers.map((member) => ({
@@ -96,15 +100,7 @@ async function main() {
       joinedAt: ago(m.joinedDaysAgo),
     })),
   );
-
-  // Demo session (u1) holds three extra roles beyond her own CodeChef Admin
-  // seat, for QA persona switching from a single account.
-  const demoMemberships: Prisma.MembershipCreateManyInput[] = [
-    { id: "demo-u1-e-cell", userId: "u1", clubId: "c6", role: "Coordinator", status: "Active", joinedAt: ago(620) },
-    { id: "demo-u1-sarga", userId: "u1", clubId: "c3", role: "Volunteer", status: "Active", joinedAt: ago(620) },
-    { id: "demo-u1-paradox", userId: "u1", clubId: "c2", role: "Member", status: "Active", joinedAt: ago(620) },
-  ];
-  await prisma.membership.createMany({ data: [...membershipRows, ...demoMemberships] });
+  await prisma.membership.createMany({ data: membershipRows });
 
   // ---------- dedicated faculty (no club membership, isFaculty only) ----------
   await prisma.user.createMany({
@@ -162,7 +158,7 @@ async function main() {
       title: a.title,
       body: a.body,
       clubId: clubIdBySlug.get(a.clubSlug)!,
-      authorId: "u1",
+      authorId: memberUserId(a.authorId),
       pinned: a.pinned,
       audience: a.audience,
       priority: a.priority,
@@ -223,7 +219,7 @@ async function main() {
       .map(({ id, name, capacity, availability }) => ({ id, name, quantity: capacity, availability })),
   });
 
-  // ---------- transparency log (one per past event) ----------
+  // ---------- transparency log (one per past flagship event) ----------
   await prisma.transparencyLogEntry.createMany({
     data: transparencyLog.map((t) => ({
       id: t.id,
@@ -237,8 +233,9 @@ async function main() {
     })),
   });
 
-  // ---------- team test accounts — one per app role (documented in README) ----------
-  // Password pattern: FirstName@2026
+  // ---------- the team's 5 real accounts — one per app role (documented in README) ----------
+  // Password pattern: FirstName@2026. Each is seeded with real, role-appropriate
+  // data (not just a bare login) per the seed spec.
   const teamAccounts = [
     {
       id: "u-alok",
@@ -247,7 +244,7 @@ async function main() {
       rollNumber: "23f3003225",
       password: "Alok@2026",
       isFaculty: true,
-      membership: null as null | { clubId: string; role: "Admin" | "Volunteer" | "Coordinator" | "Member" },
+      memberships: [] as { clubSlug: string; role: "Admin" | "Volunteer" | "Coordinator" | "Member" }[],
     },
     {
       id: "u-vishal",
@@ -256,7 +253,8 @@ async function main() {
       rollNumber: "23f2005593",
       password: "Vishal@2026",
       isFaculty: false,
-      membership: { clubId: "c1", role: "Admin" as const },
+      // Co-admin of E-Cell alongside Aditya Raghunathan (m1) — realistic for a larger club.
+      memberships: [{ clubSlug: "e-cell", role: "Admin" as const }],
     },
     {
       id: "u-pardhiv",
@@ -265,7 +263,7 @@ async function main() {
       rollNumber: "23f3004115",
       password: "Pardhiv@2026",
       isFaculty: false,
-      membership: { clubId: "c3", role: "Volunteer" as const },
+      memberships: [{ clubSlug: "codechef", role: "Volunteer" as const }],
     },
     {
       id: "u-purnendu",
@@ -274,7 +272,8 @@ async function main() {
       rollNumber: "22f2000147",
       password: "Purnendu@2026",
       isFaculty: false,
-      membership: { clubId: "c6", role: "Coordinator" as const },
+      // Arena Chess Club had no dedicated coordinator in the fictional roster — clean assignment.
+      memberships: [{ clubSlug: "arena", role: "Coordinator" as const }],
     },
     {
       id: "u-yalla",
@@ -283,7 +282,11 @@ async function main() {
       rollNumber: "23f3003728",
       password: "Ashish@2026",
       isFaculty: false,
-      membership: { clubId: "c2", role: "Member" as const },
+      memberships: [
+        { clubSlug: "codechef", role: "Member" as const },
+        { clubSlug: "arena", role: "Member" as const },
+        { clubSlug: "quill", role: "Member" as const },
+      ],
     },
   ];
 
@@ -301,43 +304,49 @@ async function main() {
         emailVerified: now,
       },
     });
-    if (account.membership) {
+    for (const [index, membership] of account.memberships.entries()) {
       await prisma.membership.create({
         data: {
-          id: `team-${account.id}`,
+          id: `team-${account.id}-${membership.clubSlug}`,
           userId: account.id,
-          clubId: account.membership.clubId,
-          role: account.membership.role,
+          clubId: clubIdBySlug.get(membership.clubSlug)!,
+          role: membership.role,
           status: "Active",
-          joinedAt: ago(600),
+          joinedAt: ago(600 - index * 10),
         },
       });
     }
   }
 
-  // ---------- personal data for the 5 documented demo accounts ----------
-  // The loop above only gives each team account a bare membership row — real
-  // demo/QA logins need their own tasks, issues, contributions, and
-  // announcements too, not just a seat borrowed from the generic bulk
-  // dataset (which never references these account ids at all).
-  const sargaEvents = await prisma.event.findMany({ where: { clubId: "c3" }, orderBy: { date: "asc" } });
-  const eCellEvents = await prisma.event.findMany({ where: { clubId: "c6" }, orderBy: { date: "asc" } });
+  // ---------- Alok (Faculty) — a pending club request to approve live ----------
+  await prisma.clubRequest.create({
+    data: {
+      id: "cr-vaad-debate-collective",
+      name: "Vaad Debate Collective",
+      tagline: "A second home for competitive debate, focused on Asians-style.",
+      category: "Literary",
+      description: "A new debate collective focused on Asian Parliamentary format, complementing Paradox's British Parliamentary focus. Weekly practice rounds, open to all experience levels.",
+      emoji: "◈",
+      status: "Pending",
+      requestedById: memberUserId("m35"), // Manish Goyal
+      createdAt: ago(2),
+      updatedAt: ago(2),
+    },
+  });
 
+  // ---------- Pardhiv (Volunteer) — cross-club task load, one deliberately overdue ----------
   const pardhivTaskDefs = [
-    { title: "Confirm PA system booking", role: "Logistics", status: "todo" as const, priority: "High" as const, dueInDays: 2 },
-    { title: "Brief new volunteers on setup", role: "Coordination", status: "todo" as const, priority: "Med" as const, dueInDays: 4 },
-    { title: "Test mic levels before soundcheck", role: "Tech ops", status: "doing" as const, priority: "Med" as const, dueInDays: 1 },
-    { title: "Post rehearsal recap on Discord", role: "Content", status: "done" as const, priority: "Low" as const, dueInDays: -3 },
-    { title: "Arrange green-room snacks", role: "Hospitality", status: "done" as const, priority: "Low" as const, dueInDays: -10 },
+    { id: "team-task-pardhiv-1", title: "Sound check and mic setup", eventSlug: "fusion-night-vi-sarga-live-sarga", role: "Tech ops", status: "todo" as const, priority: "Med" as const, dueInDays: 3 },
+    { id: "team-task-pardhiv-2", title: "Judge briefing document", eventSlug: "hack-a-sangam-24h-codechef", role: "Coordination", status: "done" as const, priority: "Med" as const, dueInDays: -18 },
+    { id: "team-task-pardhiv-3", title: "Sponsor booth coordination", eventSlug: "ignite-2026-startup-weekend-e-cell", role: "Coordination", status: "doing" as const, priority: "High" as const, dueInDays: 3 },
+    { id: "team-task-pardhiv-4", title: "Registration desk", eventSlug: "ignite-2026-startup-weekend-e-cell", role: "Logistics", status: "todo" as const, priority: "High" as const, dueInDays: -2 },
   ];
-  for (const [index, def] of pardhivTaskDefs.entries()) {
-    const event = sargaEvents[index % Math.max(sargaEvents.length, 1)];
-    if (!event) continue;
+  for (const def of pardhivTaskDefs) {
     await prisma.task.create({
       data: {
-        id: `team-task-pardhiv-${index + 1}`,
+        id: def.id,
         title: def.title,
-        eventId: event.id,
+        eventId: eventIdBySlug.get(def.eventSlug)!,
         role: def.role,
         dueAt: fromNow(def.dueInDays),
         status: def.status,
@@ -346,124 +355,66 @@ async function main() {
       },
     });
   }
+  await prisma.contribution.create({
+    data: {
+      id: "team-contribution-pardhiv-1",
+      userId: "u-pardhiv",
+      eventId: eventIdBySlug.get("hack-a-sangam-24h-codechef")!,
+      role: "Coordination",
+      hoursLogged: 7.5,
+      verifiedAt: ago(16),
+    },
+  });
 
+  // ---------- Purnendu (Coordinator, Arena) — open tasks ready to hand off to volunteers ----------
   const purnenduTaskDefs = [
-    { title: "Confirm sponsor booth setup", role: "Logistics", status: "todo" as const, priority: "High" as const, dueInDays: 3 },
-    { title: "Brief judges on scoring rubric", role: "Coordination", status: "todo" as const, priority: "High" as const, dueInDays: 5 },
-    { title: "Finalize mentor slot roster", role: "Coordination", status: "doing" as const, priority: "Med" as const, dueInDays: 2 },
-    { title: "Draft post-event survey", role: "Content", status: "todo" as const, priority: "Low" as const, dueInDays: 8 },
-    { title: "Confirm venue booking with facilities", role: "Logistics", status: "done" as const, priority: "Med" as const, dueInDays: -6 },
+    { id: "team-task-purnendu-1", title: "Board setup", eventSlug: "bullet-chess-night-arena", role: "Logistics", status: "todo" as const, priority: "Med" as const, dueInDays: 5, assigneeId: memberUserId("m17") }, // Siddharth Bose
+    { id: "team-task-purnendu-2", title: "Pairing sheet printing", eventSlug: "bullet-chess-night-arena", role: "Logistics", status: "todo" as const, priority: "Low" as const, dueInDays: 4, assigneeId: memberUserId("m17") },
+    { id: "team-task-purnendu-3", title: "Arbiter coordination", eventSlug: "rating-ladder-round-5-arena", role: "Coordination", status: "todo" as const, priority: "Med" as const, dueInDays: 17, assigneeId: memberUserId("m11") }, // Rohan Kulkarni
   ];
-  for (const [index, def] of purnenduTaskDefs.entries()) {
-    const event = eCellEvents[index % Math.max(eCellEvents.length, 1)];
-    if (!event) continue;
+  for (const def of purnenduTaskDefs) {
     await prisma.task.create({
       data: {
-        id: `team-task-purnendu-${index + 1}`,
+        id: def.id,
         title: def.title,
-        eventId: event.id,
+        eventId: eventIdBySlug.get(def.eventSlug)!,
         role: def.role,
         dueAt: fromNow(def.dueInDays),
         status: def.status,
         priority: def.priority,
-        assigneeId: "u-purnendu",
+        assigneeId: def.assigneeId,
       },
     });
   }
 
-  // A few verified volunteer hours for Pardhiv on past Sarga events.
-  const pastSargaEvents = sargaEvents.filter((e) => e.status === "past");
-  const pardhivContributionDefs = [
-    { role: "Volunteer crew", hoursLogged: 6.5 },
-    { role: "Tech ops", hoursLogged: 4.0 },
-    { role: "Hospitality", hoursLogged: 3.5 },
-  ];
-  for (const [index, def] of pardhivContributionDefs.entries()) {
-    const event = pastSargaEvents[index % Math.max(pastSargaEvents.length, 1)];
-    if (!event) continue;
-    await prisma.contribution.create({
-      data: {
-        id: `team-contribution-pardhiv-${index + 1}`,
-        userId: "u-pardhiv",
-        eventId: event.id,
-        role: def.role,
-        hoursLogged: def.hoursLogged,
-        verifiedAt: ago(10 + index * 15),
-      },
-    });
-  }
-
-  // Yalla (Paradox member) raising real, varied-status issues.
-  const yallaIssueDefs = [
-    { title: "Can't count myself in - button loops", category: "Registration" as const, status: "Open" as const, priority: "Med" as const, daysAgo: 3, assigneeId: undefined as string | undefined },
-    { title: "Waitlist position not updating", category: "Registration" as const, status: "InProgress" as const, priority: "Low" as const, daysAgo: 9, assigneeId: "u-vishal" },
-    { title: "Club page shows outdated tagline", category: "Other" as const, status: "Resolved" as const, priority: "Low" as const, daysAgo: 20, assigneeId: undefined as string | undefined },
-  ];
-  for (const [index, def] of yallaIssueDefs.entries()) {
-    await prisma.issue.create({
-      data: {
-        id: `team-issue-yalla-${index + 1}`,
-        title: def.title,
-        category: def.category,
-        status: def.status,
-        raisedById: "u-yalla",
-        assigneeId: def.assigneeId ?? null,
-        clubId: "c2",
-        priority: def.priority,
-        createdAt: ago(def.daysAgo),
-      },
-    });
-  }
-
-  // Announcements authored by the admin and coordinator team accounts themselves.
-  const vishalAnnouncementDefs = [
-    { title: "Regionals onsite squad meeting Friday", body: "Mandatory meeting for everyone on the regionals travel squad — logistics and jersey sizing.", pinned: true, daysAgo: 2 },
-    { title: "New judging panel for internal contests", body: "Rotating in two new problem-setters this month — expect fresh problem styles.", pinned: false, daysAgo: 8 },
-  ];
-  for (const [index, def] of vishalAnnouncementDefs.entries()) {
-    await prisma.announcement.create({
-      data: {
-        id: `team-announcement-vishal-${index + 1}`,
-        title: def.title,
-        body: def.body,
-        clubId: "c1",
-        authorId: "u-vishal",
-        pinned: def.pinned,
-        audience: "All",
-        priority: "Med",
-        createdAt: ago(def.daysAgo),
-      },
-    });
-  }
-
-  const purnenduAnnouncementDefs = [
-    { title: "Ignite venue change confirmed", body: "Startup weekend moves to the Amphitheatre — same dates, bigger room.", pinned: true, daysAgo: 4 },
-    { title: "Coordinator office hours this week", body: "Drop by the E-Cell lounge Wednesday if you need help with your pitch deck.", pinned: false, daysAgo: 11 },
-  ];
-  for (const [index, def] of purnenduAnnouncementDefs.entries()) {
-    await prisma.announcement.create({
-      data: {
-        id: `team-announcement-purnendu-${index + 1}`,
-        title: def.title,
-        body: def.body,
-        clubId: "c6",
-        authorId: "u-purnendu",
-        pinned: def.pinned,
-        audience: "All",
-        priority: "Med",
-        createdAt: ago(def.daysAgo),
-      },
-    });
-  }
+  // ---------- Yalla (Member) — registrations and one submitted issue ----------
+  await prisma.countMeIn.createMany({
+    data: [
+      { id: "team-countmein-yalla-1", eventId: eventIdBySlug.get("weekly-cook-off-48-codechef")!, userId: "u-yalla", checkedIn: false, createdAt: ago(1) },
+      { id: "team-countmein-yalla-2", eventId: eventIdBySlug.get("bullet-chess-night-arena")!, userId: "u-yalla", checkedIn: false, createdAt: ago(2) },
+    ],
+  });
+  await prisma.issue.create({
+    data: {
+      id: "team-issue-yalla-1",
+      title: "Certificate not generated after event",
+      category: "Other",
+      status: "InProgress",
+      raisedById: "u-yalla",
+      clubId: clubIdBySlug.get("codechef")!,
+      priority: "Med",
+      createdAt: ago(6),
+    },
+  });
 
   console.log("Seed complete.");
-  console.log(`Clubs: ${seedClubs.length} · Members: ${seedMembers.length + teamAccounts.length + seedFaculty.length} · Events: ${seedEvents.length} · Tasks: ${seedTasks.length} · Announcements: ${seedAnnouncements.length} · Issues: ${seedIssues.length}`);
-  console.log("Demo login: 23s1000123@ds.study.iitm.ac.in / sangam");
+  console.log(`Clubs: ${seedClubs.length} · Members: ${seedMembers.length + teamAccounts.length + seedFaculty.length} · Events: ${seedEvents.length} · Tasks: ${seedTasks.length + pardhivTaskDefs.length + purnenduTaskDefs.length} · Announcements: ${seedAnnouncements.length} · Issues: ${seedIssues.length + 1}`);
   console.log("Team role logins (password = FirstName@2026):");
   for (const account of teamAccounts) {
-    const roleLabel = account.isFaculty ? "Faculty" : account.membership!.role;
+    const roleLabel = account.isFaculty ? "Faculty" : account.memberships[0]?.role ?? "Member";
     console.log(`  ${roleLabel.padEnd(12)} ${account.email} / ${account.password}`);
   }
+  console.log("Fictional roster login password (all 38 + 2 faculty): Sangam@2026");
 }
 
 main()
