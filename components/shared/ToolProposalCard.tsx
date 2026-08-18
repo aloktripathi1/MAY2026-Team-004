@@ -1,6 +1,7 @@
 "use client";
 
-import { Btn, StatusPill } from "@/components/ui/primitives";
+import { Check, X } from "lucide-react";
+import { Btn } from "@/components/ui/primitives";
 import type {
   AssistantProposedChoice,
   AssistantProposedChoiceGroup,
@@ -10,7 +11,6 @@ import { cn } from "@/lib/utils";
 export type ProposalCardState = "pending" | "accepting" | "rejecting" | "accepted" | "rejected";
 
 export type ToolProposalCardProps = {
-  toolName: string;
   summary: string;
   argsPreview: Record<string, string>;
   choices?: AssistantProposedChoice[];
@@ -43,7 +43,6 @@ function resolveCompositeChoiceId(
 }
 
 export function ToolProposalCard({
-  toolName,
   summary,
   argsPreview,
   choices,
@@ -73,13 +72,7 @@ export function ToolProposalCard({
 
   return (
     <div className="night-panel mt-2 rounded-xl p-3.5">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-mono-label text-secondary">{toolName.replaceAll("_", " ")}</p>
-        <StatusPill tone={state === "accepted" ? "green" : state === "rejected" ? "slate" : "amber"}>
-          {state === "accepted" ? "Done" : state === "rejected" ? "Rejected" : "Pending"}
-        </StatusPill>
-      </div>
-      <p className="mt-2 text-sm leading-relaxed text-white/[0.9]">{summary}</p>
+      <p className="text-sm leading-relaxed text-white/[0.9]">{summary}</p>
 
       {needsChoice && !decided && multiGroup && (
         <div className="mt-3 space-y-4 border-t border-white/10 pt-3">
@@ -178,7 +171,24 @@ export function ToolProposalCard({
           })}
         </dl>
       )}
-      {!decided && (
+      {decided ? (
+        <div
+          className={cn(
+            "mt-3 flex items-center gap-1.5 text-xs font-medium",
+            state === "accepted" ? "text-success" : "text-muted-foreground",
+          )}
+        >
+          {state === "accepted" ? (
+            <>
+              <Check className="h-3.5 w-3.5" /> Applied
+            </>
+          ) : (
+            <>
+              <X className="h-3.5 w-3.5" /> Rejected
+            </>
+          )}
+        </div>
+      ) : (
         <div className="mt-3 flex gap-2">
           <Btn type="button" variant="primary" size="sm" disabled={acceptDisabled} onClick={onAccept}>
             {state === "accepting" ? "Applying…" : "Accept"}

@@ -706,7 +706,6 @@ export function AskSangam({ role }: { role: AppRole }) {
                               message.proposals?.map((slot, actionIndex) => (
                                 <ToolProposalCard
                                   key={`${index}-${actionIndex}-${slot.action.toolName}`}
-                                  toolName={slot.action.toolName}
                                   summary={slot.action.summary}
                                   argsPreview={slot.action.argsPreview}
                                   choices={slot.action.choices}
