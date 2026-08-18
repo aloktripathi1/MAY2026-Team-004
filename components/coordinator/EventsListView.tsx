@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/backend/db/prisma";
 import { GlassCard, StatusPill } from "@/components/ui/primitives";
+import { EventThumbnail } from "@/components/ui/EventThumbnail";
 import { formatEventDate, formatWeekday, formatDayNumber } from "@/lib/format";
 import { normalizeEventTags } from "@/lib/event-tags";
+import { cn } from "@/lib/utils";
 import { Calendar, MapPin, Users } from "lucide-react";
 
 /**
@@ -10,23 +12,111 @@ import { Calendar, MapPin, Users } from "lucide-react";
  * own page and the Admin's native /admin/events page can mount the identical
  * component instead of two copies drifting apart. `basePath` picks which
  * shell's event-detail route each card links to, so an Admin stays in their
- * own shell instead of bouncing to /coordinator on drill-down.
+ * own shell instead of bouncing to /coordinator on drill-down. `layout`
+ * switches the presentation only — same query, same data, same links —
+ * "grid" is the YouTube-style card grid used by the Admin events page,
+ * "list" (default) keeps the Coordinator surface's original row layout.
  */
-export async function EventsListView({ clubId, basePath = "/coordinator" }: { clubId: string; basePath?: string }) {
+export async function EventsListView({
+  clubId,
+  basePath = "/coordinator",
+  layout = "list",
+}: {
+  clubId: string;
+  basePath?: string;
+  layout?: "list" | "grid";
+}) {
   const events = await prisma.event.findMany({
     where: { clubId },
     orderBy: { date: "desc" },
     include: { _count: { select: { countMeIns: true } } },
   });
 
+  if (events.length === 0) {
+    return (
+      <GlassCard className={cn("max-w-3xl p-8 text-center text-sm text-muted-foreground", layout === "grid" && "mx-auto")}>
+        No events found. Click "New event" above to publish one.
+      </GlassCard>
+    );
+  }
+
+  if (layout === "grid") {
+    return (
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {events.map((e) => {
+          const tagsList = normalizeEventTags(e.tags);
+          return (
+            <Link key={e.id} href={`${basePath}/events/${e.slug}`} className="group block h-full">
+              <GlassCard className="flex h-full flex-col overflow-hidden p-0">
+                <div className="relative h-40 w-full shrink-0 overflow-hidden">
+                  <div className="h-full w-full transition duration-500 ease-out group-hover:scale-105">
+                    <EventThumbnail title={e.title} cover={e.cover} photo={e.photo} size="hero" className="rounded-none" />
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
+
+                  <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+                    <StatusPill tone={e.status === "live" ? "green" : e.status === "upcoming" ? "amber" : "slate"}>
+                      {e.status}
+                    </StatusPill>
+                    {e.approval && (
+                      <span className="rounded-md bg-black/50 px-2 py-0.5 text-[10px] font-medium capitalize text-white backdrop-blur">
+                        {e.approval}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-2.5 p-5">
+                  <h3 className="line-clamp-2 text-base font-semibold leading-snug text-white transition group-hover:text-secondary">
+                    {e.title}
+                  </h3>
+
+                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {formatEventDate(e.date)} · {e.time}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{e.venue}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        {e._count.countMeIns} / {e.capacity} counted in
+                      </span>
+                    </div>
+                  </div>
+
+                  {e.description && (
+                    <p className="line-clamp-2 text-xs text-muted-foreground/80">{e.description}</p>
+                  )}
+
+                  {tagsList.length > 0 && (
+                    <div className="mt-auto flex flex-wrap gap-1 pt-1">
+                      {tagsList.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] text-muted-foreground"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </GlassCard>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl space-y-4">
-      {events.length === 0 && (
-        <GlassCard className="p-8 text-center text-sm text-muted-foreground">
-          No events found. Click "New event" above to publish one.
-        </GlassCard>
-      )}
-
       {events.map((e) => {
         const tagsList = normalizeEventTags(e.tags);
         return (

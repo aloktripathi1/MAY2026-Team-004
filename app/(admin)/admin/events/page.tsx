@@ -26,7 +26,7 @@ export default async function AdminEventsPage() {
         description="Full history and records of events hosted by your club."
         actions={<NewEventModal />}
       />
-      <EventsListView clubId={membership.clubId} basePath="/admin" />
+      <EventsListView clubId={membership.clubId} basePath="/admin" layout="grid" />
     </>
   );
 }
