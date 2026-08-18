@@ -146,13 +146,36 @@ export function ToolProposalCard({
       )}
 
       {Object.keys(preview).length > 0 && (
-        <dl className="mt-3 space-y-1.5 border-t border-white/10 pt-3">
-          {Object.entries(preview).map(([key, value]) => (
-            <div key={key} className="flex gap-2 text-xs">
-              <dt className="shrink-0 font-mono uppercase tracking-[0.12em] text-muted-foreground">{key}</dt>
-              <dd className="min-w-0 whitespace-pre-wrap break-all text-white/80">{value}</dd>
-            </div>
-          ))}
+        <dl className="mt-3 space-y-2.5 border-t border-white/10 pt-3">
+          {Object.entries(preview).map(([key, value]) => {
+            const lines = value.split("\n").filter(Boolean);
+            const isMultiline = lines.length > 1;
+
+            if (isMultiline) {
+              return (
+                <div key={key} className="space-y-1.5 text-xs">
+                  <dt className="font-mono uppercase tracking-[0.12em] text-muted-foreground">{key}</dt>
+                  <dd className="space-y-1">
+                    {lines.map((line, i) => (
+                      <div
+                        key={i}
+                        className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-white/80"
+                      >
+                        {line}
+                      </div>
+                    ))}
+                  </dd>
+                </div>
+              );
+            }
+
+            return (
+              <div key={key} className="flex gap-2 text-xs">
+                <dt className="shrink-0 font-mono uppercase tracking-[0.12em] text-muted-foreground">{key}</dt>
+                <dd className="min-w-0 whitespace-pre-wrap break-all text-white/80">{value}</dd>
+              </div>
+            );
+          })}
         </dl>
       )}
       {!decided && (
