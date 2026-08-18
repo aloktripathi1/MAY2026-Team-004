@@ -605,6 +605,32 @@ export function AskSangam({ role }: { role: AppRole }) {
     }
   }
 
+  /**
+   * Closing the panel only hides it (the component stays mounted for the
+   * open/close animation), so without this the same conversation would
+   * still be sitting in state on reopen — reset everything here instead.
+   */
+  function closeChat() {
+    if (maxDurationTimeoutRef.current) {
+      clearTimeout(maxDurationTimeoutRef.current);
+      maxDurationTimeoutRef.current = null;
+    }
+    stopLevelMeter();
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.onstop = null;
+      recorder.stop();
+      recorder.stream.getTracks().forEach((track) => track.stop());
+    }
+
+    setOpen(false);
+    setMessages([]);
+    setInput("");
+    setPending(false);
+    setError(null);
+    setVoiceState("idle");
+  }
+
   return (
     <>
       <button
@@ -625,7 +651,7 @@ export function AskSangam({ role }: { role: AppRole }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16 }}
               className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-              onClick={() => setOpen(false)}
+              onClick={closeChat}
             />
             <motion.div
               initial={{ x: "100%" }}
@@ -644,7 +670,7 @@ export function AskSangam({ role }: { role: AppRole }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closeChat}
                   aria-label="Close"
                   className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/[0.12] bg-white/[0.04] text-muted-foreground transition hover:border-white/[0.24] hover:text-white"
                 >
