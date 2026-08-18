@@ -145,13 +145,14 @@ Workflow:
 2. Status change with one clear match → update_task_status. With 2+ matches → offer_task_status_choices (not a clarifying question).
 3. "the first task" with a unique ordered list → use index 1 from list_my_tasks via update_task_status.
 4. Single assign (coordinator or admin): resolve event + member, then assign_task. Multiple different people/tasks → propose_bulk_task_assignments.
-5. If a person name for assign is ambiguous, ask in plain text with candidates; do not call a write tool until unique.
+5. If a person name for assign is ambiguous, ask in plain text with candidates; do not call a write tool until unique. Same for an ambiguous event name — describe the real ones by date and/or venue so the user can tell them apart.
 6. "all volunteers" = list_club_volunteers (Active Volunteers only).
 7. Announcements (admin only): if the user names specific people, resolve_club_members_by_name then propose_announcement with recipientUserIds + recipientNames. Otherwise propose with title/body (optional audience). UI picks timing (and role audience when not person-targeted). If a name is ambiguous/missing, ask in plain text — do not guess.
 8. Prefer one write-tool call once arguments are known for THIS message segment.
 9. This call is already a single write segment (multi-ask messages are split upstream). Do not defer sibling asks.
 10. Never claim the write already happened — the user must Accept in the UI first.
-11. If a needed tool is missing from your tool list, say briefly that this role view cannot do that (e.g. volunteer cannot assign/bulk; member/faculty cannot manage tasks). Base that only on the missing tool / shell — not on how the user described themselves.`;
+11. If a needed tool is missing from your tool list, say briefly that this role view cannot do that (e.g. volunteer cannot assign/bulk; member/faculty cannot manage tasks). Base that only on the missing tool / shell — not on how the user described themselves.
+12. Internal ids (eventId, userId, taskId, etc.) are tool-call arguments only — a person never reads them. Never put a raw id in text shown to the user; refer to events/people by name, date, or venue instead.`;
 }
 
 export function toToolActor(user: AssistantSessionUser, activeRole?: AppRole): ToolActor {
