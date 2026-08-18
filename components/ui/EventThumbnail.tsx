@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface EventThumbnailProps {
   title: string;
@@ -32,7 +33,7 @@ export function EventThumbnail({ title, cover, photo, size = "md", className = "
 
   if (photo) {
     return (
-      <div className={`${sizeClass} shrink-0 overflow-hidden rounded-lg ${borderClass} ${className}`} style={{ background: cover ?? undefined }}>
+      <div className={cn(sizeClass, "shrink-0 overflow-hidden rounded-lg", borderClass, className)} style={{ background: cover ?? undefined }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo} alt={title} loading="lazy" className="h-full w-full object-cover" />
       </div>
@@ -40,7 +41,7 @@ export function EventThumbnail({ title, cover, photo, size = "md", className = "
   }
 
   return (
-    <div className={`${sizeClass} shrink-0 rounded-lg bg-secondary/[0.08] flex items-center justify-center ${borderClass} ${className}`}>
+    <div className={cn(sizeClass, "shrink-0 rounded-lg bg-secondary/[0.08] flex items-center justify-center", borderClass, className)}>
       <CalendarDays size={iconSize} className="text-secondary/60" />
     </div>
   );
