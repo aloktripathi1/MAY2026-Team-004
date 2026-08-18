@@ -767,8 +767,10 @@ export function AskSangam({ role }: { role: AppRole }) {
                     })}
                     {pending && (
                       <div className="flex justify-start">
-                        <div className="rounded-2xl border border-white/[0.1] bg-white/[0.035] px-4 py-2.5 text-sm text-muted-foreground">
-                          Thinking…
+                        <div className="flex items-center gap-1 rounded-2xl border border-white/[0.1] bg-white/[0.035] px-4 py-3">
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-secondary/70 [animation-delay:-0.3s]" />
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-secondary/70 [animation-delay:-0.15s]" />
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-secondary/70" />
                         </div>
                       </div>
                     )}
