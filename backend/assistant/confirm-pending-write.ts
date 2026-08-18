@@ -21,18 +21,18 @@ export async function confirmPendingWrite(params: {
 }): Promise<ConfirmWriteResult> {
   const { user, decision, token } = params;
 
-  const verified = verifyPendingAction(token, {
+  const preview = verifyPendingAction(token, {
     expectedUserId: user.id,
     consume: false,
   });
 
-  if (!verified.ok) {
+  if (!preview.ok) {
     const message =
-      verified.reason === "expired"
+      preview.reason === "expired"
         ? "That proposed action expired. Ask again to get a fresh confirmation."
-        : verified.reason === "consumed"
+        : preview.reason === "consumed"
           ? "That action was already applied."
-          : verified.reason === "user_mismatch"
+          : preview.reason === "user_mismatch"
             ? "That proposed action does not belong to your session."
             : "Invalid or tampered action token.";
     return { ok: false, error: message };
@@ -43,16 +43,23 @@ export async function confirmPendingWrite(params: {
     return { ok: true, data: { answer: REJECT_ANSWER, sourceType: null } };
   }
 
-  const scopedRole = verified.payload.role as AppRole | undefined;
+  const scopedRole = preview.payload.role as AppRole | undefined;
   const actor = toToolActor(user, scopedRole);
 
   if (scopedRole && !accessibleAppRoles(user).includes(scopedRole)) {
     return { ok: false, error: "That proposed action does not match your current roles." };
   }
 
+  // Claim the token synchronously, before the (slow, async) mutation — a second
+  // concurrent Accept for the same token must lose the race here, not after
+  // both requests have already executed the write.
+  const verified = verifyPendingAction(token, { expectedUserId: user.id, consume: true });
+  if (!verified.ok) {
+    return { ok: false, error: "That action was already applied." };
+  }
+
   try {
     const executed = await executeTool(verified.payload.toolName, actor, verified.payload.args);
-    verifyPendingAction(token, { expectedUserId: user.id, consume: true });
 
     const sourceType =
       verified.payload.toolName === "propose_announcement" ? ("announcement" as const) : ("task" as const);
