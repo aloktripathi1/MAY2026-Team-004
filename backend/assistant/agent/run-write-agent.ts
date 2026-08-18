@@ -536,25 +536,22 @@ export async function runWriteToolAgent(
         return { answer, sourceType: null };
       }
 
-      for (const use of toolUses) {
-        const registered = getTool(use.name);
-        if (registered?.requiresConfirmation) {
-          const deferred = extractDeferredWriteRequest(question);
-          const proposal = await buildWriteProposal(
-            actor,
-            use.name,
-            use.input,
-            activeRole,
-            deferred ?? undefined,
-          );
-          return {
-            ...proposal,
-            answer: appendDeferredWriteNote(
-              composePendingWriteAnswer(textFromContent(result.content), proposal.answer),
-              deferred,
-            ),
-          };
-        }
+      const confirmUses = toolUses.filter((use) => getTool(use.name)?.requiresConfirmation);
+      if (confirmUses.length > 0) {
+        const deferred = extractDeferredWriteRequest(question);
+        const proposals = await Promise.all(
+          confirmUses.map((use) =>
+            buildWriteProposal(actor, use.name, use.input, activeRole, deferred ?? undefined),
+          ),
+        );
+        const merged = proposals.length === 1 ? proposals[0] : mergeMultiWriteAnswers(proposals);
+        return {
+          ...merged,
+          answer: appendDeferredWriteNote(
+            composePendingWriteAnswer(textFromContent(result.content), merged.answer),
+            deferred,
+          ),
+        };
       }
 
       const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
