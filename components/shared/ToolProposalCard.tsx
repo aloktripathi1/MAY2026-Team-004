@@ -138,39 +138,47 @@ export function ToolProposalCard({
         </div>
       )}
 
-      {Object.keys(preview).length > 0 && (
-        <dl className="mt-3 space-y-2.5 border-t border-white/10 pt-3">
-          {Object.entries(preview).map(([key, value]) => {
-            const lines = value.split("\n").filter(Boolean);
-            const isMultiline = lines.length > 1;
+      {Object.keys(preview).length > 0 && (() => {
+        const entries = Object.entries(preview);
+        const listEntry = entries.find(([, value]) => value.split("\n").filter(Boolean).length > 1);
+        // "count" is redundant once it can be folded into the list's own heading
+        // ("4 assignments") — otherwise it'd repeat the list length twice.
+        const countEntry = listEntry && entries.find(([key]) => key === "count");
+        const rest = entries.filter(([key]) => key !== listEntry?.[0] && key !== countEntry?.[0]);
 
-            if (isMultiline) {
-              return (
-                <div key={key} className="space-y-1.5 text-xs">
-                  <dt className="font-mono uppercase tracking-[0.12em] text-muted-foreground">{key}</dt>
-                  <dd className="space-y-1">
-                    {lines.map((line, i) => (
+        return (
+          <dl className="mt-3 space-y-2.5 border-t border-white/10 pt-3">
+            {listEntry && (
+              <div className="space-y-1.5 text-xs">
+                <p className="text-white/70">
+                  {countEntry ? `${countEntry[1]} ` : ""}
+                  {listEntry[0]}
+                </p>
+                <div className="space-y-1">
+                  {listEntry[1]
+                    .split("\n")
+                    .filter(Boolean)
+                    .map((line, i) => (
                       <div
                         key={i}
-                        className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-white/80"
+                        className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-white/80"
                       >
                         {line}
                       </div>
                     ))}
-                  </dd>
                 </div>
-              );
-            }
+              </div>
+            )}
 
-            return (
+            {rest.map(([key, value]) => (
               <div key={key} className="flex gap-2 text-xs">
                 <dt className="shrink-0 font-mono uppercase tracking-[0.12em] text-muted-foreground">{key}</dt>
                 <dd className="min-w-0 whitespace-pre-wrap break-all text-white/80">{value}</dd>
               </div>
-            );
-          })}
-        </dl>
-      )}
+            ))}
+          </dl>
+        );
+      })()}
       {decided ? (
         <div
           className={cn(

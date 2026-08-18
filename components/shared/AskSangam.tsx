@@ -695,7 +695,7 @@ export function AskSangam({ role }: { role: AppRole }) {
                             )}
                           >
                             {message.text}
-                            {message.role === "assistant" && (
+                            {message.role === "assistant" && !message.proposals?.length && (
                               <SourceTag
                                 sourceType={message.sourceType}
                                 sourceLabel={message.sourceLabel}
